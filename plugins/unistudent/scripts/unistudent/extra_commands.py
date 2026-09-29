@@ -168,5 +168,57 @@ def register(add, with_course):
     p.add_argument("paths", nargs="*", help="recording paths in Raw")
     p.add_argument("--unit", help="only this unit's recordings")
 
+    def cmd_ingest(args):
+        """The fetcher interface: a university plugin's listing + downloaded files → Raw."""
+        import json
+        import re
+        from . import material
+        course = resolve_course(args)
+        data = json.loads(Path(args.listing).read_text("utf-8"))
+        staged = Path(args.folder)
+        by_url = {e.get("site_url"): rel for rel, e in course.manifest()["files"].items() if e.get("site_url")}
+        clean = lambda s: re.sub(r'[\\/:*?"<>|]', "-", s).strip() or "file"
+        new, changed, missing, recordings = [], [], [], []
+        for item in data.get("items", []):
+            url = item.get("url")
+            source = staged / item["file"] if item.get("file") else None
+            if source is None or not source.exists():
+                if url in by_url:
+                    continue  # downloaded in an earlier sync
+                (recordings if item.get("kind") == "recording" else missing).append(url)
+                continue
+            rel = f"site/{clean(item.get('section') or 'General')}/{clean(item.get('name') or source.name)}"
+            existing = course.manifest()["files"].get(rel)
+            if existing and existing.get("fingerprint") == material.fingerprint(source):
+                source.unlink()
+                continue
+            material.add_file(course, source, tier="official", origin="course-site", rel=rel, replace=True)
+            manifest = course.manifest()
+            entry = manifest["files"][rel]
+            entry["site_url"] = url
+            hint = item.get("unit_hint")
+            if hint is not None and rel not in course.settings().get("unit_answers", {}):
+                entry["unit"] = "general" if str(hint) == "general" else int(hint)
+                entry["sort_reason"] = "site listing"
+            course.save_manifest(manifest)
+            (changed if existing else new).append(rel)
+        material.rebuild_materials(course)
+        built = wiki.build(course) if (new or changed) else None
+        return {"new": new, "changed": changed, "missing": missing, "recordings_available": recordings,
+                "unsorted": [r for r in material.unsorted(course) if r in new or r in changed], "wiki": built,
+                "summary": f"{len(new)} new, {len(changed)} changed, {len(missing)} missing, "
+                           f"{len(recordings)} recordings available on the site."}
+
+    p = with_course(add("ingest", cmd_ingest, "take a university plugin's listing and downloaded files into Raw"))
+    p.add_argument("listing", help="listing JSON written by the university plugin")
+    p.add_argument("folder", help="folder with the downloaded files")
+
+    def cmd_site_status(args):
+        course = resolve_course(args)
+        urls = sorted(e["site_url"] for e in course.manifest()["files"].values() if e.get("site_url"))
+        return {"downloaded": urls, "summary": f"{len(urls)} files already downloaded from the course site."}
+
+    with_course(add("site-status", cmd_site_status, "which course-site files are already in Raw"))
+
     p = with_course(add("add", cmd_add, "move inbox files into Raw, sort them, update the Wiki"))
     p.add_argument("--official", nargs="*", help="inbox file names that are the lecturer's material")

@@ -83,14 +83,15 @@ def import_folder(course, folder, tier="added", origin="student-folder"):
     return added
 
 
-def add_file(course, path, tier="added", origin="inbox", rel=None, move=True):
-    """Put one file into Raw as a real file (inbox and downloads). Returns its Raw path."""
+def add_file(course, path, tier="added", origin="inbox", rel=None, move=True, replace=False):
+    """Put one file into Raw as a real file (inbox and downloads). Returns its Raw path.
+    With replace=True a file at the same Raw path is updated instead of kept beside."""
     path = Path(path)
     manifest = course.manifest()
     files = manifest["files"]
     rel = rel or f"{origin}/{path.name}"
     base, n = rel, 2
-    while rel in files and files[rel].get("fingerprint") != fingerprint(path):
+    while not replace and rel in files and files[rel].get("fingerprint") != fingerprint(path):
         stem, suffix = os.path.splitext(base)
         rel, n = f"{stem} ({n}){suffix}", n + 1
     target = course.raw / rel
@@ -104,6 +105,8 @@ def add_file(course, path, tier="added", origin="inbox", rel=None, move=True):
             (shutil.move if move else shutil.copy2)(str(path), str(stored))
         links.make_link(stored, target)
     elif target.resolve() != path.resolve():
+        if target.is_symlink():
+            target.unlink()
         if move:
             shutil.move(str(path), str(target))
         else:
