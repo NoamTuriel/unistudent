@@ -1,0 +1,60 @@
+"""Making links instead of copies (ADR 0003).
+
+The only OS-specific part of the layout code. Strategy, in order:
+symlink → (Windows) hard link for files / junction for folders → give up (caller writes an index page).
+Set UNISTUDENT_LINK_MODE=index to force the index-page fallback.
+"""
+import os
+import subprocess
+import sys
+from pathlib import Path
+
+
+def link_mode():
+    return os.environ.get("UNISTUDENT_LINK_MODE", "auto")
+
+
+def is_linked_to(link: Path, target: Path) -> bool:
+    try:
+        return link.exists() and os.path.samefile(link, target)
+    except OSError:
+        return False
+
+
+def make_link(target: Path, link: Path) -> bool:
+    """Make `link` point at `target`. Returns False when no kind of link is possible."""
+    target = Path(target)
+    link = Path(link)
+    if link_mode() == "index":
+        return False
+    if is_linked_to(link, target):
+        return True
+    link.parent.mkdir(parents=True, exist_ok=True)
+    if link.is_symlink() or link.exists():
+        # A stale link we own: replace it. Real files are never passed here.
+        link.unlink()
+    try:
+        os.symlink(target, link, target_is_directory=target.is_dir())
+        return True
+    except (OSError, NotImplementedError):
+        pass
+    if sys.platform == "win32":
+        if target.is_dir():
+            result = subprocess.run(["cmd", "/c", "mklink", "/J", str(link), str(target)],
+                                    capture_output=True)
+            return result.returncode == 0
+        try:
+            os.link(target, link)  # hard link: same volume only, no admin rights needed
+            return True
+        except OSError:
+            return False
+    return False
+
+
+def remove_link(link: Path) -> None:
+    """Remove a link the plugin made. Never follows it."""
+    link = Path(link)
+    if link.is_symlink() or link.is_file():
+        link.unlink()
+    elif link.is_dir():  # junction on Windows
+        os.rmdir(link)
