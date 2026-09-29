@@ -92,4 +92,16 @@ def has_sources(page: Path) -> bool:
     front = FRONTMATTER.match(text)
     if front and re.search(r"(?m)^source:", front.group(1)):
         return True
-    return bool(SOURCES_LINE.search(text))
+    if SOURCES_LINE.search(text):
+        return True
+    # Pages of entries (glossary, question bank) cite per entry: a link into the material counts.
+    links = [t for _, t in MD_LINK.findall(CODE_BLOCK.sub("", text))] + _wikilink_targets(text)
+    for target in links:
+        path = unquote(target.strip("<>").partition("#")[0])
+        if re.search(r"(^|/)(sources|recordings)/", path) and (page.parent / path).exists():
+            return True
+    return False
+
+
+def _wikilink_targets(text):
+    return [name for name, _, _ in WIKILINK.findall(CODE_BLOCK.sub("", text))]

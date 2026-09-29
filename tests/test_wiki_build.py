@@ -77,6 +77,12 @@ class WikiBuild(CourseTestCase):
         kinds = sorted(p["kind"] for p in problems)
         self.assertEqual(kinds, ["broken-link", "no-sources"])
 
+    def test_a_page_of_entries_citing_the_material_needs_no_page_level_sources_line(self):
+        self.build()
+        (self.wiki / "glossary.md").write_text(
+            "# Glossary\n\n### Money multiplier\nIt is 1/r. [slides](sources/unit-04/slides.md#page-1)\n", "utf-8")
+        self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
+
     def test_unchanged_files_are_not_converted_again(self):
         first = self.build()
         self.assertEqual(first["converted"], 3)
