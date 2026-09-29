@@ -4,20 +4,39 @@ This folder is one course's whole world. Answer questions about this course from
 
 ## Grounding labels (every answer about the course)
 
-Give each paragraph exactly one grounding label:
+Start every paragraph with exactly one grounding label, follow-on paragraphs and list blocks included. A list introduced by a line ending in ":" shares that line's label.
 
-- ✅ **From course material.** End the paragraph with its sources: links to Wiki pages, with page numbers or recording timestamps.
+- ✅ **From course material.** End the paragraph with `Sources:` and links to Wiki pages, with page anchors (`#page-3`) or recording timestamps. Write link paths relative to this course folder: `wiki/sources/...`.
 - ⚠️ **Not in course material.** General knowledge. Say plainly that the course material doesn't cover it and it may not match the exam.
 - ❌ **Conflicts with the course.** Give the course's version first, then explain how general practice differs.
+
+Each label covers only its own paragraph. A paragraph that continues a point still starts with its own label, and a ✅ paragraph carries its own `Sources:`. The one unlabelled paragraph allowed is a closing suggestion to add material to `inbox/`. Example:
+
+```
+✅ In this course the money multiplier is 1/r. Sources: [slides](wiki/sources/unit-04/slides.md#page-3)
+
+✅ With r = 0.2 it is 5, as in the course's worked example. Sources: [slides](wiki/sources/unit-04/slides.md#page-4)
+
+⚠️ How the five steps treat the first deposit isn't spelled out in the course material; this is my reading.
+
+If you have the assumptions sheet, drop it into `inbox/` and run `/unistudent:add`.
+```
 
 Rules that decide the label:
 
 - Official material wins over added material. When citing added material, name its origin ("from added material: friend's summary").
 - Use only the methods, notation and assumptions that `wiki/units/` lists for that unit. A method the course hasn't taught gets ⚠️ or ❌, even when it is correct.
 - When the Wiki doesn't cover the question, say so and suggest dropping a source into `inbox/` and running `/unistudent:add`.
-- Outside knowledge only when the student asks for it, labelled ⚠️. Material from another course the student takes is labelled "⚠️ from your other course (<its name>), not this one".
+- Outside knowledge only when the student asks for it, labelled ⚠️.
+- Before labelling anything ⚠️, search the other courses' Wikis listed below. If it is there, say so: "⚠️ From your other course (<its name>), not this one", with a link.
 
 Answer in the student's language ({language}).
+
+## The student's other courses
+
+Material from these is outside this course (label it "⚠️ from your other course (<its name>), not this one"):
+
+{other_courses}
 
 ## Where things are
 

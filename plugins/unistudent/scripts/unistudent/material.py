@@ -10,6 +10,7 @@ import shutil
 from pathlib import Path
 
 from . import links
+from .convert import kind
 from .sorting import detect_unit
 
 SKIP_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
@@ -94,18 +95,27 @@ def add_file(course, path, tier="added", origin="inbox", rel=None, move=True):
         rel, n = f"{stem} ({n}){suffix}", n + 1
     target = course.raw / rel
     target.parent.mkdir(parents=True, exist_ok=True)
-    if target.resolve() != path.resolve():
+    recordings_dir = course.settings().get("recordings_dir")
+    if recordings_dir and kind(path) == "recording":
+        # Synced course folder: the one real copy lives in a local, non-synced folder.
+        stored = Path(recordings_dir) / Path(rel).name
+        stored.parent.mkdir(parents=True, exist_ok=True)
+        if stored.resolve() != path.resolve():
+            (shutil.move if move else shutil.copy2)(str(path), str(stored))
+        links.make_link(stored, target)
+    elif target.resolve() != path.resolve():
         if move:
             shutil.move(str(path), str(target))
         else:
             shutil.copy2(path, target)
-    unit, reason = _entry_unit(course, rel, target)
+    real = target.resolve() if target.exists() else Path(recordings_dir) / Path(rel).name
+    unit, reason = _entry_unit(course, rel, real)
     files[rel] = {
         "origin": origin,
         "tier": tier,
-        "source_path": str(target),
-        "size": target.stat().st_size,
-        "fingerprint": fingerprint(target),
+        "source_path": str(real),
+        "size": real.stat().st_size,
+        "fingerprint": fingerprint(real),
         "unit": unit,
         "sort_reason": reason,
     }

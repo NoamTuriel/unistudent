@@ -33,16 +33,46 @@ def write_context_files(course: Course):
         exam.append(f"- Exam date: {settings['exam_date']}")
     exam.append("- Exam format, formula sheet and lecturer emphasis: see `wiki/course.md` "
                 "(filled when the Wiki is built).")
+    others = [c for c in Registry().courses() if c["path"] != str(course.root)]
+    other_lines = [f"- {c['name']}: `{Path(c['path']) / 'wiki'}`" for c in others] or ["- None."]
     context = render("CLAUDE.md",
                      course_name=settings["course_name"],
                      language=settings.get("language", "he"),
                      general_preferences=general_preferences_file(),
+                     other_courses="\n".join(other_lines),
                      exam_section="\n".join(exam))
     (course.root / "CLAUDE.md").write_text(context, "utf-8")
     readme = course.root / "README.md"
     if not readme.exists():
         lang = "he" if settings.get("language") == "he" else "en"
         readme.write_text(render(f"README.{lang}.md", course_name=settings["course_name"]), "utf-8")
+
+
+def refresh_other_contexts(course: Course):
+    """Every course's context file names the student's other courses; keep them in step."""
+    for entry in Registry().courses():
+        other = Course(entry["path"])
+        if other.root != course.root and other.exists():
+            write_context_files(other)
+
+
+SYNCED_MARKERS = ("mobile documents", "icloud", "google drive", "googledrive", "my drive",
+                  "dropbox", "onedrive", "box sync")
+
+
+def is_synced_folder(path: Path) -> bool:
+    """iCloud, Google Drive, Dropbox and OneDrive don't carry links reliably and evict big files."""
+    return any(marker in part.lower() for part in path.parts for marker in SYNCED_MARKERS)
+
+
+def recordings_root() -> Path:
+    import os
+    return Path(os.environ.get("UNISTUDENT_RECORDINGS_ROOT") or Path.home() / "UniStudent recordings")
+
+
+def safe_name(name: str) -> str:
+    import re
+    return re.sub(r'[\\/:*?"<>|]', "-", name).strip() or "course"
 
 
 def resolve_course(args) -> Course:
@@ -67,10 +97,14 @@ def cmd_setup(args):
         "university": args.university,
         "source_mode": args.source_mode,
     }.items() if v is not None})
+    synced = is_synced_folder(course.root)
+    if synced and not settings.get("recordings_dir"):
+        settings["recordings_dir"] = str(recordings_root() / safe_name(settings["course_name"]))
     course.save_settings(settings)
     if not course.preferences_file.exists():
         course.preferences_file.write_text("# Course preferences\n\n", "utf-8")
     Registry().add(course, settings["course_name"])
+    refresh_other_contexts(course)
     added = []
     if args.import_dir:
         added = material.import_folder(course, args.import_dir, tier=args.tier)
@@ -81,6 +115,8 @@ def cmd_setup(args):
         "course": str(course.root),
         "course_name": settings["course_name"],
         "imported": len(added),
+        "synced": synced,
+        "recordings_dir": settings.get("recordings_dir"),
         "unsorted": material.unsorted(course),
         "summary": f"Course folder ready at {course.root} ({len(added)} new files, "
                    f"{len(material.unsorted(course))} unsorted).",
@@ -191,7 +227,13 @@ def build_parser():
 
 def main(argv=None):
     parser = build_parser()
-    args = parser.parse_args(argv)
+    argv = list(sys.argv[1:] if argv is None else argv)
+    commands = next(a for a in parser._actions if isinstance(a, argparse._SubParsersAction)).choices
+    if argv and argv[0] in commands:
+        # Intermixed: options and positionals in any order (skills needn't care).
+        args = commands[argv[0]].parse_intermixed_args(argv[1:])
+    else:
+        args = parser.parse_args(argv)
     try:
         result = args.func(args)
     except UserError as error:
