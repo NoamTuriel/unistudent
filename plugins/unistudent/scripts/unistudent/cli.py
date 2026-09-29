@@ -10,13 +10,12 @@ import sys
 from pathlib import Path
 
 from . import material
-from .course import Course, Registry, find_course, general_preferences_file
+from .common import UserError, resolve_course
+from .course import Course, Registry, find_course, general_preferences_file, safe_name
+from .links import is_synced_folder, recordings_root
 
 TEMPLATES = Path(__file__).resolve().parents[2] / "templates"
-
-
-class UserError(Exception):
-    pass
+CONTEXT_MARK = "<!-- unistudent:context -->"
 
 
 def render(template_name, **values):
@@ -41,7 +40,18 @@ def write_context_files(course: Course):
                      general_preferences=general_preferences_file(),
                      other_courses="\n".join(other_lines),
                      exam_section="\n".join(exam))
-    (course.root / "CLAUDE.md").write_text(context, "utf-8")
+    # The context file is ours only if we made it; a student's own CLAUDE.md is kept and
+    # gets one import line pointing at ours.
+    ours = course.state / "context.md"
+    ours.parent.mkdir(parents=True, exist_ok=True)
+    ours.write_text(context, "utf-8")
+    claude_md = course.root / "CLAUDE.md"
+    if not claude_md.exists() or claude_md.read_text("utf-8").startswith(CONTEXT_MARK):
+        claude_md.write_text(f"{CONTEXT_MARK}\n{context}", "utf-8")
+    else:
+        text = claude_md.read_text("utf-8")
+        if "@.unistudent/context.md" not in text:
+            claude_md.write_text(text.rstrip("\n") + "\n\n@.unistudent/context.md\n", "utf-8")
     readme = course.root / "README.md"
     if not readme.exists():
         lang = "he" if settings.get("language") == "he" else "en"
@@ -54,32 +64,6 @@ def refresh_other_contexts(course: Course):
         other = Course(entry["path"])
         if other.root != course.root and other.exists():
             write_context_files(other)
-
-
-SYNCED_MARKERS = ("mobile documents", "icloud", "google drive", "googledrive", "my drive",
-                  "dropbox", "onedrive", "box sync")
-
-
-def is_synced_folder(path: Path) -> bool:
-    """iCloud, Google Drive, Dropbox and OneDrive don't carry links reliably and evict big files."""
-    return any(marker in part.lower() for part in path.parts for marker in SYNCED_MARKERS)
-
-
-def recordings_root() -> Path:
-    import os
-    return Path(os.environ.get("UNISTUDENT_RECORDINGS_ROOT") or Path.home() / "UniStudent recordings")
-
-
-def safe_name(name: str) -> str:
-    import re
-    return re.sub(r'[\\/:*?"<>|]', "-", name).strip() or "course"
-
-
-def resolve_course(args) -> Course:
-    course = Course(args.course) if getattr(args, "course", None) else find_course()
-    if course is None or not course.exists():
-        raise UserError("No course folder found. Run setup first, or pass --course <folder>.")
-    return course
 
 
 # --- commands ---------------------------------------------------------------
@@ -95,7 +79,7 @@ def cmd_setup(args):
         "format": args.format,
         "course_skill": args.course_skill,
         "university": args.university,
-        "source_mode": args.source_mode,
+        "origin_mode": args.origin_mode,
     }.items() if v is not None})
     synced = is_synced_folder(course.root)
     if synced and not settings.get("recordings_dir"):
@@ -170,7 +154,7 @@ def cmd_courses(args):
 def cmd_context(args):
     course = resolve_course(args)
     course.update_settings(exam_date=args.exam_date,
-                           video_level=int(args.video_level) if args.video_level is not None else None)
+                           recording_level=int(args.recording_level) if args.recording_level is not None else None)
     write_context_files(course)
     return {"summary": f"Context file written: {course.root / 'CLAUDE.md'}"}
 
@@ -198,7 +182,7 @@ def build_parser():
     p.add_argument("--format", choices=["obsidian", "markdown"])
     p.add_argument("--course-skill")
     p.add_argument("--university")
-    p.add_argument("--source-mode", choices=["site", "own-folder", "both"])
+    p.add_argument("--origin-mode", choices=["site", "own-folder", "both"])
     p.add_argument("--import", dest="import_dir")
     p.add_argument("--tier", choices=["official", "added"], default="added")
 
@@ -217,12 +201,13 @@ def build_parser():
     p.add_argument("action", choices=["list", "switch", "current"], nargs="?", default="list")
     p.add_argument("target", nargs="?")
 
-    p = with_course(add("context", cmd_context, "update exam date / video level and rewrite the context file"))
+    p = with_course(add("context", cmd_context, "update exam date / recording level and rewrite the context file"))
     p.add_argument("--exam-date")
-    p.add_argument("--video-level", choices=["0", "1", "2", "3"])
+    p.add_argument("--recording-level", choices=["0", "1", "3"],
+                   help="0 skip, 1 download only, 3 transcript and summary")
 
-    from . import extra_commands
-    extra_commands.register(add, with_course)
+    from . import commands
+    commands.register(add, with_course)
     return parser
 
 
@@ -236,8 +221,12 @@ def main(argv=None):
     else:
         args = parser.parse_args(argv)
     try:
+        sys.stdout.reconfigure(encoding="utf-8")  # Windows pipes default to a legacy code page
+    except (AttributeError, ValueError):
+        pass
+    try:
         result = args.func(args)
-    except UserError as error:
+    except (UserError, RuntimeError, ValueError, KeyError, OSError) as error:
         print(json.dumps({"error": str(error)}, ensure_ascii=False) if args.json else f"Error: {error}")
         return 1
     if args.json:

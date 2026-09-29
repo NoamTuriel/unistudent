@@ -55,7 +55,7 @@ class SyncedCourseFolder(CourseTestCase):
             self.assertTrue(result["synced"])
             write(course / "inbox" / "Unit 2 session.mp4", b"\x00" * 2048)
             run_json("add", "--course", course)
-        stored = local / "Macro" / "Unit 2 session.mp4"
+        stored = local / "Macro" / "inbox" / "Unit 2 session.mp4"
         self.assertTrue(stored.is_file())
         raw = course / "raw" / "inbox" / "Unit 2 session.mp4"
         self.assertTrue(raw.is_symlink())

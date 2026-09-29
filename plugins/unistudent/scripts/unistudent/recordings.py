@@ -17,7 +17,8 @@ from pathlib import Path
 
 from . import material
 from .course import home
-from .wiki import recording_pages, unit_dir
+from .course import unit_dir
+from .wiki import recording_pages
 
 # Hebrew-tuned models by ivrit.ai; other languages use the multilingual model.
 MODELS = {
@@ -27,6 +28,7 @@ MODELS = {
     ("mlx", None): "mlx-community/whisper-large-v3-turbo",
 }
 PARAGRAPH_SECONDS = 60
+PACKAGES = {"mlx": "mlx-whisper", "faster": "faster-whisper"}
 
 
 def hms(seconds: float) -> str:
@@ -150,7 +152,7 @@ def estimate(course, unit=None, only_unprocessed=True):
         "recordings": len(rows), "hours": round(seconds / 3600, 2), "unknown_duration": unknown,
         "gigabytes": round(size / 1e9, 2), "backend": name, "backend_installed": backend_available(name),
         "install_command": None if backend_available(name) else
-        f"pip install {dict(mlx='mlx-whisper', faster='faster-whisper').get(name, name)}",
+        f"pip install {PACKAGES.get(name, name)}",
         "realtime_factor": factor,
         "estimated_hours": round(seconds * factor / 3600, 2) if factor else None,
         "files": [r["path"] for r in rows],
@@ -183,8 +185,7 @@ def write_transcript(course, rel, segments, name):
 def transcribe(course, rel):
     name = backend_name()
     if not backend_available(name):
-        package = {"mlx": "mlx-whisper", "faster": "faster-whisper"}[name]
-        raise RuntimeError(f"Speech-to-text isn't installed. Run: pip install {package}")
+        raise RuntimeError(f"Speech-to-text isn't installed. Run: pip install {PACKAGES[name]}")
     source = material.raw_path(course, rel)
     with tempfile.TemporaryDirectory() as tmp:
         audio = Path(tmp) / "audio.wav"

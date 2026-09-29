@@ -4,7 +4,7 @@ description: Build or refresh the course Wiki from Raw (conversions, then glossa
 disable-model-invocation: true
 ---
 
-The Wiki is the course's knowledge base for AI: everything an answer may rely on. Every page cites its sources; nothing enters it from outside the course material.
+The Wiki is everything an answer about the course may rely on. Every page cites its sources; nothing enters it from outside the course material.
 
 `us` means `python3 <this skill's base directory>/../../scripts/us.py`.
 
@@ -18,6 +18,8 @@ Done when: the build ran and you have its `units_touched`, `images` and `needs_v
 
 For each file in `images` and `needs_visual`, dispatch the `source-reader` subagent (in parallel). It writes the content as Markdown source pages.
 
+Done when: every listed file has a source page.
+
 ## 3. Write the understanding layer
 
 For each unit in `units_touched` (all units on a first build), dispatch one `wiki-unit-writer` subagent, in parallel. Give it the course folder, the unit, and the student's language. Each returns glossary entries and question-bank entries for its unit, and edits only its own unit page.
@@ -29,6 +31,8 @@ Done when: every touched unit page has its methods, notation and assumptions sec
 ## 4. The course page
 
 Fill `wiki/course.md` from the exam-information files, formula sheets and past exams: exam format, aids allowed, what the lecturer stresses. Each line cites its source. Unknown → write "not in the course material yet".
+
+Done when: each section of `wiki/course.md` has content with sources, or says it's not in the material yet.
 
 ## 5. Check
 

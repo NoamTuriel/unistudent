@@ -34,7 +34,7 @@ Done when: you know the source mode, and the folder and tier if one was given.
 
 ## 4. Create the course folder
 
-Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <he|en> --source-mode <site|own-folder|both> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`.
+Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <he|en> --origin-mode <site|own-folder|both> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`.
 
 Then resolve unsorted files: run `us unsorted --json`. If any, ask one grouped question (unit number, or "general" for whole-course files such as past exams) and record each answer with `us assign "<path>" <unit|general>`.
 
@@ -44,9 +44,13 @@ Done when: `us unsorted` prints "Nothing unsorted." or the student chose to leav
 
 Run the university plugin's sync skill (e.g. `openu:sync`). It asks about recordings itself.
 
+Done when: the sync reported what it downloaded.
+
 ## 6. Recordings
 
-If the course has recordings and they weren't handled in step 5, run `us recordings estimate --json` and ask whether to include them. Say it's recommended but slow, with the numbers. Record the choice with `us context --video-level <0 skip|1 download only|3 transcript and summary>`. Never start transcription here: point to `/unistudent:recordings`.
+If the course has recordings and they weren't handled in step 5, run `us recordings estimate --json` and ask whether to include them. Say it's recommended but slow, with the numbers. Record the choice with `us context --recording-level <0 skip|1 download only|3 transcript and summary>`. Transcription itself happens later, in `/unistudent:recordings`: point there.
+
+Done when: the recording level is recorded.
 
 ## 7. Wiki
 
@@ -62,3 +66,5 @@ Explain in the student's language, in five short lines, following the course fol
 - Sync the course site (university plugin)
 
 In Cowork, suggest one project per course with this folder connected. In Claude Code, suggest starting Claude inside the folder.
+
+Done when: the student has seen the explanation and the menu.

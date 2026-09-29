@@ -24,3 +24,5 @@ disable-model-invocation: true
 | `/unistudent:courses` | switch course |
 | `/unistudent:setup` | add another course |
 | `/openu:sync` (or the student's university plugin) | new material on the course site |
+
+Done when: the student has seen what's waiting and the commands that apply.

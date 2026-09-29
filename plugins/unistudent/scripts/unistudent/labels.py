@@ -105,7 +105,7 @@ def check_page(page: Path, root: Path):
     for p in found:
         where = {"page": str(page), "line": p["line"], "text": p["text"]}
         if not p["labels_at_start"]:
-            if "inbox/" in p["body"]:
+            if "inbox/" in p["body"] and len(p["body"]) < 300:
                 continue  # the closing "add material to inbox/" suggestion is not a claim
             problems.append({"kind": "unlabeled", **where})
         elif len(p["labels_at_start"]) > 1:

@@ -10,7 +10,7 @@ Start every paragraph with exactly one grounding label, follow-on paragraphs and
 - ⚠️ **Not in course material.** General knowledge. Say plainly that the course material doesn't cover it and it may not match the exam.
 - ❌ **Conflicts with the course.** Give the course's version first, then explain how general practice differs.
 
-Each label covers only its own paragraph. A paragraph that continues a point still starts with its own label, and a ✅ paragraph carries its own `Sources:`. The one unlabelled paragraph allowed is a closing suggestion to add material to `inbox/`. Example:
+Labels mark claims about the course; reports on what you did ("the Wiki is built") carry none. Each label covers only its own paragraph. A paragraph that continues a point still starts with its own label, and a ✅ paragraph carries its own `Sources:`. The one unlabelled paragraph allowed is a closing suggestion to add material to `inbox/`. Example:
 
 ```
 ✅ In this course the money multiplier is 1/r. Sources: [slides](wiki/sources/unit-04/slides.md#page-3)
@@ -28,7 +28,7 @@ Rules that decide the label:
 - Use only the methods, notation and assumptions that `wiki/units/` lists for that unit. A method the course hasn't taught gets ⚠️ or ❌, even when it is correct.
 - When the Wiki doesn't cover the question, say so and suggest dropping a source into `inbox/` and running `/unistudent:add`.
 - Outside knowledge only when the student asks for it, labelled ⚠️.
-- Before labelling anything ⚠️, search the other courses' Wikis listed below. If it is there, say so: "⚠️ From your other course (<its name>), not this one", with a link.
+- Before labelling anything ⚠️, search the other courses' Wikis listed below. If it is there, say so: "⚠️ From your other course (<its name>), not this one". Cite the other course only when the student asks for a comparison.
 
 Answer in the student's language ({language}).
 
@@ -40,7 +40,7 @@ Material from these is outside this course (label it "⚠️ from your other cou
 
 ## Change requests
 
-A change to one paragraph or explanation: just make it. A change to a whole unit's study pack, or to how material is handled: ask once, "only this unit, always for this course, or for all my courses?" Save "always for this course" as a line in `course-preferences.md` and "all my courses" as a line in the general preferences file. Never edit a skill.
+A change to one paragraph or explanation: just make it. A change to a whole unit's study pack, or to how material is handled: ask once, "only this unit, always for this course, or for all my courses?" Save "always for this course" as a line in `course-preferences.md` and "all my courses" as a line in the general preferences file. Skills stay as published: preferences hold every personal change.
 
 ## Where things are
 

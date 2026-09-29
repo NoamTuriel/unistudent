@@ -10,6 +10,7 @@ from pathlib import Path
 
 from . import material
 from .convert import convert, kind
+from .course import safe_name, unit_dir
 from .links_check import STUB_MARK, check_links, has_sources
 
 GEN_START = "<!-- unistudent:generated:start -->"
@@ -45,18 +46,6 @@ STUBS = {
 }
 
 
-def unit_dir(unit) -> str:
-    if unit is None:
-        return "unsorted"
-    if unit == "general":
-        return "general"
-    return f"unit-{int(unit):02d}"
-
-
-def _safe_name(name: str) -> str:
-    return re.sub(r'[\\/:*?"<>|#^\[\]]', "-", name).strip() or "file"
-
-
 def _plan_pages(course):
     """Stable Raw path → Wiki page mapping (sorted, so collisions resolve the same way every time)."""
     plan, used = {}, set()
@@ -64,7 +53,7 @@ def _plan_pages(course):
         if kind(rel) != "document":
             continue
         folder = unit_dir(entry.get("unit"))
-        stem = _safe_name(Path(rel).stem)
+        stem = safe_name(Path(rel).stem)
         candidate, n = f"sources/{folder}/{stem}.md", 2
         while candidate in used:
             candidate, n = f"sources/{folder}/{stem} ({n}).md", n + 1
@@ -79,6 +68,7 @@ def _source_page(rel, entry, conversion):
         f"source: {rel}",
         f"origin: {entry.get('origin')}",
         f"tier: {entry.get('tier')}",
+        *([f"origin_note: {entry['origin_note']}"] if entry.get("origin_note") else []),
         f"unit: {entry.get('unit') if entry.get('unit') is not None else 'unsorted'}",
         f"converted_with: {conversion.method}",
         "---",
@@ -115,11 +105,16 @@ def _link(label, target):
 
 
 def recording_pages(course):
-    """Recordings and their Wiki folders (filled by the recordings pipeline)."""
-    out = {}
+    """Recordings and their Wiki folders (filled by the recordings pipeline).
+    Folder names are unique and stable: sorted, with a suffix on name clashes."""
+    out, used = {}, set()
     for rel, entry in sorted(course.manifest()["files"].items()):
         if kind(rel) == "recording":
-            folder = f"recordings/{_safe_name(Path(rel).stem)}"
+            stem = safe_name(Path(rel).stem)
+            folder, n = f"recordings/{stem}", 2
+            while folder in used:
+                folder, n = f"recordings/{stem} ({n})", n + 1
+            used.add(folder)
             out[rel] = {"folder": folder, "unit": entry.get("unit"),
                         "processed": (course.wiki / folder / "summary.md").exists()}
     return out
@@ -174,7 +169,7 @@ def build(course, force=False):
         by_unit.setdefault(unit_dir(info["unit"]), [])
     unit_pages = []
     for folder in sorted(by_unit):
-        unit = None if folder == "unsorted" else ("general" if folder == "general" else int(folder[5:]))
+        unit = {"unsorted": None, "general": "general"}.get(folder, folder[len("unit-"):])
         lines = [f"# {course.unit_label(unit)}", "", "Sources:", ""]
         for rel, page in sorted(by_unit[folder], key=lambda item: item[1]):
             lines.append(f"- {_link(Path(page).stem, '../' + page)} ({manifest[rel].get('tier')}, {manifest[rel].get('origin')})")

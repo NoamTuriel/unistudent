@@ -31,8 +31,7 @@ def make_link(target: Path, link: Path) -> bool:
         return True
     link.parent.mkdir(parents=True, exist_ok=True)
     if link.is_symlink() or link.exists():
-        # A stale link we own: replace it. Real files are never passed here.
-        link.unlink()
+        remove_link(link)  # a stale link we own; real files are never passed here
     try:
         os.symlink(target, link, target_is_directory=target.is_dir())
         return True
@@ -49,6 +48,20 @@ def make_link(target: Path, link: Path) -> bool:
         except OSError:
             return False
     return False
+
+
+SYNCED_MARKERS = ("mobile documents", "icloud", "google drive", "googledrive", "my drive",
+                  "dropbox", "onedrive", "box sync")
+
+
+def is_synced_folder(path: Path) -> bool:
+    """iCloud, Google Drive, Dropbox and OneDrive don't carry links reliably and evict big files."""
+    return any(marker in part.lower() for part in Path(path).parts for marker in SYNCED_MARKERS)
+
+
+def recordings_root() -> Path:
+    """Where recordings of synced course folders live: local, never synced."""
+    return Path(os.environ.get("UNISTUDENT_RECORDINGS_ROOT") or Path.home() / "UniStudent recordings")
 
 
 def remove_link(link: Path) -> None:

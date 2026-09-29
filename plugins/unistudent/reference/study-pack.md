@@ -22,8 +22,6 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 | walkthrough | `N.2 הסבר החומר` / `N.2 Walkthrough` | The big idea, then every concept of every topic, in the concept structure below; per topic: recording segments and its practice questions | ✓ |
 | practice | `N.3 תרגול` / `N.3 Practice` | Every question from the course material for this unit, grouped by topic and stage, tagged, with the recording time when it is solved there | ✓ |
 | recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | Per recording: time · until · type · what happens · topic. Only when the unit's recordings have transcripts | ✓ when transcripts exist |
-| cheatsheet | `N.5 דף סיכום` / `N.5 Cheat sheet` | One page: the unit's formulas, assumptions and tools, each with its source | optional |
-| selftest | `N.6 בוחן עצמי` / `N.6 Self-test` | 10 short questions with hidden answers, mixed topics | optional |
 
 Save to `study/<unit label>/` (e.g. `study/יחידה 4/`).
 
@@ -49,4 +47,4 @@ Stage 0: examples from the slides. Stage 1: questions with answers. Stage 2: the
 
 ## Grounding
 
-Every paragraph starts with one grounding label, as in the course folder's `CLAUDE.md`. ✅ paragraphs carry their own `Sources:`. Tables, headings and navigation lines carry none.
+Label every paragraph as the course folder's `CLAUDE.md` says.

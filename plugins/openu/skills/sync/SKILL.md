@@ -11,7 +11,7 @@ Site knowledge (URLs, page structure, where recordings live) is in `<this skill'
 
 ## 1. Course and what's already here
 
-Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded).
+Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded, with the site date each had).
 
 ## 2. Open the course site
 
@@ -30,17 +30,21 @@ Walk every section of the course site and list every file as one item:
 
 - `section` is the site's own section title: the core finds the unit in it ("יחידה 4 - ...").
 - `unit_hint` only when the site states the unit and the title doesn't; `"general"` for whole-course items (exam information, past exams, formula sheets).
-- Skip URLs already in `site-status`.
+- Skip URLs already in `site-status`, unless the site shows a different date than its `modified` value there: then download it again (it changed). Record the date the site shows as `modified`.
 
 Done when: every section has been opened, and every file link in it is an item or already downloaded.
 
 ## 4. Recordings: ask first
 
-Count the recording items. Tell the student how many recordings there are and, when the site shows durations, the total hours. Say downloading them is recommended but slow and large. Ask: download all, only unit N, or not now. Recordings not chosen stay listed without a `file`; the core reports them as available.
+Count the recording items. Tell the student how many there are, the total hours and size when the site shows them (otherwise about 1 GB and 1.5 hours per session), and roughly how long the download takes. Say downloading them is recommended but slow and large. Ask: download all, only unit N, or not now. Record the answer with `us context --recording-level <0 skip|1 download|3 transcript and summary>`, and skip this question on later syncs unless the student asks. Recordings not chosen stay listed without a `file`; the core reports them as available.
+
+Done when: the student chose, or a saved choice applied.
 
 ## 5. Download
 
 Download the chosen files into one new folder under the student's Downloads folder (e.g. `Downloads/unistudent-<course>-<date>`), as `site.md` describes. Set each item's `file` to its downloaded name. Save the listing as `listing.json` in that folder.
+
+Done when: every chosen item has a downloaded file or is noted as failed.
 
 ## 6. Hand over
 
@@ -48,6 +52,8 @@ Run `us ingest --json "<folder>/listing.json" "<folder>"`. The core moves the fi
 
 - `unsorted`: ask one grouped question and record answers with `us assign`.
 - `missing`: retry those downloads once, then report them.
+
+Done when: the ingest ran and unsorted files are answered or deferred.
 
 ## 7. Report
 

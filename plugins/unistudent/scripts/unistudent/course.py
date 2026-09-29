@@ -1,6 +1,7 @@
 """Course folder, Settings, Manifest and Registry (see CONTEXT.md)."""
 import json
 import os
+import re
 from pathlib import Path
 
 STATE_DIR = ".unistudent"
@@ -17,13 +18,45 @@ DEFAULT_SETTINGS = {
     "format": "obsidian",          # obsidian | markdown
     "course_skill": None,          # e.g. "macro"; None → generic rules
     "university": None,            # e.g. "openu"; None → core only
-    "source_mode": "own-folder",   # site | own-folder | both
-    "video_level": None,           # None (not asked yet) | 0..3
+    "origin_mode": "own-folder",   # where material comes from: site | own-folder | both
+    "recording_level": None,       # None (not asked yet) | 0 skip | 1 download only | 3 transcript + summary
     "recordings_dir": None,        # local non-synced folder when the course folder syncs
+    "lecturer": None,
+    "recording_segments": [],      # unit spans inside recordings: {"unit": 4, "from": "<rec> 00:00:00", "to": "<rec> 01:39:00"}
     "exam_date": None,
     "sort_patterns": [],
     "unit_answers": {},            # raw path → unit number or "general"
 }
+
+
+def safe_name(name: str) -> str:
+    """A file or folder name that is valid on every OS."""
+    return re.sub(r'[\\/:*?"<>|#^\[\]]', "-", str(name)).strip() or "file"
+
+
+def parse_unit(value):
+    """A unit as stored: an int, "general" (whole course), or None (unsorted)."""
+    if value is None or value == "unsorted":
+        return None
+    if str(value).strip().lower() in ("general", "0"):
+        return "general"
+    try:
+        number = int(str(value).strip())
+    except ValueError:
+        raise ValueError(f"A unit is a number, 'general' or 'unsorted', not {value!r}.")
+    if number < 0:
+        raise ValueError(f"A unit number can't be negative: {value!r}.")
+    return number
+
+
+def unit_dir(unit) -> str:
+    """Internal folder name for a unit (Wiki pages, state)."""
+    unit = parse_unit(unit)
+    if unit is None:
+        return "unsorted"
+    if unit == "general":
+        return "general"
+    return f"unit-{unit:02d}"
 
 
 def home() -> Path:
@@ -112,6 +145,7 @@ class Course:
         return LABELS.get(lang, LABELS["en"])[key].format(**kw)
 
     def unit_label(self, unit):
+        unit = parse_unit(unit)
         if unit is None:
             return self.label("unsorted")
         if unit == "general":

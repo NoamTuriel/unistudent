@@ -10,6 +10,8 @@ disable-model-invocation: true
 
 Run `us courses current` and say which course. Get the unit number from the student's request, or ask.
 
+Done when: you have the course and the unit number.
+
 ## 2. Existing pack → propose, never overwrite
 
 If `study/<unit label>/` exists, run `us study changes --unit N --json`.
@@ -17,7 +19,9 @@ If `study/<unit label>/` exists, run `us study changes --unit N --json`.
 - `has_study_pack` and changes: read the new and changed Wiki pages and draft a change list ("2 new questions for topic 3 from <source>: add them?"). Apply only what the student approves, then run `us study mark-built --unit N`. Stop.
 - No changes: say the pack is up to date and ask what they want changed.
 
-Study packs belong to the student: never rewrite a page they didn't approve.
+Study packs belong to the student: change only what they approve.
+
+Done when: there is no pack yet (go on to step 3), or the student approved or declined every proposed change.
 
 ## 3. Resolve the rules
 
@@ -33,9 +37,13 @@ Done when: you know the page list, each page's content rules, and the concept st
 
 Ask with AskUserQuestion (multiSelect): every available page with its one-line "what it gives you", all default pages selected. Skip the recordings page when the unit has no transcripts, and say why.
 
+Done when: the student chose the pages.
+
 ## 5. Build
 
-Dispatch one `unit-pack-writer` subagent with: course folder, unit, the chosen pages, the resolved rules (paste them in full: the subagent has no access to your skills), the format (Obsidian or Markdown) and the language.
+Dispatch one `study-pack-writer` subagent with: course folder, unit, the chosen pages, the resolved rules (paste them in full: the subagent has no access to your skills), the format (Obsidian or Markdown), the language, and the path to `us.py`.
+
+Done when: the writer returned its page list.
 
 ## 6. Verify
 
@@ -47,4 +55,4 @@ Then run `us study mark-built --unit N`.
 
 ## 7. Change requests during the session
 
-A change to one paragraph or explanation: just make it. A change to the whole pack or how material is handled: ask "only this unit, always for this course, or for all my courses?" and save the last two with `us prefs add --scope course|general --text "<the rule>"`. Skills are never edited.
+Follow "Change requests" in the course's `CLAUDE.md`. Save with `us prefs add --scope course|general --text "<the rule>"`.

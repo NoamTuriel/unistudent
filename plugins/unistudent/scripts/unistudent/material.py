@@ -11,19 +11,28 @@ from pathlib import Path
 
 from . import links
 from .convert import kind
+from .course import parse_unit
 from .sorting import detect_unit
 
 SKIP_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
 INDEX_NAME = "INDEX.md"
 
 
+FULL_HASH_LIMIT = 200 << 20
+
+
 def fingerprint(path: Path) -> str:
-    """Cheap, stable identity: size + hash of the first and last MiB (recordings are GBs)."""
-    size = path.stat().st_size
-    digest = hashlib.sha256(str(size).encode())
+    """Content identity. Files up to 200 MB are hashed whole; bigger ones (recordings)
+    by size, modification time and their first and last MiB, to stay fast."""
+    stat = path.stat()
+    digest = hashlib.sha256(str(stat.st_size).encode())
     with open(path, "rb") as handle:
-        digest.update(handle.read(1 << 20))
-        if size > 2 << 20:
+        if stat.st_size <= FULL_HASH_LIMIT:
+            for chunk in iter(lambda: handle.read(1 << 20), b""):
+                digest.update(chunk)
+        else:
+            digest.update(str(int(stat.st_mtime)).encode())
+            digest.update(handle.read(1 << 20))
             handle.seek(-(1 << 20), os.SEEK_END)
             digest.update(handle.read(1 << 20))
     return digest.hexdigest()[:24]
@@ -83,7 +92,7 @@ def import_folder(course, folder, tier="added", origin="student-folder"):
     return added
 
 
-def add_file(course, path, tier="added", origin="inbox", rel=None, move=True, replace=False):
+def add_file(course, path, tier="added", origin="inbox", rel=None, move=True, replace=False, note=None):
     """Put one file into Raw as a real file (inbox and downloads). Returns its Raw path.
     With replace=True a file at the same Raw path is updated instead of kept beside."""
     path = Path(path)
@@ -99,7 +108,7 @@ def add_file(course, path, tier="added", origin="inbox", rel=None, move=True, re
     recordings_dir = course.settings().get("recordings_dir")
     if recordings_dir and kind(path) == "recording":
         # Synced course folder: the one real copy lives in a local, non-synced folder.
-        stored = Path(recordings_dir) / Path(rel).name
+        stored = Path(recordings_dir) / rel
         stored.parent.mkdir(parents=True, exist_ok=True)
         if stored.resolve() != path.resolve():
             (shutil.move if move else shutil.copy2)(str(path), str(stored))
@@ -111,7 +120,7 @@ def add_file(course, path, tier="added", origin="inbox", rel=None, move=True, re
             shutil.move(str(path), str(target))
         else:
             shutil.copy2(path, target)
-    real = target.resolve() if target.exists() else Path(recordings_dir) / Path(rel).name
+    real = target.resolve() if target.exists() else Path(recordings_dir) / rel
     unit, reason = _entry_unit(course, rel, real)
     files[rel] = {
         "origin": origin,
@@ -122,6 +131,8 @@ def add_file(course, path, tier="added", origin="inbox", rel=None, move=True, re
         "unit": unit,
         "sort_reason": reason,
     }
+    if note:
+        files[rel]["origin_note"] = note
     course.save_manifest(manifest)
     return rel
 
@@ -131,7 +142,7 @@ def assign(course, rel, unit):
     manifest = course.manifest()
     if rel not in manifest["files"]:
         raise KeyError(rel)
-    value = "general" if str(unit) in ("general", "0") else int(unit)
+    value = parse_unit(unit)
     settings = course.settings()
     settings.setdefault("unit_answers", {})[rel] = value
     course.save_settings(settings)
