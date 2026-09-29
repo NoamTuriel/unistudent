@@ -1,9 +1,11 @@
 {
   "mcpServers": {
     "unistudent": {
-      "command": "python3",
+      "command": "uvx",
       "args": [
-        "${CLAUDE_PLUGIN_ROOT}/scripts/mcp_server.py"
+        "--from",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "unistudent-mcp"
       ]
     }
   }

@@ -4,9 +4,8 @@ build-backend = "setuptools.build_meta"
 
 [project]
 name = "unistudent"
-version = "0.2.0"
+version = "0.3.0"
 description = "A per-course Wiki from your university course material, grounded AI answers, and study packs. MCP server + Agent Skills."
-readme = "README.md"
 requires-python = ">=3.9"
 license = { text = "MIT" }
 authors = [{ name = "Noam Turiel" }]
@@ -25,7 +24,7 @@ unistudent = "unistudent.cli:main"
 unistudent-mcp = "unistudent.mcp:main"
 
 [tool.setuptools]
-package-dir = { "" = "plugins/unistudent/scripts" }
+package-dir = { "" = "scripts" }
 packages = ["unistudent"]
 
 [tool.setuptools.package-data]

@@ -29,6 +29,8 @@ The more course material there is, the more precise the answers.
 
 ## Commands
 
+In Claude Code type them as shown; in other AI apps, ask for the skill by name (e.g. "run course-add").
+
 | Command | What it does |
 |---|---|
 | `/unistudent:course-help` | How the plugin works and what it can do |

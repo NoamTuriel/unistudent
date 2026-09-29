@@ -52,6 +52,30 @@ def duration(path: Path):
         return None
 
 
+def install_hint(name):
+    """Install into the Python that actually runs UniStudent (not whichever pip is first on PATH)."""
+    import sys
+    package = PACKAGES.get(name, name)
+    return (f"Speech-to-text isn't installed. Run: \"{sys.executable}\" -m pip install {package} "
+            "(or reinstall UniStudent with its 'stt' extra: uv tool install --force \"unistudent[stt] @ <repo>\").")
+
+
+def start_background(course, rels):
+    """Run the transcription in a detached process; its log is in .unistudent/jobs/."""
+    import sys
+    jobs = course.state / "jobs"
+    jobs.mkdir(parents=True, exist_ok=True)
+    log = jobs / f"transcribe-{time.strftime('%Y%m%d-%H%M%S')}.log"
+    package_root = Path(__file__).resolve().parents[1]
+    env = dict(os.environ, PYTHONPATH=str(package_root) + os.pathsep + os.environ.get("PYTHONPATH", ""))
+    cmd = [sys.executable, "-m", "unistudent.cli", "recordings", "transcribe", "--course", str(course.root), *rels]
+    kwargs = {"start_new_session": True} if os.name != "nt" else {"creationflags": 0x00000008}  # DETACHED_PROCESS
+    with open(log, "w", encoding="utf-8") as handle:
+        process = subprocess.Popen(cmd, stdout=handle, stderr=subprocess.STDOUT, stdin=subprocess.DEVNULL,
+                                   env=env, **kwargs)
+    return {"pid": process.pid, "log": str(log), "recordings": list(rels)}
+
+
 def backend_name():
     forced = os.environ.get("UNISTUDENT_STT_BACKEND")
     if forced:
@@ -151,8 +175,7 @@ def estimate(course, unit=None, only_unprocessed=True):
     return {
         "recordings": len(rows), "hours": round(seconds / 3600, 2), "unknown_duration": unknown,
         "gigabytes": round(size / 1e9, 2), "backend": name, "backend_installed": backend_available(name),
-        "install_command": None if backend_available(name) else
-        f"pip install {PACKAGES.get(name, name)}",
+        "install_command": None if backend_available(name) else install_hint(name),
         "realtime_factor": factor,
         "estimated_hours": round(seconds * factor / 3600, 2) if factor else None,
         "files": [r["path"] for r in rows],
@@ -204,7 +227,7 @@ def _vtt(segments):
 def transcribe(course, rel):
     name = backend_name()
     if not backend_available(name):
-        raise RuntimeError(f"Speech-to-text isn't installed. Run: pip install {PACKAGES[name]}")
+        raise RuntimeError(install_hint(name))
     source = material.raw_path(course, rel)
     with tempfile.TemporaryDirectory() as tmp:
         audio = Path(tmp) / "audio.wav"

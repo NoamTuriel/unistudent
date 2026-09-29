@@ -1,5 +1,6 @@
 """Recordings into the Wiki (seam 2), with the test speech-to-text backend."""
 import os
+from pathlib import Path
 import unittest
 
 from helpers import CourseTestCase, mock_env, run, run_json, write
@@ -39,6 +40,17 @@ class Recordings(CourseTestCase):
         self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
         # Already transcribed recordings drop out of the estimate.
         self.assertEqual(run_json("recordings", "estimate", "--course", self.course)["recordings"], 0)
+
+    def test_background_transcription_returns_at_once_and_finishes(self):
+        import time
+        job = run_json("recordings", "transcribe", "--course", self.course, "Unit 4/session 5.mp4", "--background")
+        self.assertTrue(job["log"].endswith(".log"))
+        transcript = self.course / "wiki" / "recordings" / "session 5" / "transcript.md"
+        for _ in range(50):
+            if transcript.exists():
+                break
+            time.sleep(0.1)
+        self.assertTrue(transcript.exists(), Path(job["log"]).read_text("utf-8"))
 
     def test_a_recording_counts_as_processed_once_its_summary_exists(self):
         run_json("recordings", "transcribe", "--course", self.course, "Unit 4/session 5.mp4")

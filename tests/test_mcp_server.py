@@ -68,6 +68,27 @@ class McpServer(CourseTestCase):
         text = json.loads(self.call("doc", {"name": "verifier"})["content"][0]["text"])["text"]
         self.assertIn("0 problems", text)
 
+    def test_bad_input_never_kills_the_server(self):
+        self.proc.stdin.write("not json\n")
+        self.proc.stdin.flush()
+        self.assertEqual(json.loads(self.proc.stdout.readline())["error"]["code"], -32700)
+        self.proc.stdin.write("[1, 2]\n")
+        self.proc.stdin.flush()
+        self.assertEqual(json.loads(self.proc.stdout.readline())["error"]["code"], -32600)
+        unknown = self.rpc(self.proc, "tools/call", {"name": "nope", "arguments": {}})
+        self.assertEqual(unknown["error"]["code"], -32602)
+        missing = self.call("assign", {})  # required arguments missing: argparse error text comes back
+        self.assertTrue(missing["isError"])
+        self.assertIn("required", missing["content"][0]["text"])
+        self.assertIn("result", self.rpc(self.proc, "ping"))  # still alive
+
+    def test_each_action_exposes_only_its_own_arguments(self):
+        tools = {t["name"]: t["inputSchema"] for t in self.rpc(self.proc, "tools/list")["result"]["tools"]}
+        self.assertEqual(tools["courses_list"]["properties"], {})
+        self.assertEqual(tools["courses_switch"]["required"], ["target"])
+        self.assertNotIn("force", tools["wiki_check"]["properties"])
+        self.assertIn("text", tools["prefs_add"]["required"])
+
     def test_a_student_error_comes_back_as_a_tool_error(self):
         result = self.call("study_changes", {"course": str(self.tmp / "nowhere"), "unit": "4"})
         self.assertTrue(result["isError"])

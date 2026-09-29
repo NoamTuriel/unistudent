@@ -16,6 +16,19 @@ from . import __version__, cli
 
 PROTOCOL_VERSIONS = ("2025-06-18", "2025-03-26", "2024-11-05")
 HIDDEN_COMMANDS = {"eval-grade", "manifest"}  # developer tools, and output too large for a chat
+# Commands with several actions share one parser; these are the arguments each action uses.
+ACTION_ARGS = {
+    ("courses", "list"): [], ("courses", "current"): [], ("courses", "switch"): ["target"],
+    ("prefs", "show"): ["course"], ("prefs", "add"): ["course", "scope", "text"],
+    ("wiki", "check"): ["course"], ("wiki", "build"): ["course", "force"],
+    ("recordings", "list"): ["course", "unit"], ("recordings", "estimate"): ["course", "unit"],
+    ("recordings", "benchmark"): ["course", "paths"],
+    ("recordings", "transcribe"): ["course", "paths", "background"],
+    ("recordings", "fetch"): ["course", "paths", "audio_only"],
+}
+REQUIRED = {("courses", "switch"): ["target"], ("prefs", "add"): ["text"],
+            ("recordings", "benchmark"): ["paths"], ("recordings", "transcribe"): ["paths"],
+            ("recordings", "fetch"): ["paths"]}
 SKILL_DIRS = [Path(__file__).resolve().parent / "skills"]
 # In a repo checkout, subject and university plugins' skills are prompts too.
 _REPO_PLUGINS = Path(__file__).resolve().parents[3]
@@ -59,12 +72,14 @@ def build_tools():
         verb = next((a for a in args if a.dest == "action" and a.choices), None)
         for choice in (list(verb.choices) if verb else [None]):
             props, required = {}, []
+            only = ACTION_ARGS.get((command, choice))
             for a in args:
-                if a is verb:
+                if a is verb or (only is not None and _arg_name(a) not in only):
                     continue
                 props[_arg_name(a)] = _arg_schema(a)
                 if (not a.option_strings and a.nargs not in ("*", "?")) or getattr(a, "required", False):
                     required.append(_arg_name(a))
+            required += [r for r in REQUIRED.get((command, choice), []) if r not in required]
             name = "_".join(w.replace("-", "_") for w in [command] + ([choice] if choice else []))
             description = helps.get(command) or command
             if choice:
@@ -98,15 +113,18 @@ def _argv(words, sub, verb, arguments):
 def call_tool(tools, name, arguments):
     match = next((t for t in tools if t[0]["name"] == name), None)
     if match is None:
-        return {"content": [{"type": "text", "text": f"Unknown tool: {name}"}], "isError": True}
+        return None
     _, words, sub, verb = match
-    out = io.StringIO()
+    out, err = io.StringIO(), io.StringIO()
     try:
-        with contextlib.redirect_stdout(out):
+        with contextlib.redirect_stdout(out), contextlib.redirect_stderr(err):
             code = cli.main(_argv(words, sub, verb, arguments or {}))
     except SystemExit as exit_:  # argparse rejected the arguments
         code = exit_.code or 2
-    text = out.getvalue().strip() or "{}"
+    except Exception as error:  # never let one failing tool take the server down
+        code = 1
+        err.write(f"{type(error).__name__}: {error}")
+    text = out.getvalue().strip() or err.getvalue().strip() or "{}"
     try:
         data = json.loads(text)
         if isinstance(data, dict) and "error" in data:
@@ -131,6 +149,8 @@ def _skills():
 
 
 def handle(message, tools):
+    if not isinstance(message, dict):
+        return {"jsonrpc": "2.0", "id": None, "error": {"code": -32600, "message": "Invalid request"}}
     method, params, id_ = message.get("method"), message.get("params") or {}, message.get("id")
     if id_ is None:
         return None  # notifications need no answer
@@ -147,6 +167,8 @@ def handle(message, tools):
         result = {"tools": [t[0] for t in tools]}
     elif method == "tools/call":
         result = call_tool(tools, params.get("name"), params.get("arguments"))
+        if result is None:
+            return {"jsonrpc": "2.0", "id": id_, "error": {"code": -32602, "message": f"Unknown tool {params.get('name')}"}}
     elif method == "prompts/list":
         result = {"prompts": [{"name": n, "description": s["description"]} for n, s in _skills().items()]}
     elif method == "prompts/get":
@@ -174,8 +196,14 @@ def main():
         try:
             message = json.loads(line)
         except ValueError:
-            continue
-        reply = handle(message, tools)
+            message = None
+            reply = {"jsonrpc": "2.0", "id": None, "error": {"code": -32700, "message": "Parse error"}}
+        else:
+            try:
+                reply = handle(message, tools)
+            except Exception as error:
+                reply = {"jsonrpc": "2.0", "id": message.get("id") if isinstance(message, dict) else None,
+                         "error": {"code": -32603, "message": f"{type(error).__name__}: {error}"}}
         if reply is not None:
             protocol_out.write(json.dumps(reply, ensure_ascii=False) + "\n")
             protocol_out.flush()

@@ -58,6 +58,8 @@ Done when: the recording level is recorded.
 
 Read `<this skill's base directory>/../course-wiki/SKILL.md` and follow it for the whole course. Then run `us context --exam-date <date>` if the student knows the exam date (ask once; skipping is fine).
 
+Done when: `us wiki check` reports 0 problems.
+
 ## 8. Explain and offer next steps
 
 Explain in the student's language, in five short lines, following the course folder's `README.md`: what each folder is, the inbox, and the grounding labels (✅ ⚠️ ❌). Then offer the menu:

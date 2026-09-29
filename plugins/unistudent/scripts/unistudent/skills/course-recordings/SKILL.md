@@ -14,6 +14,8 @@ Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool 
 
 Run `us courses current`, then `us recordings estimate --json` (add `--unit N` if the student named a unit; suggest the unit they're studying now).
 
+Done when: you have the numbers for the chosen recordings, and the speech-to-text engine is installed.
+
 If `realtime_factor` is empty and a recording exists, offer a one-minute benchmark (`us recordings benchmark "<path>"`) to get a real time estimate. If `backend_installed` is false, show `install_command` (and ffmpeg's install if `ffmpeg` is missing) and stop until installed.
 
 ## 2. Ask
@@ -24,7 +26,7 @@ Done when: the student said yes to a specific list, or no.
 
 ## 3. Transcribe
 
-Run `us recordings transcribe "<path>"` for each chosen recording, one at a time, in the background where possible. Tell the student they can keep working.
+Run `us recordings transcribe "<path>" ... --background`: it returns at once and writes progress to a log. Tell the student they can keep working, and check with `us recordings list` until every chosen recording has a transcript.
 
 Done when: every chosen recording has a `transcript.md`.
 

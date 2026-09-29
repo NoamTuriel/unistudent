@@ -43,7 +43,7 @@ Done when: the student chose the pages.
 
 ## 5. Build
 
-**Delegate** to one `study-pack-writer` worker, giving it: course folder, unit, the chosen pages, the resolved rules (paste them in full: the worker can't see your skills), the format (Obsidian or Markdown), the language, and the path to `us.py`.
+**Delegate** to one `study-pack-writer` worker, giving it: course folder, unit, the chosen pages, the resolved rules (paste them in full: the worker can't see your skills), the format (Obsidian or Markdown), and the language.
 
 Done when: the writer returned its page list.
 
@@ -58,3 +58,5 @@ Then run `us study mark-built --unit N`.
 ## 7. Change requests during the session
 
 Follow "Change requests" in the course context (`.unistudent/context.md`). Save with `us prefs add --scope course|general --text "<the rule>"`.
+
+Done when: every whole-unit change the student asked for is saved at the scope they chose.

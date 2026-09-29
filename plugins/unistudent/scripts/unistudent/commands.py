@@ -169,6 +169,10 @@ def register(add, with_course):
             factor = recordings.benchmark(course, args.paths[0])
             return {"realtime_factor": factor,
                     "summary": f"This machine transcribes 1 hour of audio in about {factor:.2f} h."}
+        if args.background:
+            job = recordings.start_background(course, args.paths)
+            return {**job, "summary": f"Transcribing {len(args.paths)} recordings in the background. "
+                                      f"Progress: {job['log']}. Check with `recordings list`."}
         done = [str(recordings.transcribe(course, rel)) for rel in args.paths]
         return {"transcripts": done, "summary": "Transcribed:\n" + "\n".join(done)}
 
@@ -176,6 +180,8 @@ def register(add, with_course):
     p.add_argument("action", choices=["list", "estimate", "benchmark", "transcribe", "fetch"])
     p.add_argument("paths", nargs="*", help="recording paths in Raw (fetch: listing JSON and download folder)")
     p.add_argument("--audio-only", action="store_true", help="fetch: keep only the sound (enough for transcripts)")
+    p.add_argument("--background", action="store_true",
+                   help="transcribe: run detached and return at once (long jobs outlive tool-call time limits)")
     p.add_argument("--unit", help="only this unit's recordings")
 
     def cmd_ingest(args):
