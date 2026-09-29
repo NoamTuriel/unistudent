@@ -33,6 +33,9 @@ class Recordings(CourseTestCase):
         self.assertIn("## 00:00:00", transcript)
         self.assertIn("## 00:01:00", transcript)
         self.assertIn("[00:00:20] segment at 00:00:20", transcript)
+        vtt = (self.course / "wiki" / "recordings" / "session 5" / "transcript.vtt").read_text("utf-8")
+        self.assertTrue(vtt.startswith("WEBVTT"))
+        self.assertIn("00:00:20.000 --> 00:00:40.000", vtt)
         self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
         # Already transcribed recordings drop out of the estimate.
         self.assertEqual(run_json("recordings", "estimate", "--course", self.course)["recordings"], 0)

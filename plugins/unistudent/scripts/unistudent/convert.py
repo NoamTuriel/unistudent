@@ -13,7 +13,9 @@ from pathlib import Path
 
 logging.getLogger("pypdf").setLevel(logging.CRITICAL)
 
-DOCUMENTS = {".pdf", ".docx", ".doc", ".odt", ".rtf", ".pptx", ".ppt", ".odp", ".txt", ".md"}
+DOCUMENTS = {".pdf", ".docx", ".doc", ".odt", ".rtf", ".pptx", ".ppt", ".odp", ".txt", ".md",
+             ".xlsx", ".xls", ".html", ".htm", ".epub"}
+MARKITDOWN_ONLY = {".xlsx", ".xls", ".html", ".htm", ".epub"}
 RECORDINGS = {".mp4", ".mkv", ".mov", ".m4v", ".webm", ".avi", ".mp3", ".m4a", ".wav", ".aac"}
 IMAGES = {".png", ".jpg", ".jpeg", ".heic", ".webp", ".gif", ".tif", ".tiff"}
 OFFICE = {".docx", ".doc", ".odt", ".rtf", ".pptx", ".ppt", ".odp"}
@@ -91,6 +93,19 @@ def _docx_text(path: Path) -> Conversion:
                       ["Formulas may be missing: install LibreOffice for full fidelity."])
 
 
+def _markitdown(path: Path):
+    """Microsoft MarkItDown (pip install 'markitdown[all]'), when installed: many formats, one page."""
+    try:
+        from markitdown import MarkItDown
+    except ImportError:
+        return None
+    try:
+        text = MarkItDown().convert(str(path)).text_content
+    except Exception as error:
+        return Conversion([], "none", [f"markitdown could not read it: {error}"])
+    return Conversion([text], "markitdown")
+
+
 def _pptx_text(path: Path) -> Conversion:
     from pptx import Presentation
     slides = []
@@ -106,12 +121,17 @@ def convert(path) -> Conversion:
     if suffix in (".txt", ".md"):
         return Conversion([path.read_text("utf-8", errors="replace")], "text")
     if suffix == ".pdf":
-        return _pdf_pages(path)
+        return _pdf_pages(path)  # page by page, so citations can point at a page
+    if suffix in MARKITDOWN_ONLY:
+        return _markitdown(path) or Conversion([], "none", [f"Install markitdown to read {suffix} files."])
     if suffix in OFFICE:
-        if _soffice():
+        if _soffice():  # LibreOffice → PDF keeps formulas and pages
             conversion = _via_pdf(path)
             if conversion is not None:
                 return conversion
+        conversion = _markitdown(path)
+        if conversion is not None and conversion.pages:
+            return conversion
         try:
             if suffix == ".docx":
                 return _docx_text(path)

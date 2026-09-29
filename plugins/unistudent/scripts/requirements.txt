@@ -1,4 +1,0 @@
-# Optional: better document conversion. The core runs without them.
-pypdf>=4
-python-docx>=1
-python-pptx>=0.6

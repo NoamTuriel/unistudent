@@ -24,7 +24,7 @@ from .wiki import recording_pages
 MODELS = {
     ("faster", "he"): "ivrit-ai/whisper-large-v3-turbo-ct2",
     ("faster", None): "large-v3-turbo",
-    ("mlx", "he"): "ivrit-ai/whisper-large-v3-turbo-mlx",
+    ("mlx", "he"): "mlx-community/ivrit-ai-whisper-large-v3-mlx",
     ("mlx", None): "mlx-community/whisper-large-v3-turbo",
 }
 PARAGRAPH_SECONDS = 60
@@ -179,7 +179,26 @@ def write_transcript(course, rel, segments, name):
     if block:
         lines += [f"## {hms(block_start)}", "", " ".join(block), ""]
     (folder / "transcript.md").write_text("\n".join(lines), "utf-8")
+    vtt = _vtt(segments)
+    (folder / "transcript.vtt").write_text(vtt, "utf-8")
+    # A sidecar next to the video lets video tools (e.g. mcp-video-analyzer) use this transcript,
+    # but only where the video lives in a folder the plugin owns.
+    real = source.resolve()
+    owned = [course.raw.resolve()] + ([Path(course.settings()["recordings_dir"]).resolve()]
+                                      if course.settings().get("recordings_dir") else [])
+    if any(str(real).startswith(str(root) + os.sep) for root in owned):
+        real.with_suffix(".vtt").write_text(vtt, "utf-8")
     return folder / "transcript.md"
+
+
+def _vtt(segments):
+    def stamp(seconds):
+        ms = int(round((seconds - int(seconds)) * 1000))
+        return f"{hms(seconds)}.{ms:03d}"
+    lines = ["WEBVTT", ""]
+    for start, end, text in segments:
+        lines += [f"{stamp(start)} --> {stamp(end)}", text, ""]
+    return "\n".join(lines)
 
 
 def transcribe(course, rel):
