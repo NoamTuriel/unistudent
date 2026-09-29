@@ -5,7 +5,7 @@ disable-model-invocation: true
 ---
 
 <!-- conventions: keep identical in every UniStudent skill -->
-Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command>` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command>`). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md`; give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 <!-- /conventions -->
 
 ## 1. Course and unit
@@ -29,7 +29,7 @@ Done when: there is no pack yet (go on to step 3), or the student approved or de
 
 Read, in this order (later wins):
 
-1. the generic rules (reference above);
+1. the generic rules: `<this skill's base directory>/../../reference/study-pack.md` (or `us doc study-pack`);
 2. the field and course skills: if `.unistudent/settings.json` names a `course_skill`, load that skill (it names its field skill; load that too). If the skill isn't installed, say so and continue with the generic rules;
 3. general preferences, then `course-preferences.md` (paths in the course context, `.unistudent/context.md`).
 

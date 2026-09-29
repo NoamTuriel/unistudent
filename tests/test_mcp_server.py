@@ -62,6 +62,12 @@ class McpServer(CourseTestCase):
         current = json.loads(self.call("courses_current", {})["content"][0]["text"])
         self.assertEqual(current["name"], "Macro")
 
+    def test_worker_instructions_and_rules_are_readable_through_the_server(self):
+        docs = json.loads(self.call("doc", {})["content"][0]["text"])["docs"]
+        self.assertTrue({"study-pack", "verifier", "source-reader", "study-pack-writer"} <= set(docs))
+        text = json.loads(self.call("doc", {"name": "verifier"})["content"][0]["text"])["text"]
+        self.assertIn("0 problems", text)
+
     def test_a_student_error_comes_back_as_a_tool_error(self):
         result = self.call("study_changes", {"course": str(self.tmp / "nowhere"), "unit": "4"})
         self.assertTrue(result["isError"])

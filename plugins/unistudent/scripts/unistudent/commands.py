@@ -232,6 +232,19 @@ def register(add, with_course):
 
     with_course(add("site-status", cmd_site_status, "which course-site files are already in Raw"))
 
+    def cmd_doc(args):
+        package = Path(__file__).resolve().parent
+        docs = {f.stem: f for folder in ("agents", "reference") for f in sorted((package / folder).glob("*.md"))}
+        if not args.name:
+            return {"docs": sorted(docs), "summary": "Docs: " + ", ".join(sorted(docs))}
+        if args.name not in docs:
+            raise UserError(f"No doc named {args.name}. Docs: {', '.join(sorted(docs))}")
+        text = docs[args.name].read_text("utf-8")
+        return {"name": args.name, "text": text, "summary": text}
+
+    p = add("doc", cmd_doc, "read a UniStudent reference: worker instructions or study-pack rules")
+    p.add_argument("name", nargs="?", help="e.g. study-pack, verifier, source-reader")
+
     p = with_course(add("add", cmd_add, "move inbox files into Raw, sort them, update the Wiki"))
     p.add_argument("--official", nargs="*", help="inbox file names that are the lecturer's material")
     p.add_argument("--describe", nargs="*", metavar="NAME=ORIGIN",
