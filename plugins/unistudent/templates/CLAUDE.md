@@ -38,6 +38,10 @@ Material from these is outside this course (label it "⚠️ from your other cou
 
 {other_courses}
 
+## Change requests
+
+A change to one paragraph or explanation: just make it. A change to a whole unit's study pack, or to how material is handled: ask once, "only this unit, always for this course, or for all my courses?" Save "always for this course" as a line in `course-preferences.md` and "all my courses" as a line in the general preferences file. Never edit a skill.
+
 ## Where things are
 
 - Settings: `.unistudent/settings.json`. Manifest of every file: `.unistudent/manifest.json`.

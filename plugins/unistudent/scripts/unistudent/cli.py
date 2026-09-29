@@ -169,8 +169,8 @@ def cmd_courses(args):
 
 def cmd_context(args):
     course = resolve_course(args)
-    if args.exam_date:
-        course.update_settings(exam_date=args.exam_date)
+    course.update_settings(exam_date=args.exam_date,
+                           video_level=int(args.video_level) if args.video_level is not None else None)
     write_context_files(course)
     return {"summary": f"Context file written: {course.root / 'CLAUDE.md'}"}
 
@@ -217,8 +217,9 @@ def build_parser():
     p.add_argument("action", choices=["list", "switch", "current"], nargs="?", default="list")
     p.add_argument("target", nargs="?")
 
-    p = with_course(add("context", cmd_context, "rewrite the course context file"))
+    p = with_course(add("context", cmd_context, "update exam date / video level and rewrite the context file"))
     p.add_argument("--exam-date")
+    p.add_argument("--video-level", choices=["0", "1", "2", "3"])
 
     from . import extra_commands
     extra_commands.register(add, with_course)

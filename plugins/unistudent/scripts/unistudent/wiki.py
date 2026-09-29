@@ -140,7 +140,7 @@ def build(course, force=False):
                 old.unlink()
             del state[rel]
 
-    converted, warnings_out, needs_visual = 0, [], []
+    converted, warnings_out, needs_visual, touched = 0, [], [], set()
     for rel, page in plan.items():
         entry = manifest[rel]
         target = wiki / page
@@ -154,6 +154,7 @@ def build(course, force=False):
         state[rel] = {"page": page, "fingerprint": entry.get("fingerprint"),
                       "method": conversion.method, "empty_pages": conversion.empty_pages}
         converted += 1
+        touched.add(unit_dir(entry.get("unit")))
         warnings_out += [f"{rel}: {w}" for w in conversion.warnings]
         if conversion.empty_pages:
             needs_visual.append({"source": rel, "pages": conversion.empty_pages})
@@ -203,6 +204,7 @@ def build(course, force=False):
 
     return {
         "converted": converted,
+        "units_touched": sorted(touched),
         "pages": len(plan),
         "recordings": list(recordings),
         "images": images,

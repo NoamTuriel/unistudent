@@ -149,6 +149,8 @@ def estimate(course, unit=None, only_unprocessed=True):
     return {
         "recordings": len(rows), "hours": round(seconds / 3600, 2), "unknown_duration": unknown,
         "gigabytes": round(size / 1e9, 2), "backend": name, "backend_installed": backend_available(name),
+        "install_command": None if backend_available(name) else
+        f"pip install {dict(mlx='mlx-whisper', faster='faster-whisper').get(name, name)}",
         "realtime_factor": factor,
         "estimated_hours": round(seconds * factor / 3600, 2) if factor else None,
         "files": [r["path"] for r in rows],
