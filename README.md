@@ -53,11 +53,17 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
 
 (VS Code calls the top-level key `servers` and wants `"type": "stdio"`.)
 
-**Codex CLI**: `codex mcp add unistudent -- uvx --from git+https://github.com/OWNER/unistudent unistudent-mcp`
+**Codex CLI**: `codex mcp add unistudent -- uvx --from git+https://github.com/OWNER/unistudent unistudent-mcp`, or in `~/.codex/config.toml`:
 
-**Gemini CLI**: `gemini mcp add unistudent uvx --from git+https://github.com/OWNER/unistudent unistudent-mcp`
+```toml
+[mcp_servers.unistudent]
+command = "uvx"
+args = ["--from", "git+https://github.com/OWNER/unistudent", "unistudent-mcp"]
+```
 
-**Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add OWNER/unistudent`
+**Gemini CLI**: the same `mcpServers` block as above, in `~/.gemini/settings.json`.
+
+**Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add OWNER/unistudent` (it reads the skills declared in this repo's Claude plugin files).
 
 Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code).
 
