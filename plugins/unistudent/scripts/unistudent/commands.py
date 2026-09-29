@@ -156,6 +156,13 @@ def register(add, with_course):
                               f"{timing}. Backend: {est['backend']}"
                               + ("" if est["backend_installed"] else " (not installed)") + ".")
             return est
+        if args.action == "fetch":
+            if len(args.paths) != 2:
+                raise UserError("fetch needs the listing JSON and the download folder.")
+            result = recordings.fetch_streams(args.paths[0], args.paths[1], audio_only=args.audio_only)
+            result["summary"] = (f"Downloaded {len(result['downloaded'])} recordings"
+                                 + (f"; failed: {', '.join(result['failed'])}" if result["failed"] else "") + ".")
+            return result
         if not args.paths:
             raise UserError("Name at least one recording (its path in Raw).")
         if args.action == "benchmark":
@@ -166,8 +173,9 @@ def register(add, with_course):
         return {"transcripts": done, "summary": "Transcribed:\n" + "\n".join(done)}
 
     p = with_course(add("recordings", cmd_recordings, "list, estimate, benchmark or transcribe recordings"))
-    p.add_argument("action", choices=["list", "estimate", "benchmark", "transcribe"])
-    p.add_argument("paths", nargs="*", help="recording paths in Raw")
+    p.add_argument("action", choices=["list", "estimate", "benchmark", "transcribe", "fetch"])
+    p.add_argument("paths", nargs="*", help="recording paths in Raw (fetch: listing JSON and download folder)")
+    p.add_argument("--audio-only", action="store_true", help="fetch: keep only the sound (enough for transcripts)")
     p.add_argument("--unit", help="only this unit's recordings")
 
     def cmd_ingest(args):

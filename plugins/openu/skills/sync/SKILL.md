@@ -7,48 +7,45 @@ Download what's new on the student's OpenU course site and hand it to the UniStu
 
 `us` means the UniStudent core's `python3 <core plugin>/scripts/us.py`: find it with Glob for `**/unistudent/scripts/us.py` under the plugins folder that holds this skill.
 
-Site knowledge (URLs, page structure, where recordings live) is in `<this skill's base directory>/../../reference/site.md`. Read it first.
+How the site works (lists, download method, recordings, ready-made snippets) is in `<this skill's base directory>/../../reference/site.md`. Read it first.
 
 ## 1. Course and what's already here
 
-Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded, with the site date each had).
+Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded, with the site date each had). You need access to the student's Downloads folder: that's where the browser saves files.
 
-## 2. Open the course site
+Done when: you know the course folder, the Downloads folder path, and what's already downloaded.
 
-Use Claude in Chrome with the student's own logged-in session. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open the course page as `site.md` describes.
+## 2. Find the course on the site
 
-## 3. Build the listing
+Use Claude in Chrome with the student's own logged-in session. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id`.
 
-Walk every section of the course site and list every file as one item:
+Done when: you have the course id.
 
-```json
-{"course_site": "<course page URL>",
- "items": [{"url": "...", "name": "<file name as shown>", "section": "<section title as shown>",
-            "file": "<downloaded file name, once downloaded>", "kind": "document|recording",
-            "unit_hint": 4}]}
-```
+## 3. List the files
 
-- `section` is the site's own section title: the core finds the unit in it ("יחידה 4 - ...").
-- `unit_hint` only when the site states the unit and the title doesn't; `"general"` for whole-course items (exam information, past exams, formula sheets).
-- Skip URLs already in `site-status`, unless the site shows a different date than its `modified` value there: then download it again (it changed). Record the date the site shows as `modified`.
+Run the listing snippet from `site.md` for the course id. Add folder contents (open each folder, list its file links). Build one listing item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, and `unit_hint: "general"` for past exams, exam information and file stores. Drop URLs already in `site-status`.
 
-Done when: every section has been opened, and every file link in it is an item or already downloaded.
+Done when: every row of the resources list and every file in every folder is an item or already downloaded.
 
 ## 4. Recordings: ask first
 
-Count the recording items. Tell the student how many there are, the total hours and size when the site shows them (otherwise about 1 GB and 1.5 hours per session), and roughly how long the download takes. Say downloading them is recommended but slow and large. Ask: download all, only unit N, or not now. Record the answer with `us context --recording-level <0 skip|1 download|3 transcript and summary>`, and skip this question on later syncs unless the student asks. Recordings not chosen stay listed without a `file`; the core reports them as available.
+Open the course's video collections (links on the course page and in the "וידאו" section). Count the recordings and add up their durations when shown (otherwise about 1.5–3 hours per session). Tell the student: how many, total hours, about 3 GB per three hours at full quality, much less as audio only (enough for transcripts). Ask: all, only unit N, or not now; and full video or audio only. Record the answer with `us context --recording-level <0 skip|1 download|3 transcript and summary>`, and reuse it on later syncs unless the student asks.
 
-Done when: the student chose, or a saved choice applied.
+For each chosen recording, collect its stream URL with the stream snippet from `site.md` and put it in the listing as `kind: "recording"`, `stream_url`, `name` (title + date), `section`. The URLs expire within hours: download them in this same run.
+
+Done when: the student chose, and every chosen recording has a listing item with a stream URL.
 
 ## 5. Download
 
-Download the chosen files into one new folder under the student's Downloads folder (e.g. `Downloads/unistudent-<course>-<date>`), as `site.md` describes. Set each item's `file` to its downloaded name. Save the listing as `listing.json` in that folder.
+In the course tab, download every document item with the in-page method from `site.md`, named `unistudent-<course number>-<date>__<name>`, and set each item's `file` to that name. Then download the listing itself as `unistudent-<course number>-<date>__listing.json`.
 
-Done when: every chosen item has a downloaded file or is noted as failed.
+Then run `us recordings fetch "<Downloads>/<listing file>" "<Downloads>" [--audio-only]` for the recordings.
+
+Done when: every chosen item has a `file`, or is reported as failed.
 
 ## 6. Hand over
 
-Run `us ingest --json "<folder>/listing.json" "<folder>"`. The core moves the files into Raw, sorts them, updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`.
+Run `us ingest --json "<Downloads>/<listing file>" "<Downloads>"`. The core moves the listed files into Raw, sorts them, updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`.
 
 - `unsorted`: ask one grouped question and record answers with `us assign`.
 - `missing`: retry those downloads once, then report them.
@@ -57,4 +54,4 @@ Done when: the ingest ran and unsorted files are answered or deferred.
 
 ## 7. Report
 
-Two lines: what's new since the last sync, and what's waiting (recordings not downloaded, unsorted files). If a unit with a study pack got new material, offer `/unistudent:unit N`.
+Two lines: what's new since the last sync, and what's waiting (recordings not downloaded, unsorted files). If a unit with a study pack got new material, offer `/unistudent:unit N`. If recordings came in, offer `/unistudent:recordings`.

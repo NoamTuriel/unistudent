@@ -1,24 +1,62 @@
-# Open University course site: what the sync skill needs to know
+# Open University course site: how the sync skill reaches it
 
-> **Status: not yet verified.** Ticket 01 (test OpenU site access) fills this page from a real logged-in session. Until then, treat every line below as a working assumption, and when the site differs, follow what you see and tell the student.
+Verified on 2026-09-30 in a logged-in Chrome session (ticket 01). Moodle with the OU "Smart Opal" theme; the course page itself is a tile view, so read the lists below instead of the course page.
 
-## Where courses live
+## Courses
 
-- Course sites run on Moodle ("אופל", opal.openu.ac.il) behind the university's single sign-on.
-- The course page lists sections (weeks, units, "מטלות", "בחינות", recordings). Section titles often contain "יחידה N".
+- `https://opal.openu.ac.il/my/` lists the student's courses as links to `/course/view.php?id=<courseid>`. The link text is "<course name> (<semester>)", e.g. "מבוא למקרוכלכלה (2026ג)". The course page header shows the course number (e.g. 10126).
 
-## Files
+## Files: one list for the whole course
 
-- File links in a section lead either straight to the file or to a Moodle "resource" page with the file link.
-- Download each file through the logged-in Chrome session so it lands in the student's Downloads folder.
+`/course/resources.php?id=<courseid>` is a table (`table.generaltable`) with one row per file-like activity: section title · name · description. A row with an empty section cell belongs to the section above it. Activity types seen: `resource` (a file), `url` (usually a link to a file on the same site), `folder`.
+
+- **resource / url:** `/mod/<type>/view.php?id=<id>&redirect=1` answers with the file itself (it redirects to `/pluginfile.php/...`). The final URL's last path part is the file name.
+- **folder:** `/mod/folder/view.php?id=<id>` lists its files as `/pluginfile.php/...` links inside the main region.
+- **Section titles** carry the unit: "יחידה 5: הכסף ומערכת הבנקאות". A section spanning units ("יחידות 6 ו-7") is left for the student to sort. Past-exam and "מחסן קבצים" sections are whole-course (`unit_hint: "general"`).
+- Not in this list: `oufcard` (video cards, e.g. exam solutions) and video collections. Find them by opening each section tile from the course page and reading the "ניווט" block's links.
+
+Listing snippet (run in the course tab with the javascript tool):
+
+```js
+const d = new DOMParser().parseFromString(await (await fetch('/course/resources.php?id=' + COURSE_ID, {credentials: 'include'})).text(), 'text/html');
+let section = '';
+[...d.querySelectorAll('table.generaltable tbody tr')].map(r => {
+  const cells = [...r.cells].map(c => c.textContent.trim().replace(/\s+/g, ' '));
+  if (cells[0]) section = cells[0];
+  const a = r.querySelector('a[href*="/mod/"]');
+  return a && {section, name: cells[1], type: new URL(a.href).pathname.split('/')[2], url: a.href};
+}).filter(Boolean)
+```
+
+## Downloading files
+
+The session cookie is http-only, so scripts can't reuse it. Download from inside the logged-in tab: `fetch(url, {credentials: 'include'})` → `blob` → a temporary `<a download="<name>">` click. Files land in the student's Downloads folder (verified). Chrome may ask once to allow multiple downloads from opal.openu.ac.il: the student approves it.
+
+Put the files in one batch folder by prefixing names, e.g. `unistudent-<course>-<date>__<name>`, and write the listing as a JSON download the same way.
 
 ## Recordings
 
-- Session recordings are probably streamed from a separate video system. How to reach a downloadable file is the main open question of ticket 01.
+- Video collections: `/mod/ouilvideocollection/view.php?c=<id>`. Each recording is a `.ovc_playlist_title` element (title) inside `.ovc_playlist`; the date and lecturer are next to it.
+- Clicking a title loads an iframe `/local/ouil_video/player.php?mediaid=<id>`. In that iframe, `jwplayer_parameters.file` is an HLS playlist on `souvod1.bynetcdn.com` with a time-limited token in the URL. It needs **no cookies**: ffmpeg can download it directly while the token is valid (a few hours), so collect the URLs and download right away.
+- Two quality variants: about 1.8 Mbit/s and 0.4 Mbit/s. A three-hour session is about 3 GB at high quality, far less at low quality or audio only, which is all transcription needs.
 
-## Open questions (ticket 01)
+Stream snippet (in the collection tab):
 
-1. Exact URL patterns for the course page, sections, resource pages and file downloads.
-2. Whether a script can reuse the Chrome session to download (faster than browser clicks), and how.
-3. How recordings are served, and whether they can be downloaded.
-4. What OpenU's terms say about downloading recordings for personal study.
+```js
+const out = [];
+for (const t of document.querySelectorAll('.ovc_playlist_title')) {
+  t.click(); await new Promise(r => setTimeout(r, 4000));
+  out.push({name: t.textContent.trim(), stream_url: document.querySelector('iframe').contentWindow.jwplayer_parameters.file});
+}
+out
+```
+
+The javascript tool hides tokenised URLs from Claude's view, so write them straight into the listing download instead of returning them.
+
+## Terms of use
+
+Every page's footer: materials are uploaded for the personal use of the course's students and for course purposes only; they are the university's property and must not be distributed ("אין להפיץ חומרים אלה"), under the discipline code. So: download for the student's own study only, keep everything in their own course folder, and never publish or share course material. The footer doesn't address recordings separately.
+
+## Not available
+
+- Moodle's `core_courseformat_get_state` AJAX call (older Moodle). The standard web-service token login wasn't tried: it would need the student's password.

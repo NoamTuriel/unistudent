@@ -195,3 +195,37 @@ def transcribe(course, rel):
             extract_audio(source, audio)
         segments = transcribe_audio(audio, name, course.settings().get("language"))
     return write_transcript(course, rel, segments, name)
+
+
+def fetch_streams(listing_path, folder, audio_only=False):
+    """Download every recording in a university plugin's listing that has a stream URL
+    (e.g. HLS) and no file yet. Stream tokens expire, so this runs right after the listing."""
+    import json
+    from .course import safe_name
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("ffmpeg is needed to download recordings. Install it (macOS: brew install ffmpeg; "
+                           "Windows: winget install ffmpeg; Linux: your package manager).")
+    listing_path, folder = Path(listing_path), Path(folder)
+    data = json.loads(listing_path.read_text("utf-8"))
+    downloaded, failed = [], []
+    for item in data.get("items", []):
+        if item.get("kind") != "recording" or not item.get("stream_url") or item.get("file"):
+            continue
+        stem = Path(safe_name(item.get("name") or "recording")).stem
+        name = stem + (".m4a" if audio_only else ".mp4")
+        target = folder / name
+        part = folder / (name + ".part" + target.suffix)
+        cmd = ["ffmpeg", "-y", "-v", "error", "-i", item["stream_url"]]
+        cmd += ["-vn", "-c:a", "aac"] if audio_only else ["-c", "copy"]
+        cmd += [str(part)]
+        result = subprocess.run(cmd, capture_output=True)
+        if result.returncode == 0 and part.exists() and part.stat().st_size > 0:
+            os.replace(part, target)
+            item["file"], item["name"] = name, name
+            downloaded.append(name)
+        else:
+            if part.exists():
+                part.unlink()
+            failed.append(item.get("name") or item["url"])
+    listing_path.write_text(json.dumps(data, ensure_ascii=False, indent=1), "utf-8")
+    return {"downloaded": downloaded, "failed": failed}
