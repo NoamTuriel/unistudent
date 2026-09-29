@@ -60,13 +60,14 @@ _LIST_LINE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 
 
 def _merge_continuations(blocks):
-    """A trailing "Sources:" block, or a list right after a paragraph, belongs to that paragraph."""
+    """A trailing "Sources:" block, or an unlabelled list right after a paragraph, belongs to that paragraph."""
     merged = []
     for start, lines in blocks:
         if merged:
             prev = merged[-1][1]
             is_sources = bool(_SOURCES_START.match(lines[0]))
-            is_intro_list = not _LIST_LINE.match(prev[0]) and all(
+            is_intro_list = not _LIST_LINE.match(prev[0]) and not _LABEL_RE.match(
+                _MARKER.sub("", lines[0], count=1)) and all(
                 _LIST_LINE.match(l) or l.startswith((" ", "\t")) for l in lines)
             if is_sources or is_intro_list:
                 prev.extend(lines)
