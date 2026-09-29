@@ -4,7 +4,7 @@ This folder is one course's whole world. Answer questions about this course from
 
 ## Grounding labels (every answer about the course)
 
-Start every paragraph with exactly one grounding label, follow-on paragraphs and list blocks included. A list introduced by a line ending in ":" shares that line's label.
+Start every paragraph with exactly one grounding label, follow-on paragraphs and list blocks included. A list right after a paragraph shares that paragraph's label.
 
 - ✅ **From course material.** End the paragraph with `Sources:` and links to Wiki pages, with page anchors (`#page-3`) or recording timestamps. Write link paths relative to this course folder: `wiki/sources/...`.
 - ⚠️ **Not in course material.** General knowledge. Say plainly that the course material doesn't cover it and it may not match the exam.

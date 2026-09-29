@@ -60,6 +60,11 @@ class GroundingLabels(CourseTestCase):
                 "Sources: [slides](wiki/sources/unit-04/slides.md#page-1)\n")
         self.assertEqual(self.kinds(text), [])
 
+    def test_a_list_right_after_a_labelled_paragraph_shares_its_label(self):
+        text = ("✅ The course teaches five steps. Sources: [s](wiki/sources/unit-04/slides.md#page-1)\n\n"
+                "1. Change in reserves.\n2. Excess reserves.\n")
+        self.assertEqual(self.kinds(text), [])
+
     def test_a_follow_on_paragraph_without_a_label_is_flagged(self):
         text = ("❌ In this course the multiplier is 1/r. Sources: [s](wiki/sources/unit-04/slides.md#page-1)\n\n"
                 "Outside this course the textbook formula includes the currency ratio.\n")
