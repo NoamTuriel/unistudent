@@ -47,4 +47,4 @@ Stage 0: examples from the slides. Stage 1: questions with answers. Stage 2: the
 
 ## Grounding
 
-Label every paragraph as the course folder's `CLAUDE.md` says.
+Label every paragraph as the course context (`.unistudent/context.md`) says.

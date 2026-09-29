@@ -10,7 +10,7 @@ Input: the course folder, the unit, the chosen pages, the resolved rules (generi
 
 1. **Read the unit:** `wiki/units/<unit>.md` and everything it links (source pages, recording tables of contents and summaries), the glossary, the question bank entries tagged with this unit, and `wiki/course.md`.
 2. **Topics:** define the unit's 4–6 topics and their tags as the rules say. Every page uses this one list.
-3. **Write each chosen page** into `study/Unit N/`. Content comes from the Wiki only. Label every paragraph as the course's `CLAUDE.md` says. Link paths are relative to the page.
+3. **Write each chosen page** into `study/Unit N/`. Content comes from the Wiki only. Label every paragraph as the course context (`.unistudent/context.md`) says. Link paths are relative to the page.
 4. **Practice page:** every question in the unit's question-bank entries appears once, under its topic.
 5. **Check:** run `python3 <us.py> check --labels "study/Unit N"` (the path to `us.py` is in your input) and fix everything it reports.
 

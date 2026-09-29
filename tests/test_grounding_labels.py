@@ -72,7 +72,7 @@ class GroundingLabels(CourseTestCase):
 
     def test_a_closing_inbox_suggestion_needs_no_label(self):
         text = ("⚠️ The course material doesn't cover the IS-LM model.\n\n"
-                "If you have notes on it, drop them into `inbox/` and run `/unistudent:add`.\n")
+                "If you have notes on it, drop them into `inbox/` and run `/unistudent:course-add`.\n")
         self.assertEqual(self.kinds(text), [])
 
     def test_my_own_explanation_of_course_material_is_its_own_label_and_cites_what_it_explains(self):

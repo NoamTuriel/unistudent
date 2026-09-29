@@ -31,6 +31,21 @@ class Regressions(CourseTestCase):
         self.assertEqual(text.count("@.unistudent/context.md"), 1)
         self.assertIn("Grounding labels", (course / ".unistudent" / "context.md").read_text("utf-8"))
 
+    def test_the_course_context_reaches_every_agent(self):
+        course = self.tmp / "Macro"
+        run_json("setup", course, "--name", "Macro")
+        self.assertIn("Grounding labels", (course / "AGENTS.md").read_text("utf-8"))
+        self.assertIn("@.unistudent/context.md", (course / "CLAUDE.md").read_text("utf-8"))
+
+    def test_a_students_own_agents_md_is_kept(self):
+        course = self.tmp / "Macro"
+        write(course / "AGENTS.md", "# Mine\n")
+        run_json("setup", course, "--name", "Macro")
+        run_json("setup", course, "--name", "Macro")
+        text = (course / "AGENTS.md").read_text("utf-8")
+        self.assertTrue(text.startswith("# Mine"))
+        self.assertEqual(text.count(".unistudent/context.md"), 1)
+
     def test_where_an_added_file_comes_from_reaches_the_wiki(self):
         course = self.tmp / "Macro"
         run_json("setup", course, "--name", "Macro", "--language", "en")

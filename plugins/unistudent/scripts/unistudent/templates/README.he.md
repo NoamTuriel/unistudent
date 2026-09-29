@@ -15,7 +15,7 @@
 ## איך להאכיל את Claude בעוד חומר
 
 1. זורקים קובץ ל-`inbox/`.
-2. מריצים `/unistudent:add`.
+2. מריצים `/unistudent:course-add`.
 3. Claude ממיין אותו ליחידה, מעדכן את ה-Wiki, ומשתמש בו מעכשיו בתשובות.
 
 ככל שיש יותר חומר של הקורס, התשובות מדויקות יותר.
@@ -31,11 +31,11 @@
 
 | פקודה | מה היא עושה |
 |---|---|
-| `/unistudent:help` | הסבר על הפלאגין ומה אפשר לעשות |
-| `/unistudent:add` | מעבד את מה שיש ב-`inbox/` |
-| `/unistudent:wiki` | בונה או מרענן את ה-Wiki |
-| `/unistudent:unit` | בונה חבילת לימוד ליחידה (בוחרים אילו דפים) |
-| `/unistudent:recordings` | תמלול וסיכום הקלטות (כבד ואיטי, תמיד שואל קודם) |
+| `/unistudent:course-help` | הסבר על הפלאגין ומה אפשר לעשות |
+| `/unistudent:course-add` | מעבד את מה שיש ב-`inbox/` |
+| `/unistudent:course-wiki` | בונה או מרענן את ה-Wiki |
+| `/unistudent:study-pack` | בונה חבילת לימוד ליחידה (בוחרים אילו דפים) |
+| `/unistudent:course-recordings` | תמלול וסיכום הקלטות (כבד ואיטי, תמיד שואל קודם) |
 | `/unistudent:courses` | רשימת הקורסים שלך ומעבר ביניהם |
 
 ## העדפות

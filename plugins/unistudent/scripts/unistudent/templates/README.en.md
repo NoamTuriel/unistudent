@@ -15,7 +15,7 @@ This folder is your whole course in one place. Claude answers questions about th
 ## Feeding Claude more material
 
 1. Drop a file into `inbox/`.
-2. Run `/unistudent:add`.
+2. Run `/unistudent:course-add`.
 3. Claude sorts it into a unit, updates the Wiki, and uses it in answers from then on.
 
 The more course material there is, the more precise the answers.
@@ -31,11 +31,11 @@ The more course material there is, the more precise the answers.
 
 | Command | What it does |
 |---|---|
-| `/unistudent:help` | How the plugin works and what it can do |
-| `/unistudent:add` | Processes what's in `inbox/` |
-| `/unistudent:wiki` | Builds or refreshes the Wiki |
-| `/unistudent:unit` | Builds a study pack for a unit (you pick the pages) |
-| `/unistudent:recordings` | Transcribes and summarises recordings (heavy and slow; always asks first) |
+| `/unistudent:course-help` | How the plugin works and what it can do |
+| `/unistudent:course-add` | Processes what's in `inbox/` |
+| `/unistudent:course-wiki` | Builds or refreshes the Wiki |
+| `/unistudent:study-pack` | Builds a study pack for a unit (you pick the pages) |
+| `/unistudent:course-recordings` | Transcribes and summarises recordings (heavy and slow; always asks first) |
 | `/unistudent:courses` | Lists your courses and switches between them |
 
 ## Preferences

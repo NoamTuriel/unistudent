@@ -14,7 +14,7 @@ from .common import UserError, resolve_course
 from .course import Course, Registry, find_course, general_preferences_file, safe_name
 from .links import is_synced_folder, recordings_root
 
-TEMPLATES = Path(__file__).resolve().parents[2] / "templates"
+TEMPLATES = Path(__file__).resolve().parent / "templates"
 CONTEXT_MARK = "<!-- unistudent:context -->"
 
 
@@ -34,28 +34,34 @@ def write_context_files(course: Course):
                 "(filled when the Wiki is built).")
     others = [c for c in Registry().courses() if c["path"] != str(course.root)]
     other_lines = [f"- {c['name']}: `{Path(c['path']) / 'wiki'}`" for c in others] or ["- None."]
-    context = render("CLAUDE.md",
+    context = render("context.md",
                      course_name=settings["course_name"],
                      language=settings.get("language", "he"),
                      general_preferences=general_preferences_file(),
                      other_courses="\n".join(other_lines),
                      exam_section="\n".join(exam))
-    # The context file is ours only if we made it; a student's own CLAUDE.md is kept and
-    # gets one import line pointing at ours.
+    # The full context lives in .unistudent/context.md. AGENTS.md (read by Codex, Cursor, Gemini
+    # and others) carries it in full; CLAUDE.md imports it. A student's own file is kept and gets
+    # one pointer line instead.
     ours = course.state / "context.md"
     ours.parent.mkdir(parents=True, exist_ok=True)
     ours.write_text(context, "utf-8")
-    claude_md = course.root / "CLAUDE.md"
-    if not claude_md.exists() or claude_md.read_text("utf-8").startswith(CONTEXT_MARK):
-        claude_md.write_text(f"{CONTEXT_MARK}\n{context}", "utf-8")
-    else:
-        text = claude_md.read_text("utf-8")
-        if "@.unistudent/context.md" not in text:
-            claude_md.write_text(text.rstrip("\n") + "\n\n@.unistudent/context.md\n", "utf-8")
+    _write_or_point(course.root / "AGENTS.md", context,
+                    "Read `.unistudent/context.md` first: it holds this course's rules (UniStudent).")
+    _write_or_point(course.root / "CLAUDE.md", "@.unistudent/context.md\n", "@.unistudent/context.md")
     readme = course.root / "README.md"
     if not readme.exists():
         lang = "he" if settings.get("language") == "he" else "en"
         readme.write_text(render(f"README.{lang}.md", course_name=settings["course_name"]), "utf-8")
+
+
+def _write_or_point(path: Path, content: str, pointer: str):
+    if not path.exists() or path.read_text("utf-8").startswith(CONTEXT_MARK):
+        path.write_text(f"{CONTEXT_MARK}\n{content}", "utf-8")
+        return
+    text = path.read_text("utf-8")
+    if pointer not in text:
+        path.write_text(text.rstrip("\n") + f"\n\n{pointer}\n", "utf-8")
 
 
 def refresh_other_contexts(course: Course):
@@ -146,7 +152,7 @@ def cmd_courses(args):
         course = inside or find_course()
         if course is None:
             return {"course": None, "found_by": None, "courses": courses,
-                    "summary": "No course yet: run /unistudent:setup."}
+                    "summary": "No course yet: run /unistudent:course-setup."}
         name = course.settings()["course_name"]
         found_by = "course folder" if inside else "last active"
         summary = f"Working on: {name}"

@@ -1,11 +1,11 @@
 ---
-name: sync
-description: "University plugin: download new material from an Open University (האוניברסיטה הפתוחה) course site into the course folder. Use for /openu:sync and during UniStudent setup."
+name: openu-sync
+description: "University plugin: download new material from an Open University (האוניברסיטה הפתוחה) course site into the course folder. Use for /openu:openu-sync and during UniStudent setup."
 ---
 
 Download what's new on the student's OpenU course site and hand it to the UniStudent core. The core stores, sorts and adds it to the Wiki; this skill only reaches the site.
 
-`us` means the UniStudent core's `python3 <core plugin>/scripts/us.py`: find it with Glob for `**/unistudent/scripts/us.py` under the plugins folder that holds this skill.
+`us <command>` is the UniStudent core's tool for that command: the MCP tool named by its words joined with `_` (`us site-status` → `site_status`) when the unistudent MCP server is connected, otherwise `unistudent <command>` in a shell. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 
 How the site works (lists, download method, recordings, ready-made snippets) is in `<this skill's base directory>/../../reference/site.md`. Read it first.
 
@@ -17,7 +17,7 @@ Done when: you know the course folder, the Downloads folder path, and what's alr
 
 ## 2. Find the course on the site
 
-Use Claude in Chrome with the student's own logged-in session. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id`.
+Use a browser tool that drives the student's own logged-in Chrome (Claude in Chrome, or a browser MCP server attached to their Chrome profile). The site can't be reached without their session. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id`.
 
 Done when: you have the course id.
 
@@ -54,4 +54,4 @@ Done when: the ingest ran and unsorted files are answered or deferred.
 
 ## 7. Report
 
-Two lines: what's new since the last sync, and what's waiting (recordings not downloaded, unsorted files). If a unit with a study pack got new material, offer `/unistudent:unit N`. If recordings came in, offer `/unistudent:recordings`.
+Two lines: what's new since the last sync, and what's waiting (recordings not downloaded, unsorted files). If a unit with a study pack got new material, offer `/unistudent:study-pack N`. If recordings came in, offer `/unistudent:course-recordings`.

@@ -22,14 +22,14 @@ Labels mark claims about the course; reports on what you did ("the Wiki is built
 
 ⚠️ How the five steps treat the first deposit isn't spelled out in the course material; this is my reading.
 
-If you have the assumptions sheet, drop it into `inbox/` and run `/unistudent:add`.
+If you have the assumptions sheet, drop it into `inbox/` and run `/unistudent:course-add`.
 ```
 
 Rules that decide the label:
 
 - Official material wins over added material. When citing added material, name its origin ("from added material: friend's summary").
 - Use only the methods, notation and assumptions that `wiki/units/` lists for that unit. A method the course hasn't taught gets ⚠️ or ❌, even when it is correct.
-- When the Wiki doesn't cover the question, say so and suggest dropping a source into `inbox/` and running `/unistudent:add`.
+- When the Wiki doesn't cover the question, say so and suggest dropping a source into `inbox/` and running `/unistudent:course-add`.
 - Outside knowledge only when the student asks for it, labelled ⚠️.
 - Before labelling anything ⚠️, search the other courses' Wikis listed below. If it is there, say so: "⚠️ From your other course (<its name>), not this one". Cite the other course only when the student asks for a comparison.
 

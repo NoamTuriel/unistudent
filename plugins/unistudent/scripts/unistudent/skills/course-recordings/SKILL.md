@@ -1,12 +1,14 @@
 ---
-name: recordings
+name: course-recordings
 description: Transcribe and summarise course recordings into the Wiki (heavy and slow; always asks first).
 disable-model-invocation: true
 ---
 
 Heavy work starts only after the student says yes to real numbers.
 
-`us` means `python3 <this skill's base directory>/../../scripts/us.py`.
+<!-- conventions: keep identical in every UniStudent skill -->
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command>` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command>`). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md`; give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+<!-- /conventions -->
 
 ## 1. What and how much
 
@@ -28,7 +30,7 @@ Done when: every chosen recording has a `transcript.md`.
 
 ## 4. Table of contents and summary
 
-For each transcript, dispatch one `recording-summarizer` subagent (in parallel). Each writes `toc.md` and `summary.md` next to the transcript and returns a three-line summary. Only those three lines come back to you.
+For each transcript, **delegate** to one `recording-summarizer` worker. Each writes `toc.md` and `summary.md` next to the transcript and returns a three-line summary. Only those three lines come back to you.
 
 Done when: every transcript has `toc.md` and `summary.md`.
 
@@ -36,6 +38,6 @@ Done when: every transcript has `toc.md` and `summary.md`.
 
 Run `us wiki build` (the unit pages now link the summaries), then `us wiki check`.
 
-Done when: `us wiki check` reports 0 problems. If a unit with a study pack got new recordings, offer `/unistudent:unit N` for proposed changes.
+Done when: `us wiki check` reports 0 problems. If a unit with a study pack got new recordings, offer `/unistudent:study-pack N` for proposed changes.
 
 Report: which recordings are done, and the announcements and "this will be on the exam" moments the summarizers found.

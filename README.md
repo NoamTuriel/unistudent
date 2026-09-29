@@ -28,7 +28,7 @@ Claude Code:
 /plugin install economics@unistudent    # economics courses
 ```
 
-Then, for each course: `/unistudent:setup`.
+Then, for each course: `/unistudent:course-setup`.
 
 You'll need Python 3.9+. Optional, for better results: `pip install -r plugins/unistudent/scripts/requirements.txt`, LibreOffice (Word files with formulas), poppler (`pdftotext`), and for recordings ffmpeg plus `mlx-whisper` (Apple silicon) or `faster-whisper` (everything else).
 
@@ -36,14 +36,14 @@ You'll need Python 3.9+. Optional, for better results: `pip install -r plugins/u
 
 | Command | What it does |
 |---|---|
-| `/unistudent:setup` | Set up a course (run once per course) |
-| `/unistudent:help` | How it works, and what's waiting |
-| `/unistudent:add` | Add what you dropped into the course's `inbox/` |
-| `/unistudent:wiki` | Build or refresh the Wiki |
-| `/unistudent:unit` | Build a study pack for a unit, or review proposed updates |
-| `/unistudent:recordings` | Transcribe and summarise recordings (heavy; always asks first) |
+| `/unistudent:course-setup` | Set up a course (run once per course) |
+| `/unistudent:course-help` | How it works, and what's waiting |
+| `/unistudent:course-add` | Add what you dropped into the course's `inbox/` |
+| `/unistudent:course-wiki` | Build or refresh the Wiki |
+| `/unistudent:study-pack` | Build a study pack for a unit, or review proposed updates |
+| `/unistudent:course-recordings` | Transcribe and summarise recordings (heavy; always asks first) |
 | `/unistudent:courses` | List and switch courses |
-| `/openu:sync` | Download what's new on your OpenU course site |
+| `/openu:openu-sync` | Download what's new on your OpenU course site |
 
 ## A course folder
 

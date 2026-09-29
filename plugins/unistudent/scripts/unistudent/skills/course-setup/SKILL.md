@@ -1,12 +1,14 @@
 ---
-name: setup
+name: course-setup
 description: Set up a new course folder (onboarding). Run once per course.
 disable-model-invocation: true
 ---
 
-Set up one course for the student, then show them how the plugin works. Ask each question with AskUserQuestion (one call per step, recommended option first). The student may be new to Claude: plain words, no jargon.
+Set up one course for the student, then show them how the plugin works. **Ask** one question per step, recommended option first. The student may be new to Claude: plain words, no jargon.
 
-`us` below means `python3 <this skill's base directory>/../../scripts/us.py` (use `python` if `python3` isn't found). Add `--json` when you need to read the output.
+<!-- conventions: keep identical in every UniStudent skill -->
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command>` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command>`). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md`; give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+<!-- /conventions -->
 
 ## 1. Course
 
@@ -42,27 +44,27 @@ Done when: `us unsorted` prints "Nothing unsorted." or the student chose to leav
 
 ## 5. Download from the site (site or both)
 
-Run the university plugin's sync skill (e.g. `openu:sync`). It asks about recordings itself.
+Run the university plugin's sync skill (e.g. `openu:openu-sync`). It asks about recordings itself.
 
 Done when: the sync reported what it downloaded.
 
 ## 6. Recordings
 
-If the course has recordings and they weren't handled in step 5, run `us recordings estimate --json` and ask whether to include them. Say it's recommended but slow, with the numbers. Record the choice with `us context --recording-level <0 skip|1 download only|3 transcript and summary>`. Transcription itself happens later, in `/unistudent:recordings`: point there.
+If the course has recordings and they weren't handled in step 5, run `us recordings estimate --json` and ask whether to include them. Say it's recommended but slow, with the numbers. Record the choice with `us context --recording-level <0 skip|1 download only|3 transcript and summary>`. Transcription itself happens later, in `/unistudent:course-recordings`: point there.
 
 Done when: the recording level is recorded.
 
 ## 7. Wiki
 
-Read `<this skill's base directory>/../wiki/SKILL.md` and follow it for the whole course. Then run `us context --exam-date <date>` if the student knows the exam date (ask once; skipping is fine).
+Read `<this skill's base directory>/../course-wiki/SKILL.md` and follow it for the whole course. Then run `us context --exam-date <date>` if the student knows the exam date (ask once; skipping is fine).
 
 ## 8. Explain and offer next steps
 
 Explain in the student's language, in five short lines, following the course folder's `README.md`: what each folder is, the inbox, and the grounding labels (✅ ⚠️ ❌). Then offer the menu:
 
-- Build a study pack for a unit (`/unistudent:unit`)
-- Process recordings (`/unistudent:recordings`)
-- Add more material (`/unistudent:add`)
+- Build a study pack for a unit (`/unistudent:study-pack`)
+- Process recordings (`/unistudent:course-recordings`)
+- Add more material (`/unistudent:course-add`)
 - Sync the course site (university plugin)
 
 In Cowork, suggest one project per course with this folder connected. In Claude Code, suggest starting Claude inside the folder.
