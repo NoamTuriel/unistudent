@@ -127,6 +127,7 @@ def grade(case: dict, answer: Path, root: Path):
     failures = [f"missing label {l}" for l in case.get("must_include_labels", []) if l not in labels]
     failures += [f"forbidden label {l}" for l in case.get("must_not_include_labels", []) if l in labels]
     failures += [f"missing citation {c}" for c in case.get("must_cite", []) if c not in links]
-    failures += [f"missing mention {m}" for m in case.get("must_mention", []) if m.lower() not in text.lower()]
+    failures += [f"missing mention {m}" for m in case.get("must_mention", [])
+                 if not any(alt.strip().lower() in text.lower() for alt in m.split("|"))]
     failures += [f"{p['kind']} at line {p.get('line', '?')}" for p in report["problems"]]
     return {"id": case.get("id"), "passed": not failures, "failures": sorted(failures)}
