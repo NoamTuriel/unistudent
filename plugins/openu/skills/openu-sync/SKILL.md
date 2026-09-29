@@ -7,7 +7,7 @@ Download what's new on the student's OpenU course site and hand it to the UniStu
 
 `us <command>` is the UniStudent core's tool for that command: the MCP tool named by its words joined with `_` (`us site-status` → `site_status`) when the unistudent MCP server is connected, otherwise `unistudent <command>` in a shell. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 
-How the site works (lists, download method, recordings, ready-made snippets) is in `<this skill's base directory>/../../reference/site.md`. Read it first.
+How the site works (lists, download method, recordings, ready-made snippets) is in `<this skill's base directory>/references/site.md`. Read it first.
 
 ## 1. Course and what's already here
 

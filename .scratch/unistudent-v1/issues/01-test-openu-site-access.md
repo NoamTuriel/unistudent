@@ -14,6 +14,6 @@
 
 ## Findings
 
-See `plugins/openu/reference/site.md`. In short: `/course/resources.php` lists every file with its section; `view.php?id=…&redirect=1` returns the file; downloads work from inside the logged-in tab (verified with one 184 KB PDF); recordings are tokenised HLS streams that need no cookies (downloaded with ffmpeg); the session cookie is http-only, so scripts can't reuse it; the site footer allows personal use by the course's students only and forbids distribution.
+See `plugins/openu/skills/openu-sync/references/site.md`. In short: `/course/resources.php` lists every file with its section; `view.php?id=…&redirect=1` returns the file; downloads work from inside the logged-in tab (verified with one 184 KB PDF); recordings are tokenised HLS streams that need no cookies (downloaded with ffmpeg); the session cookie is http-only, so scripts can't reuse it; the site footer allows personal use by the course's students only and forbids distribution.
 
 Not done: anonymised HTML fixtures of real pages (the parser runs in the browser, so tests use a synthetic listing instead).
