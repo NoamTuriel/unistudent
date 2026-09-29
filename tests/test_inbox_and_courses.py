@@ -68,6 +68,21 @@ class SeveralCourses(CourseTestCase):
         finally:
             os.chdir(cwd)
 
+    def test_current_says_how_the_course_was_found_and_lists_the_others(self):
+        run("setup", self.tmp / "Macro", "--name", "Macro")
+        run("setup", self.tmp / "Statistics", "--name", "Statistics")
+        current = run_json("courses", "current")
+        self.assertEqual((current["name"], current["found_by"]), ("Statistics", "last active"))
+        self.assertEqual(sorted(c["name"] for c in current["courses"]), ["Macro", "Statistics"])
+        self.assertIn("ask", current["summary"])  # outside a folder: the request decides, else ask
+        cwd = os.getcwd()
+        os.chdir(self.tmp / "Macro")
+        try:
+            inside = run_json("courses", "current")
+        finally:
+            os.chdir(cwd)
+        self.assertEqual((inside["name"], inside["found_by"]), ("Macro", "course folder"))
+
     def test_each_course_has_its_own_wiki_and_manifest(self):
         macro = self.tmp / "Macro"
         stats = self.tmp / "Statistics"

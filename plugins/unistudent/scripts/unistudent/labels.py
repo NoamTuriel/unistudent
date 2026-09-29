@@ -2,15 +2,17 @@
 
 A paragraph is a block of text between blank lines. Headings, tables, code, comments,
 frontmatter and navigation-only blocks (links and icons, no prose) carry no label.
-✅ paragraphs must cite at least one source link, and every link must resolve.
+✅ (from course material) and 💡 (my explanation of course material) paragraphs must cite
+at least one source link, and every link must resolve.
 """
 import re
 from pathlib import Path
 
 from .links_check import MD_LINK, WIKILINK, check_links
 
-LABELS = ("✅", "⚠️", "❌")
-_LABEL_RE = re.compile(r"✅|⚠️?|❌")
+LABELS = ("✅", "💡", "⚠️", "❌")
+CITED = ("✅", "💡")  # these must link the course material they rest on
+_LABEL_RE = re.compile("✅|💡|⚠️?|❌")
 _MARKER = re.compile(r"^\s*(?:>\s*)*(?:\[![^\]]*\][+-]?\s*)?(?:[-*+]\s+|\d+[.)]\s+)?(?:\*\*|__)?\s*")
 _MIN_PROSE_LETTERS = 15
 
@@ -110,7 +112,7 @@ def check_page(page: Path, root: Path):
             problems.append({"kind": "unlabeled", **where})
         elif len(p["labels_at_start"]) > 1:
             problems.append({"kind": "several-labels", **where})
-        elif p["label"] == "✅" and not p["links"]:
+        elif p["label"] in CITED and not p["links"]:
             problems.append({"kind": "no-citation", **where})
     problems += check_links(page, root)
     return {"paragraphs": found, "problems": problems}

@@ -23,16 +23,16 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 | practice | `N.3 תרגול` / `N.3 Practice` | Every question from the course material for this unit, grouped by topic and stage, tagged, with the recording time when it is solved there | ✓ |
 | recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | Per recording: time · until · type · what happens · topic. Only when the unit's recordings have transcripts | ✓ when transcripts exist |
 
-Save to `study/<unit label>/` (e.g. `study/יחידה 4/`).
+Save to `study/Unit N/` (folder names are always English; page titles and content follow the course language).
 
 ## Concept structure (walkthrough)
 
 `### <concept> — <English name>`, then in this order:
 
 1. **In plain words:** one sentence.
-2. **Explanation:** why it is so, with a concrete example.
+2. **Explanation:** why it is so, with a concrete example (usually 💡: your words, resting on the Wiki).
 3. **Formula:** on its own line, each symbol explained; "none: a qualitative concept" when there is none.
-4. **Memory tip:** one line.
+4. **Memory tip:** one line (💡).
 
 ## Practice stages
 

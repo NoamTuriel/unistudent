@@ -23,6 +23,7 @@ The more course material there is, the more precise the answers.
 ## Labels in answers
 
 - ✅ From course material, with a link to the source.
+- 💡 Claude's own explanation (an example, analogy or trick) of something in the course material, linked to what it explains.
 - ⚠️ Not in course material. General knowledge; may not match the exam.
 - ❌ Conflicts with the course. The course version comes first, then the explanation.
 

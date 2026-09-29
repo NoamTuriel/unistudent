@@ -5,6 +5,7 @@ Claude plugins for university students. Your course material becomes a per-cours
 **Why:** a general AI answers from the whole internet: methods your course doesn't teach, other notation, material from other courses. Your exam grades your course's way. UniStudent keeps Claude inside your course material and tells you when it steps outside:
 
 - ✅ from your course material, with a link to the exact page or recording time
+- 💡 Claude's own explanation of your course material (an example, an analogy, a memory trick), linked to what it explains
 - ⚠️ not in your course material
 - ❌ conflicts with how your course does it (the course version comes first)
 

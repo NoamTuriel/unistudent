@@ -141,11 +141,21 @@ def cmd_courses(args):
             raise UserError(f"No course named {args.target}.")
         return {"active": entry, "summary": f"Working on: {entry['name']}"}
     if args.action == "current":
-        course = find_course()
+        courses = [{"name": c["name"], "path": c["path"]} for c in registry.courses()]
+        inside = find_course(use_registry=False)
+        course = inside or find_course()
         if course is None:
-            return {"course": None, "summary": "No course detected."}
+            return {"course": None, "found_by": None, "courses": courses,
+                    "summary": "No course yet: run /unistudent:setup."}
         name = course.settings()["course_name"]
-        return {"course": str(course.root), "name": name, "summary": f"Working on: {name}"}
+        found_by = "course folder" if inside else "last active"
+        summary = f"Working on: {name}"
+        if not inside and len(courses) > 1:
+            others = ", ".join(c["name"] for c in courses if c["path"] != str(course.root))
+            summary += (f" (last active; not inside a course folder). Other courses: {others}. "
+                        "If the request is about one of them, use it (--course <path>); if unclear, ask.")
+        return {"course": str(course.root), "name": name, "found_by": found_by,
+                "courses": courses, "summary": summary}
     courses = registry.courses()
     lines = [("* " if c["active"] else "  ") + f"{c['name']}  ({c['path']})" for c in courses]
     return {"courses": courses, "summary": "\n".join(lines) or "No courses yet."}

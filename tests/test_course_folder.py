@@ -52,8 +52,8 @@ class CourseFromOwnFolder(CourseTestCase):
         course = self.tmp / "Macro"
         run("setup", course, "--name", "Macro", "--import", own, "--tier", "official")
 
-        unit1 = course / "materials" / "יחידה 1" / "שאלות עם תשובות.pdf"
-        unit2 = course / "materials" / "יחידה 2" / "שיעור 2 - יחידה 2.pdf"
+        unit1 = course / "materials" / "Unit 1" / "שאלות עם תשובות.pdf"
+        unit2 = course / "materials" / "Unit 2" / "שיעור 2 - יחידה 2.pdf"
         self.assertTrue(os.path.samefile(unit1, own / "יחידה 1 - מבוא" / "שאלות עם תשובות.pdf"))
         self.assertTrue(os.path.samefile(unit2, own / "שקפים" / "שיעור 2 - יחידה 2.pdf"))
 
@@ -71,8 +71,8 @@ class CourseFromOwnFolder(CourseTestCase):
         self.assertEqual(code, 0, out)
 
         self.assertEqual(run_json("unsorted", "--course", course)["files"], [])
-        self.assertTrue((course / "materials" / "כללי" / "מבחן 2024.pdf").exists())
-        self.assertTrue((course / "materials" / "יחידה 1" / "01 - מפגש מספר 1.mp4").exists())
+        self.assertTrue((course / "materials" / "General" / "מבחן 2024.pdf").exists())
+        self.assertTrue((course / "materials" / "Unit 1" / "01 - מפגש מספר 1.mp4").exists())
 
         # Re-importing never asks again.
         run("import", "--course", course, own, "--tier", "official")
@@ -96,9 +96,9 @@ class CourseFromOwnFolder(CourseTestCase):
             run("setup", course, "--name", "Macro", "--import", own, "--tier", "official")
         finally:
             del os.environ["UNISTUDENT_LINK_MODE"]
-        index = (course / "materials" / "יחידה 1" / "INDEX.md").read_text("utf-8")
+        index = (course / "materials" / "Unit 1" / "INDEX.md").read_text("utf-8")
         self.assertIn("שאלות עם תשובות.pdf", index)
-        self.assertFalse((course / "materials" / "יחידה 1" / "שאלות עם תשובות.pdf").exists())
+        self.assertFalse((course / "materials" / "Unit 1" / "שאלות עם תשובות.pdf").exists())
         # Manifest still knows every file.
         self.assertEqual(len(run_json("manifest", "--course", course)["files"]), 4)
 

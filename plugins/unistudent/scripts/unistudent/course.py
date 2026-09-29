@@ -6,7 +6,7 @@ from pathlib import Path
 
 STATE_DIR = ".unistudent"
 
-# Student-facing names follow the course language; internal names stay English.
+# Folder names are always English; unit titles inside pages follow the course language.
 LABELS = {
     "he": {"unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין"},
     "en": {"unit": "Unit {n}", "general": "General", "unsorted": "Unsorted"},
@@ -144,7 +144,17 @@ class Course:
         lang = self.settings().get("language", "he")
         return LABELS.get(lang, LABELS["en"])[key].format(**kw)
 
+    def unit_folder(self, unit):
+        """Folder name for a unit in materials/ and study/: English on every course."""
+        unit = parse_unit(unit)
+        if unit is None:
+            return LABELS["en"]["unsorted"]
+        if unit == "general":
+            return LABELS["en"]["general"]
+        return LABELS["en"]["unit"].format(n=unit)
+
     def unit_label(self, unit):
+        """A unit's title in the course language, for page content."""
         unit = parse_unit(unit)
         if unit is None:
             return self.label("unsorted")
@@ -153,12 +163,14 @@ class Course:
         return self.label("unit", n=unit)
 
 
-def find_course(start=None):
+def find_course(start=None, use_registry=True):
     """The course folder containing `start` (default: cwd), else the active course in the Registry."""
     here = Path(start or os.getcwd()).resolve()
     for folder in [here, *here.parents]:
         if (folder / STATE_DIR / "settings.json").exists():
             return Course(folder)
+    if not use_registry:
+        return None
     active = Registry().active()
     if active:
         return Course(active)

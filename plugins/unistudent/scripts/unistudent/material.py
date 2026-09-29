@@ -180,7 +180,7 @@ def rebuild_materials(course):
 
     by_folder = {}
     for rel, entry in sorted(course.manifest()["files"].items()):
-        by_folder.setdefault(course.unit_label(entry.get("unit")), []).append(rel)
+        by_folder.setdefault(course.unit_folder(entry.get("unit")), []).append(rel)
 
     made = []
     for folder, rels in by_folder.items():

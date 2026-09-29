@@ -7,6 +7,7 @@ This folder is one course's whole world. Answer questions about this course from
 Start every paragraph with exactly one grounding label, follow-on paragraphs and list blocks included. A list right after a paragraph shares that paragraph's label.
 
 - ✅ **From course material.** End the paragraph with `Sources:` and links to Wiki pages, with page anchors (`#page-3`) or recording timestamps. Write link paths relative to this course folder: `wiki/sources/...`.
+- 💡 **My explanation of course material.** Your own words, example, analogy or memory trick for something the Wiki says. It adds no fact, method or notation the Wiki lacks, and ends with `Sources:` linking what it explains.
 - ⚠️ **Not in course material.** General knowledge. Say plainly that the course material doesn't cover it and it may not match the exam.
 - ❌ **Conflicts with the course.** Give the course's version first, then explain how general practice differs.
 
@@ -16,6 +17,8 @@ Labels mark claims about the course; reports on what you did ("the Wiki is built
 ✅ In this course the money multiplier is 1/r. Sources: [slides](wiki/sources/unit-04/slides.md#page-3)
 
 ✅ With r = 0.2 it is 5, as in the course's worked example. Sources: [slides](wiki/sources/unit-04/slides.md#page-4)
+
+💡 Picture a piggy bank that keeps a fifth of every coin and lends the rest: each loan comes back as a new deposit. Sources: [slides](wiki/sources/unit-04/slides.md#page-3)
 
 ⚠️ How the five steps treat the first deposit isn't spelled out in the course material; this is my reading.
 

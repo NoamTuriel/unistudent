@@ -7,7 +7,7 @@ Field skill for economics. It adds to or overrides the generic study-pack rules 
 
 ## Concept structure (replaces the generic one)
 
-`### <concept> — <English name>`, always these five parts, with these bold labels:
+`### <concept> — <English name>`, always these five parts, with these bold labels. The simple explanation and the trick are your own words, so they carry 💡; the deep explanation is 💡 when it reasons only from what the Wiki states, and ⚠️ when it brings in theory the course doesn't teach.
 
 1. **In plain words:** one sentence saying what it is.
 2. **Simple explanation:** for a young child, with a concrete everyday example (pocket money, a piggy bank, a shop). No jargon, no formulas.

@@ -14,7 +14,7 @@ Done when: you have the course and the unit number.
 
 ## 2. Existing pack → propose, never overwrite
 
-If `study/<unit label>/` exists, run `us study changes --unit N --json`.
+If `study/Unit N/` exists, run `us study changes --unit N --json`.
 
 - `has_study_pack` and changes: read the new and changed Wiki pages and draft a change list ("2 new questions for topic 3 from <source>: add them?"). Apply only what the student approves, then run `us study mark-built --unit N`. Stop.
 - No changes: say the pack is up to date and ask what they want changed.
@@ -47,9 +47,9 @@ Done when: the writer returned its page list.
 
 ## 6. Verify
 
-Dispatch the `verifier` subagent on `study/<unit label>/`. Fix what it reports, then run it again.
+Dispatch the `verifier` subagent on `study/Unit N/`. Fix what it reports, then run it again.
 
-Done when: `us check --labels "study/<unit label>"` reports 0 problems.
+Done when: `us check --labels "study/Unit N"` reports 0 problems.
 
 Then run `us study mark-built --unit N`.
 

@@ -75,6 +75,15 @@ class GroundingLabels(CourseTestCase):
                 "If you have notes on it, drop them into `inbox/` and run `/unistudent:add`.\n")
         self.assertEqual(self.kinds(text), [])
 
+    def test_my_own_explanation_of_course_material_is_its_own_label_and_cites_what_it_explains(self):
+        text = ("💡 Think of a piggy bank that lends out most of each coin: every loan comes back as a new "
+                "deposit. Sources: [slides](wiki/sources/unit-04/slides.md#page-1)\n")
+        report = self.check(text)
+        self.assertEqual(report["problems"], [])
+        self.assertEqual([p["label"] for p in report["paragraphs"]], ["💡"])
+        self.assertEqual(self.kinds("💡 Think of a piggy bank that lends out most of each coin it receives.\n"),
+                         ["no-citation"])
+
     def test_outside_and_conflict_labels_need_no_citation(self):
         text = ("⚠️ The course material doesn't cover the IS-LM model; this is general knowledge.\n\n"
                 "❌ In this course the multiplier is 1/r. Sources: [s](wiki/sources/unit-04/slides.md#page-1) "
