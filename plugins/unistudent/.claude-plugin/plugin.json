@@ -1,6 +1,6 @@
 {
   "name": "unistudent",
-  "version": "0.2.0",
+  "version": "0.2.1",
   "description": "Core (any university): course folders, Wiki, recordings, study packs, grounding labels, preferences.",
   "author": {
     "name": "Noam Turiel"
@@ -21,5 +21,6 @@
     "./scripts/unistudent/agents/study-pack-writer.md",
     "./scripts/unistudent/agents/verifier.md",
     "./scripts/unistudent/agents/wiki-unit-writer.md"
-  ]
+  ],
+  "mcpServers": "./.mcp.json"
 }
