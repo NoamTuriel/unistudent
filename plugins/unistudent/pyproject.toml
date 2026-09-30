@@ -1,0 +1,31 @@
+[build-system]
+requires = ["setuptools>=61"]
+build-backend = "setuptools.build_meta"
+
+[project]
+name = "unistudent"
+version = "0.3.0"
+description = "A per-course Wiki from your university course material, grounded AI answers, and study packs. MCP server + Agent Skills."
+requires-python = ">=3.9"
+license = { text = "MIT" }
+authors = [{ name = "Noam Turiel" }]
+dependencies = []
+
+[project.optional-dependencies]
+# Better document conversion (the core runs without them).
+docs = ["pypdf>=4", "python-docx>=1", "python-pptx>=0.6", "markitdown[pdf,docx,pptx,xlsx]>=0.1; python_version >= '3.10'"]
+# Speech-to-text for recordings (pick what fits the machine).
+stt = ["faster-whisper>=1; platform_machine != 'arm64' or sys_platform != 'darwin'",
+       "mlx-whisper>=0.4; platform_machine == 'arm64' and sys_platform == 'darwin'"]
+all = ["unistudent[docs,stt]"]
+
+[project.scripts]
+unistudent = "unistudent.cli:main"
+unistudent-mcp = "unistudent.mcp:main"
+
+[tool.setuptools]
+package-dir = { "" = "scripts" }
+packages = ["unistudent"]
+
+[tool.setuptools.package-data]
+unistudent = ["skills/*/SKILL.md", "templates/*", "reference/*", "agents/*.md"]

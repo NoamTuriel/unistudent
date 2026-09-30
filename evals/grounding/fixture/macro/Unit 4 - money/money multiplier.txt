@@ -1,0 +1,9 @@
+Unit 4: The money supply
+
+The money multiplier in this course is 1/r, where r is the banks' reserve ratio.
+In this course the public holds no cash outside the banks (assumption A3 on the assumptions sheet),
+so the multiplier never includes a currency-drain term.
+
+Worked example: with r = 0.2, the multiplier is 5. A deposit of 100 raises the money supply by 500.
+Solution method taught: the five steps (1. change in reserves, 2. excess reserves, 3. multiplier,
+4. change in deposits, 5. change in money supply).

@@ -1,0 +1,9 @@
+{
+  "name": "openu",
+  "version": "0.3.0",
+  "description": "Open University of Israel: downloading from the course site and sorting into OpenU units.",
+  "author": {
+    "name": "Noam Turiel"
+  },
+  "license": "MIT"
+}

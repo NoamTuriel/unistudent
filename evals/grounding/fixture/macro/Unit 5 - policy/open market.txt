@@ -1,0 +1,4 @@
+Unit 5: Monetary policy tools
+
+An open market purchase by the central bank raises the monetary base by the amount purchased.
+The change in the money supply equals the change in the monetary base times the money multiplier 1/r.
