@@ -27,12 +27,12 @@ Works with Claude (Code, Desktop, Cowork), Cursor, VS Code, Codex, Gemini CLI an
 
 ## Install
 
-You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything else) and, for recordings only, [ffmpeg](https://ffmpeg.org). Replace `OWNER` with the GitHub account that hosts this repo.
+You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything else) and, for recordings only, [ffmpeg](https://ffmpeg.org).
 
 **Claude Code**
 
 ```
-/plugin marketplace add OWNER/unistudent
+/plugin marketplace add NoamTuriel/unistudent
 /plugin install unistudent@unistudent
 /plugin install openu@unistudent        # Open University students
 /plugin install economics@unistudent    # economics courses
@@ -45,7 +45,7 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
   "mcpServers": {
     "unistudent": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/OWNER/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
     }
   }
 }
@@ -53,21 +53,21 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
 
 (VS Code calls the top-level key `servers` and wants `"type": "stdio"`. Desktop apps on a Mac often can't see `uvx`: if the server doesn't start, put the full path from `which uvx` in `"command"`, e.g. `/Users/you/.local/bin/uvx`.)
 
-**Codex CLI**: `codex mcp add unistudent -- uvx --from "git+https://github.com/OWNER/unistudent#subdirectory=plugins/unistudent" unistudent-mcp`, or in `~/.codex/config.toml`:
+**Codex CLI**: `codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" unistudent-mcp`, or in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.unistudent]
 command = "uvx"
-args = ["--from", "git+https://github.com/OWNER/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
 ```
 
 **Gemini CLI**: the same `mcpServers` block as above, in `~/.gemini/settings.json`.
 
-**Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add OWNER/unistudent` (it reads the skills declared in this repo's Claude plugin files). The skills do their work through the UniStudent MCP server, so add the server too; alternatively `uv tool install` below gives them the `unistudent` command.
+**Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add NoamTuriel/unistudent` (it reads the skills declared in this repo's Claude plugin files). The skills do their work through the UniStudent MCP server, so add the server too; alternatively `uv tool install` below gives them the `unistudent` command.
 
 Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code).
 
-Optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/OWNER/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx) and Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon).
+Optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx) and Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon).
 
 ## Works well with
 
