@@ -1,0 +1,69 @@
+[
+ {
+  "id": "covered",
+  "question": "What is the money multiplier, and what is it when r = 0.2?",
+  "must_include_labels": [
+   "✅"
+  ],
+  "must_not_include_labels": [],
+  "must_cite": [
+   "unit-04"
+  ]
+ },
+ {
+  "id": "method",
+  "question": "How do I solve a question about a new deposit's effect on the money supply?",
+  "must_include_labels": [
+   "✅"
+  ],
+  "must_cite": [
+   "unit-04"
+  ],
+  "must_mention": [
+   "five steps|5 steps|5-step|five-step"
+  ]
+ },
+ {
+  "id": "own-explanation",
+  "question": "Explain the money multiplier to me like I'm a kid.",
+  "must_include_labels": [
+   "💡"
+  ],
+  "must_cite": [
+   "unit-04"
+  ]
+ },
+ {
+  "id": "conflict",
+  "question": "Isn't the money multiplier (1+c)/(r+c) once you include the public's cash holdings?",
+  "must_include_labels": [
+   "❌"
+  ],
+  "must_cite": [
+   "unit-04"
+  ]
+ },
+ {
+  "id": "not-covered",
+  "question": "Explain the IS-LM model.",
+  "must_include_labels": [
+   "⚠️"
+  ],
+  "must_mention": [
+   "inbox"
+  ]
+ },
+ {
+  "id": "other-course",
+  "question": "What is the price elasticity of demand?",
+  "must_include_labels": [
+   "⚠️"
+  ],
+  "must_not_include_labels": [
+   "✅"
+  ],
+  "must_mention": [
+   "other course"
+  ]
+ }
+]

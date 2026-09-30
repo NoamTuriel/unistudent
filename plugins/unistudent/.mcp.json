@@ -1,0 +1,12 @@
+{
+  "mcpServers": {
+    "unistudent": {
+      "command": "uvx",
+      "args": [
+        "--from",
+        "${CLAUDE_PLUGIN_ROOT}",
+        "unistudent-mcp"
+      ]
+    }
+  }
+}
