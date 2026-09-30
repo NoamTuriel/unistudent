@@ -5,26 +5,24 @@
 <h1 align="center">UniStudent</h1>
 
 <p align="center"><strong>An AI plugin for university students.</strong><br>
-Turn your course into your own private, sandboxed Wiki, and get answers grounded in nothing but your own material.</p>
+It builds a Wiki out of your course's own files, so the AI answers from what your course teaches and nothing else.</p>
 
 <p align="center">
   <a href="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/NoamTuriel/unistudent/tests.yml?branch=main&label=tested&logo=github&logoColor=white" alt="tested" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6.svg" alt="license: MIT" /></a>
   <img src="https://img.shields.io/badge/MCP-compatible-38bdf8.svg" alt="MCP compatible" />
-  <img src="https://img.shields.io/badge/Agent%20Skills-compatible-10b981.svg" alt="Agent Skills compatible" />
-  <img src="https://img.shields.io/badge/python-3.9%2B-3776AB.svg" alt="python 3.9+" />
 </p>
 
-## 🧠 Create your own sandbox Wiki
+## How it works
 
-1. **Fetch & organize** — pull everything your course has to offer, straight from your university's site or your own folders: slides, books, past exams, recordings — sorted into one tidy course folder, unit by unit.
-2. **Analyze** — every document, book and recording gets read, transcribed and understood, then turned into the Wiki: a private, sandboxed, AI-only knowledge base built from nothing but your own course.
+1. **Collect.** It pulls your course material into one course folder, sorted by unit. That can come from your university's site or from files you already have: slides, books, past exams, recordings.
+2. **Read.** It reads and transcribes all of it and writes the Wiki: a set of Markdown files that only the AI reads, made from your course and nothing else.
 
-## 🎓 What your Wiki gives you
+## What you can do with the Wiki
 
-- **Study packs, made clear** — a roadmap of what to memorize versus understand, an exercise map covering every question type, and plain explanations for every concept, generated for you the moment your Wiki exists.
-- **A recordings roadmap** — never miss what a teacher says. Know exactly when each topic is explained, when an example is shown, and when something important is announced — down to the minute, every time.
-- **Answers grounded only in your material** — ask anything about your course and get an answer built only from what your course actually teaches, never the wider internet.
+- **Get study packs.** For each unit you get a roadmap of what to memorize and what to understand, a map of the exercise types, and a plain explanation of each concept. They are generated as soon as the Wiki exists.
+- **Find things in recordings.** Each recording gets a summary that says when a topic is explained, when an example is worked through, and when the lecturer announces something (a deadline, a change, "this will be on the exam"), with the time so you can jump there.
+- **Ask questions about your course.** The answer comes from your course material, not from the wider internet.
 
 > A general AI answers from the whole internet: methods your course doesn't teach, other notation,
 > material from other courses. Your exam grades your course's way. UniStudent keeps the AI inside your
@@ -37,21 +35,35 @@ Turn your course into your own private, sandboxed Wiki, and get answers grounded
 | ⚠️ | Not in your course material |
 | ❌ | Conflicts with how your course does it (the course version comes first) |
 
+Here is what the labels look like. This is a made-up example for an intro to economics course, not a real transcript:
+
+> **Q: Why does the demand curve slope down?**
+>
+> ✅ As the price rises, buyers purchase less of the good (Unit 2, p. 14).
+>
+> 💡 Think of coffee: if a cup goes from 10 to 20 shekels, you start making it at home. That is the substitution effect from the same page, in an everyday case.
+>
+> ⚠️ Behavioral economists also explain this through loss aversion. Your course material doesn't cover that.
+
 Works with Claude (Code, Desktop, Cowork), Cursor, VS Code, Codex, Gemini CLI and any other app that speaks MCP.
 
-## What you get
+## What's in the box
 
-| Piece | What it is | Where it works |
+There are three pieces. The **MCP server** (`unistudent-mcp`) holds the tools: set up a course, add material, build and check the Wiki, keep track of study packs, process recordings. It works in any MCP app. The **skills** (Agent Skills format) are the step-by-step instructions that use those tools; apps with skill support load them directly, and other MCP apps show the core skills as prompts. The **Claude plugins** bundle both with some subagents and install in one step in Claude Code and Cowork.
+
+The skills are split across three plugins. `unistudent` is the core and works for any university. `openu` is for the Open University of Israel and downloads new material from your course site. `economics` holds study-pack rules for economics courses, plus a skill for the intro macroeconomics course.
+
+| Skill | Plugin | What it does |
 |---|---|---|
-| **MCP server** `unistudent-mcp` | The tools: set up a course, add material, build and check the Wiki, study-pack bookkeeping, recordings | Any MCP app |
-| **Skills** (Agent Skills format) | The step-by-step know-how: course-setup, course-add, course-wiki, study-pack, course-recordings, course-help, courses, openu-sync, economics, macro | Any app with skills; in other MCP apps the core skills appear as prompts |
-| **Claude plugins** | All of the above plus subagents, installed in one step | Claude Code, Cowork |
-
-| Plugin | What it does |
-|---|---|
-| `unistudent` | Core, any university: course folders, Wiki, recordings, study packs, grounding labels, preferences |
-| `openu` | Open University of Israel: downloads new material from your course site |
-| `economics` | Economics study-pack rules, and the intro macroeconomics course skill |
+| course-setup | `unistudent` | Set up a course (once per course) |
+| course-help | `unistudent` | How it works, and what's waiting |
+| course-add | `unistudent` | Add what you dropped into the course's `inbox/` |
+| course-wiki | `unistudent` | Build or refresh the Wiki |
+| study-pack | `unistudent` | Build a study pack for a unit, or review proposed updates |
+| course-recordings | `unistudent` | Transcribe and summarise recordings (heavy; always asks first) |
+| courses | `unistudent` | List and switch courses |
+| openu-sync | `openu` | Download what's new on your OpenU course site |
+| economics, macro | `economics` | Study-pack rules for economics courses; the intro macroeconomics course skill |
 
 ## Install
 
@@ -106,19 +118,6 @@ UniStudent uses existing tools instead of reinventing them:
 - **[mcp-video-analyzer](https://github.com/guimatheus92/mcp-video-analyzer)**: add it next to UniStudent to let the AI look at the slides on screen while indexing a recording. Every transcript is also saved as WebVTT, which it (and video players) can use.
 - **A browser tool** (Claude in Chrome, or a browser MCP server) for downloading from your course site with your own login.
 - **[Obsidian](https://obsidian.md)**: study packs can use Obsidian links and callouts.
-
-## Commands (skills)
-
-| Skill | What it does |
-|---|---|
-| course-setup | Set up a course (once per course) |
-| course-help | How it works, and what's waiting |
-| course-add | Add what you dropped into the course's `inbox/` |
-| course-wiki | Build or refresh the Wiki |
-| study-pack | Build a study pack for a unit, or review proposed updates |
-| course-recordings | Transcribe and summarise recordings (heavy; always asks first) |
-| courses | List and switch courses |
-| openu-sync | Download what's new on your OpenU course site |
 
 ## A course folder
 
