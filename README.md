@@ -1,13 +1,25 @@
-# UniStudent
+<h1 align="center">UniStudent</h1>
 
-Turn your university course material into a per-course Wiki that your AI answers from, with every answer marked by where it came from, and study packs for each unit.
+<p align="center"><strong>An AI plugin for university students.</strong><br>
+Turn your course material into a per-course Wiki your AI is grounded in — every answer marked by where it came from — plus study packs for each unit.</p>
 
-**Why:** a general AI answers from the whole internet: methods your course doesn't teach, other notation, material from other courses. Your exam grades your course's way. UniStudent keeps the AI inside your course material and tells you when it steps outside:
+<p align="center">
+  <a href="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml"><img src="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml/badge.svg" alt="tests" /></a>
+  <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6.svg" alt="license: MIT" /></a>
+  <img src="https://img.shields.io/badge/MCP-compatible-38bdf8.svg" alt="MCP compatible" />
+  <img src="https://img.shields.io/badge/python-3.9%2B-3776AB.svg" alt="python 3.9+" />
+</p>
 
-- ✅ from your course material, with a link to the exact page or recording time
-- 💡 the AI's own explanation of your course material (an example, an analogy, a memory trick), linked to what it explains
-- ⚠️ not in your course material
-- ❌ conflicts with how your course does it (the course version comes first)
+> A general AI answers from the whole internet: methods your course doesn't teach, other notation,
+> material from other courses. Your exam grades your course's way. UniStudent keeps the AI inside your
+> course material and tells you when it steps outside.
+
+| Label | Meaning |
+|:---:|---|
+| ✅ | From your course material, with a link to the exact page or recording time |
+| 💡 | The AI's own explanation of your course material (an example, an analogy, a memory trick), linked to what it explains |
+| ⚠️ | Not in your course material |
+| ❌ | Conflicts with how your course does it (the course version comes first) |
 
 Works with Claude (Code, Desktop, Cowork), Cursor, VS Code, Codex, Gemini CLI and any other app that speaks MCP.
 
