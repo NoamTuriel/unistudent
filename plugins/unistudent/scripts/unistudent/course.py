@@ -216,3 +216,81 @@ class Registry:
 
 def general_preferences_file() -> Path:
     return home() / "general-preferences.md"
+
+
+def _slug(text: str) -> str:
+    """A lookup key that survives spelling/case/spacing drift between sessions ("Bar-Ilan" == "bar ilan")."""
+    return re.sub(r"[^a-z0-9]+", "-", str(text).strip().casefold()).strip("-") or "unknown"
+
+
+def generated_university_file(university: str) -> Path:
+    """A once-interviewed, cached fallback for a university with no installed plugin (ADR 0005)."""
+    return home() / "generated" / _slug(university) / "site.md"
+
+
+def generated_course_skill_file(field: str, course_name: str) -> Path:
+    """A once-interviewed, cached study-pack fallback for a course with no installed course skill (ADR 0005)."""
+    return home() / "generated" / _slug(field) / (_slug(course_name) + ".md")
+
+
+def write_generated_reference(path: Path, heading: str, sections: list) -> None:
+    """One interview-generate-persist mechanism, shared by the university and course/subject fallbacks (ADR 0005).
+
+    `sections` is [(title, words)]; `words` is joined with spaces, matching how the CLI collects free text.
+    """
+    path.parent.mkdir(parents=True, exist_ok=True)
+    body = (f"# {heading}\n\n"
+            "Written once from the student's own description, not independently verified — "
+            "a starting point, not gospel.\n\n")
+    for title, words in sections:
+        body += f"## {title}\n\n{' '.join(words)}\n\n"
+    path.write_text(body, "utf-8")
+
+
+SETUP_STAGES = ["university", "course", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
+
+
+def _setup_progress_dir() -> Path:
+    return home() / "setup-progress"
+
+
+def setup_progress_file(course_name: str) -> Path:
+    return _setup_progress_dir() / (safe_name(course_name) + ".json")
+
+
+def read_setup_progress(course_name: str) -> dict:
+    return _read_json(setup_progress_file(course_name), {"stage": None, "answers": {}})
+
+
+def write_setup_progress(course_name: str, stage: str, answers: dict) -> dict:
+    if stage not in SETUP_STAGES:
+        raise ValueError(f"Unknown setup stage {stage!r}; must be one of {', '.join(SETUP_STAGES)}.")
+    data = read_setup_progress(course_name)
+    data["answers"].update(answers)
+    data["stage"] = stage
+    _write_json(setup_progress_file(course_name), data)
+    return data
+
+
+def clear_setup_progress(course_name: str):
+    setup_progress_file(course_name).unlink(missing_ok=True)
+
+
+def list_setup_progress() -> list:
+    """Every course with setup started but not finished (finishing clears its file)."""
+    folder = _setup_progress_dir()
+    if not folder.is_dir():
+        return []
+    out = []
+    for path in sorted(folder.glob("*.json")):
+        data = _read_json(path, {"stage": None, "answers": {}})
+        out.append({"course_name": data["answers"].get("course_name", path.stem),
+                    "stage": data["stage"], "answers": data["answers"]})
+    return out
+
+
+def next_setup_stage(stage):
+    if stage is None:
+        return SETUP_STAGES[0]
+    i = SETUP_STAGES.index(stage)
+    return SETUP_STAGES[i + 1] if i + 1 < len(SETUP_STAGES) else None

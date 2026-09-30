@@ -30,7 +30,9 @@ Done when: there is no pack yet (go on to step 3), or the student approved or de
 Read, in this order (later wins):
 
 1. the generic rules: `<this skill's base directory>/../../reference/study-pack.md` (or `us doc study-pack`);
-2. the field and course skills: if `.unistudent/settings.json` names a `course_skill`, load that skill (it names its field skill; load that too). If the skill isn't installed, say so and continue with the generic rules;
+2. the field and course skills: if `.unistudent/settings.json` names a `course_skill`, load that skill (it names its field skill; load that too).
+   - No `course_skill` set, or it isn't installed: check `us course-skill status --field "<broad field>" --course-name "<course name>" --json` for a previously generated fallback and use it if there is one.
+   - Still none: interview the student once — the course's broad academic field, what to emphasize in this course's study packs, and how it wants material summarized. Show back what you're about to save; on confirmation, run `us course-skill save --field "<field>" --course-name "<course>" --emphasis "<summary>" --summarize "<summary>"` and use it from here on. Say plainly this is remembered for next time.
 3. general preferences, then `course-preferences.md` (paths in the course context, `.unistudent/context.md`).
 
 Done when: you know the page list, each page's content rules, and the concept structure.
