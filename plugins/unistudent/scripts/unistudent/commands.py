@@ -2,7 +2,9 @@
 from pathlib import Path
 
 from .common import UserError, resolve_course
-from .course import parse_unit, safe_name, unit_dir
+from .course import (SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
+                     list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, safe_name, unit_dir,
+                     write_generated_reference, write_setup_progress)
 
 
 def register(add, with_course):
@@ -105,6 +107,89 @@ def register(add, with_course):
     p.add_argument("action", choices=["show", "add"])
     p.add_argument("--text", nargs="+")
     p.add_argument("--scope", choices=["course", "general"], default="course")
+
+    def cmd_university(args):
+        path = generated_university_file(args.university)
+        if args.action == "status":
+            exists = path.exists()
+            return {"generated": exists, "path": str(path),
+                    "content": path.read_text("utf-8") if exists else None,
+                    "summary": (f"Reusing the generated fallback for {args.university} ({path})." if exists
+                                else f"No generated fallback yet for {args.university}.")}
+        if not args.url or not args.organizing:
+            raise UserError("Give both --url and --organizing.")
+        write_generated_reference(path, f"{args.university}: how the student reaches the course site",
+                                  [("Site", args.url),
+                                   ("How the student organizes and prioritizes material", args.organizing)])
+        return {"path": str(path), "summary": f"Saved a generated fallback for {args.university} at {path}."}
+
+    p = add("university", cmd_university, "check for or save a generated university fallback (no installed plugin)")
+    p.add_argument("action", choices=["status", "save"])
+    p.add_argument("--university", required=True)
+    p.add_argument("--url", nargs="+")
+    p.add_argument("--organizing", nargs="+", help="how the student organizes and prioritizes material")
+
+    def cmd_course_skill(args):
+        path = generated_course_skill_file(args.field, args.course_name)
+        if args.action == "status":
+            exists = path.exists()
+            return {"generated": exists, "path": str(path),
+                    "content": path.read_text("utf-8") if exists else None,
+                    "summary": (f"Reusing the generated study-pack fallback for {args.course_name} ({path})."
+                                if exists else f"No generated study-pack fallback yet for {args.course_name}.")}
+        if not args.emphasis or not args.summarize:
+            raise UserError("Give both --emphasis and --summarize.")
+        write_generated_reference(path, f"{args.field} — {args.course_name}: generated study-pack rules",
+                                  [("What to emphasize", args.emphasis), ("How to summarize", args.summarize)])
+        return {"path": str(path),
+                "summary": f"Saved a generated study-pack fallback for {args.course_name} at {path}."}
+
+    p = add("course-skill", cmd_course_skill,
+            "check for or save a generated course/subject study-pack fallback (no installed course skill)")
+    p.add_argument("action", choices=["status", "save"])
+    p.add_argument("--field", required=True, help="broad academic field, e.g. economics")
+    p.add_argument("--course-name", required=True)
+    p.add_argument("--emphasis", nargs="+", help="what to emphasize in this course's study packs")
+    p.add_argument("--summarize", nargs="+", help="how this course wants material summarized")
+
+    def cmd_setup_progress(args):
+        if args.action == "list":
+            entries = list_setup_progress()
+            return {"in_progress": entries,
+                    "summary": "\n".join(f"{e['course_name']}: after '{e['stage']}'" for e in entries)
+                               or "No setup in progress."}
+        if not args.course_name:
+            raise UserError("Give --course-name.")
+        if args.action == "clear":
+            clear_setup_progress(args.course_name)
+            return {"summary": f"Cleared setup progress for {args.course_name}."}
+        if args.action == "status":
+            data = read_setup_progress(args.course_name)
+            nxt = next_setup_stage(data["stage"])
+            return {"stage": data["stage"], "next_stage": nxt, "answers": data["answers"],
+                    "summary": (f"Resuming {args.course_name} after '{data['stage']}': next is '{nxt}'."
+                                if data["stage"] else f"No setup in progress for {args.course_name}.")}
+        if not args.stage:
+            raise UserError("Give --stage.")
+        answers = {}
+        for kv in args.answer or []:
+            if "=" not in kv:
+                raise UserError(f"--answer needs key=value, got {kv!r}.")
+            k, v = kv.split("=", 1)
+            answers[k] = v
+        answers.setdefault("course_name", args.course_name)
+        data = write_setup_progress(args.course_name, args.stage, answers)
+        if next_setup_stage(args.stage) is None:
+            clear_setup_progress(args.course_name)
+            return {"summary": f"Setup for {args.course_name} complete; progress cleared."}
+        return {"stage": data["stage"], "answers": data["answers"],
+                "summary": f"Recorded stage '{args.stage}' done for {args.course_name}."}
+
+    p = add("setup-progress", cmd_setup_progress, "track and resume course-setup's stage-by-stage progress")
+    p.add_argument("action", choices=["status", "advance", "clear", "list"])
+    p.add_argument("--course-name")
+    p.add_argument("--stage", choices=SETUP_STAGES)
+    p.add_argument("--answer", nargs="+", help="key=value pairs to remember (repeatable)")
 
     def cmd_study(args):
         from datetime import datetime

@@ -10,59 +10,74 @@ Set up one course for the student, then show them how the plugin works. **Ask** 
 Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 <!-- /conventions -->
 
-## 1. Course
+## 0. Resume, if setup was started before
+
+Run `us setup-progress status --course-name "<course, if you already know it>"` once you know the course name (step 2), or `us setup-progress list --json` before that if you don't. If there's progress for this course, say so ("Picking up where we left off, after <stage>") and skip straight to the stage after the last one recorded, using the answers already stored instead of asking again. After finishing each numbered stage below, record it: `us setup-progress advance --course-name "<course>" --stage <stage> [--answer key=value ...]` (stage names: `university`, `course`, `path`, `format`, `fetch-and-organize`, `analyze`, `capabilities`). Recording the last stage (`capabilities`) clears the progress automatically.
+
+## 1. University
+
+Ask which university.
+
+- A plugin for it is installed (e.g. `openu`): use it; it knows how to reach the course site.
+- None installed, but a generated fallback already exists (`us university status --university "<name>" --json` says `generated: true`): reuse it silently — no re-interview.
+- Neither: interview them once — ask for the course site's URL and how they organize and prioritize material (by week? by topic? exams and solutions kept separately?). Show back what you're about to save, and on confirmation run `us university save --university "<name>" --url "<url>" --organizing "<summary>"`. Say plainly: this is remembered, so next course at the same university skips this question.
+
+Done when: you know the university and, if relevant, how to reach its site (installed plugin, generated fallback, or "own folder only for now").
+
+## 2. Course
 
 Ask which course. Offer the installed course skills by name (skills whose description starts with "Course skill:", e.g. `economics:macro`), plus "My course isn't listed". Not listed → generic rules; record no course skill.
 
 Done when: you have the course name and the course skill (or none).
 
-## 2. Storage and format
+## 3. Storage and format
 
-Ask where to keep the course folder and whether they use Obsidian or plain Markdown. Suggest `<their documents folder>/University/<course name>`. On a device bridge, request access to that one folder only.
+Ask where to keep the course folder. Suggest `<their documents folder>/University/<course name>`. On a device bridge, request access to that one folder only. Record it: `us setup-progress advance --course-name "<course>" --stage path --answer path=<folder>`.
 
 If the folder is inside iCloud, Google Drive, Dropbox or OneDrive, tell them in one sentence: recordings will be kept in a local folder that doesn't sync, because synced folders break links and push big files to the cloud.
 
-Done when: you have a folder path and a format.
+Then ask whether they use Obsidian or plain Markdown, and record that stage too (`--stage format`) — see step 0.
 
-## 3. Source
+Done when: you have a folder path and a format, each recorded as its own stage.
+
+## 4. Fetch and organize material
 
 Ask: download from the course website, use a folder they already have, or both.
 
-- A university plugin is installed (e.g. `openu`): offer all three.
-- None installed: offer their own folder and the inbox only, and say downloading needs their university's plugin.
+- A university plugin or a generated fallback is available (step 1): offer all three.
+- Neither: offer their own folder and the inbox only.
 - Own folder: ask for it, and ask whether it is the lecturer's material (official) or other material (added).
-
-Done when: you know the source mode, and the folder and tier if one was given.
-
-## 4. Create the course folder
 
 Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <he|en> --origin-mode <site|own-folder|both> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`.
 
 Then resolve unsorted files: run `us unsorted --json`. If any, ask one grouped question (unit number, or "general" for whole-course files such as past exams) and record each answer with `us assign "<path>" <unit|general>`.
 
-Done when: `us unsorted` prints "Nothing unsorted." or the student chose to leave the rest for later.
+If downloading from the site: run the university plugin's sync skill (e.g. `openu:openu-sync`) or, with a generated fallback, fetch using its saved notes. Fetching can be slow — say so up front, and confirm what came in when it's done.
 
-## 5. Download from the site (site or both)
+Before moving on, ask once for anything else the course gave them that hasn't come up yet: other books, solution sets, past exams, anything else from the university. More material now means better summaries and answers later.
 
-Run the university plugin's sync skill (e.g. `openu:openu-sync`). It asks about recordings itself.
+Then, if the course has recordings, run `us recordings estimate --json` and ask whether to include them. Say it's recommended but slow, with the numbers. Record the choice with `us context --recording-level <0 skip|1 download only|3 transcript and summary>`. Transcription itself happens later, in `/unistudent:course-recordings`: point there.
 
-Done when: the sync reported what it downloaded.
+Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), and the recording level is recorded.
 
-## 6. Recordings
+## 5. Analyze (build the Wiki)
 
-If the course has recordings and they weren't handled in step 5, run `us recordings estimate --json` and ask whether to include them. Say it's recommended but slow, with the numbers. Record the choice with `us context --recording-level <0 skip|1 download only|3 transcript and summary>`. Transcription itself happens later, in `/unistudent:course-recordings`: point there.
-
-Done when: the recording level is recorded.
-
-## 7. Wiki
+Tell the student, in one or two plain sentences, what's about to happen and why: their files (PDFs, slides, recordings) are being turned into a knowledge base Claude can search and cite precisely, instead of Claude re-reading whole documents every time — faster answers, and answers it can point back to a specific page or moment instead of guessing.
 
 Read `<this skill's base directory>/../course-wiki/SKILL.md` and follow it for the whole course. Then run `us context --exam-date <date>` if the student knows the exam date (ask once; skipping is fine).
 
 Done when: `us wiki check` reports 0 problems.
 
-## 8. Explain and offer next steps
+## 6. Capabilities: explain, then show, what this can do
 
-Explain in the student's language, in five short lines, following the course folder's `README.md`: what each folder is, the inbox, and the grounding labels (✅ ⚠️ ❌). Then offer the menu:
+Explain in the student's language, in five short lines, following the course folder's `README.md`: what each folder is, the inbox, and the grounding labels (✅ ⚠️ ❌).
+
+Then, in plain words (no unexplained "MCP", "context file" or "grounding" without a one-clause gloss), cover both of these every time, not only if asked:
+
+- **Adding more material later:** drop new files in the course folder's `inbox`, then run `/unistudent:course-add` (or just mention it — Claude will notice next time).
+- **Reconnecting a new AI session:** open the AI app (any of them — Claude Code, Cowork, Cursor, etc.) inside this course folder and it picks the course up automatically. If it doesn't, or the session isn't rooted in the folder, paste this one line: `Read AGENTS.md in <course folder path> before answering.`
+
+Then suggest one concrete next step, chosen from what's actually true for this course (not a generic list) — e.g. "Unit 1 has material ready; want a study pack for it?" or "There are 3 recordings — want a roadmap of what's covered in each?" — and only after that, offer the rest of the menu:
 
 - Build a study pack for a unit (`/unistudent:study-pack`)
 - Process recordings (`/unistudent:course-recordings`)
@@ -71,4 +86,4 @@ Explain in the student's language, in five short lines, following the course fol
 
 In Cowork, suggest one project per course with this folder connected. In Claude Code, suggest starting Claude inside the folder.
 
-Done when: the student has seen the explanation and the menu.
+Done when: the student has seen the explanation, both plain-language points above, a concrete suggestion, and the menu.

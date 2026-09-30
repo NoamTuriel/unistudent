@@ -65,7 +65,7 @@ args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plu
 
 **Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add NoamTuriel/unistudent` (it reads the skills declared in this repo's Claude plugin files). The skills do their work through the UniStudent MCP server, so add the server too; alternatively `uv tool install` below gives them the `unistudent` command.
 
-Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code).
+Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It first asks your university: if there's no installed plugin for it (like `openu` above), it interviews you once — course site URL, how you organize material — and remembers the answer, so the next course at the same university skips that question. Setup can be stopped and resumed at any point; running it again picks up where you left off.
 
 Optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx) and Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon).
 
@@ -107,7 +107,7 @@ UniStudent uses existing tools instead of reinventing them:
   .unistudent/            settings, manifest, full context
 ```
 
-Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected).
+Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected) and it picks the course up automatically through `AGENTS.md`/`CLAUDE.md`. If a session isn't rooted in the folder (or doesn't auto-read it), tell it once: "Read AGENTS.md in `<course folder path>` before answering" — that works in any AI app, not just Claude's.
 
 Course material is the university's: keep it in your own folders and never share it. The repo contains code only.
 

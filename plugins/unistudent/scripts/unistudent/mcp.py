@@ -25,10 +25,20 @@ ACTION_ARGS = {
     ("recordings", "benchmark"): ["course", "paths"],
     ("recordings", "transcribe"): ["course", "paths", "background"],
     ("recordings", "fetch"): ["course", "paths", "audio_only"],
+    ("university", "status"): ["university"], ("university", "save"): ["university", "url", "organizing"],
+    ("course-skill", "status"): ["field", "course_name"],
+    ("course-skill", "save"): ["field", "course_name", "emphasis", "summarize"],
+    ("setup-progress", "status"): ["course_name"], ("setup-progress", "clear"): ["course_name"],
+    ("setup-progress", "list"): [],
+    ("setup-progress", "advance"): ["course_name", "stage", "answer"],
 }
 REQUIRED = {("courses", "switch"): ["target"], ("prefs", "add"): ["text"],
             ("recordings", "benchmark"): ["paths"], ("recordings", "transcribe"): ["paths"],
-            ("recordings", "fetch"): ["paths"]}
+            ("recordings", "fetch"): ["paths"],
+            ("university", "save"): ["url", "organizing"],
+            ("course-skill", "save"): ["emphasis", "summarize"],
+            ("setup-progress", "status"): ["course_name"], ("setup-progress", "clear"): ["course_name"],
+            ("setup-progress", "advance"): ["course_name", "stage"]}
 SKILL_DIRS = [Path(__file__).resolve().parent / "skills"]
 # In a repo checkout, subject and university plugins' skills are prompts too.
 _REPO_PLUGINS = Path(__file__).resolve().parents[3]
