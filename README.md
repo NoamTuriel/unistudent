@@ -1,14 +1,25 @@
+<p align="center">
+  <img src="assets/icon.svg" width="96" height="96" alt="UniStudent" />
+</p>
+
 <h1 align="center">UniStudent</h1>
 
 <p align="center"><strong>An AI plugin for university students.</strong><br>
-Turn your course material into a per-course Wiki your AI is grounded in — every answer marked by where it came from — plus study packs for each unit.</p>
+Stop feeding your AI the whole internet — feed it your actual course, and get answers you can trust.</p>
 
 <p align="center">
-  <a href="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml"><img src="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml/badge.svg" alt="tests" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6.svg" alt="license: MIT" /></a>
   <img src="https://img.shields.io/badge/MCP-compatible-38bdf8.svg" alt="MCP compatible" />
+  <img src="https://img.shields.io/badge/Agent%20Skills-compatible-10b981.svg" alt="Agent Skills compatible" />
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB.svg" alt="python 3.9+" />
 </p>
+
+**What this gives you:**
+
+- 📥 **Fetches and organizes your material** — pulls new files straight from your university's course site into one tidy course folder, sorted by unit
+- 🧠 **A private, sandboxed Wiki, built just for your course** — an AI-only knowledge base made from nothing but your own material, so every answer is grounded, not guessed
+- 📝 **Out-of-the-box unit summary packs** — roadmaps, walkthroughs and practice sets, ready to study from with no setup
+- 🎙️ **Recording analysis** — transcribes your lectures and times every announcement and "this will be on the exam" moment, so nothing a teacher says gets lost
 
 > A general AI answers from the whole internet: methods your course doesn't teach, other notation,
 > material from other courses. Your exam grades your course's way. UniStudent keeps the AI inside your
