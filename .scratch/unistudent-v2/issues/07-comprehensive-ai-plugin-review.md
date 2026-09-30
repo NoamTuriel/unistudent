@@ -4,14 +4,13 @@
 
 **Blocked by:** 01, 02, 03, 04, 05, 06 (reviews the whole project as actually shipped, not a moving target)
 
-**Status:** ready-for-agent
+**Status:** done (2026-09-30)
 
-**Deferred:** not part of this implementation pass — filed for later.
 
-- [ ] Reads the actual shipped code/skills fresh (re-read, not reasoned from prior conversation memory)
-- [ ] Covers goal-alignment for a first-time, non-technical student explicitly
-- [ ] Covers AI-plugin best practices: scoping, context economy, portability, deep-module design
-- [ ] Covers agentic-concept correctness: grounding, layering, script-vs-agent boundary, verification loops
-- [ ] Every finding explains why it matters, not just what to change
-- [ ] Findings are prioritized, not just listed
-- [ ] Produces a dated doc under `docs/`, plus a short list of any new follow-up tickets it surfaces
+- [x] Reads the actual shipped code/skills fresh (re-read, not reasoned from prior conversation memory)
+- [x] Covers goal-alignment for a first-time, non-technical student explicitly
+- [x] Covers AI-plugin best practices: scoping, context economy, portability, deep-module design
+- [x] Covers agentic-concept correctness: grounding, layering, script-vs-agent boundary, verification loops
+- [x] Every finding explains why it matters, not just what to change
+- [x] Findings are prioritized, not just listed
+- [x] Produces a dated doc under `docs/`, plus a short list of any new follow-up tickets it surfaces
