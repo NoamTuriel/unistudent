@@ -113,7 +113,7 @@ Course material is the university's: keep it in your own folders and never share
 
 ## Development
 
-- Design: [`docs/spec/v1.md`](docs/spec/v1.md), vocabulary: [`CONTEXT.md`](CONTEXT.md), decisions: [`docs/adr/`](docs/adr/), tickets: [`.scratch/unistudent-v1/issues/`](.scratch/unistudent-v1/issues/).
+- Design: [`docs/spec/v1.md`](docs/spec/v1.md), vocabulary: [`CONTEXT.md`](CONTEXT.md), decisions: [`docs/adr/`](docs/adr/). Ticket history and dated project reviews are kept locally only (gitignored), not in this repo.
 - One source of truth: the command line (`plugins/unistudent/scripts/unistudent/cli.py`, `commands.py`). The MCP server generates its tools from it.
 - Tests: `python3 -m unittest discover -s tests` (standard library only; CI runs macOS, Windows and Linux on Python 3.9 and 3.12, with and without optional libraries).
 - Grounding eval with a real model: `python3 evals/grounding/run.py` (needs the `claude` CLI).

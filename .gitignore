@@ -4,3 +4,8 @@ __pycache__/
 *.tmp
 build/
 *.egg-info/
+
+# Local working notes: ticket history and dated project reviews (may reference personal context).
+# Kept on this machine only, never pushed.
+.scratch/
+docs/review-*.md
