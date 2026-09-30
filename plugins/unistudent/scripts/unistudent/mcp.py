@@ -113,8 +113,6 @@ def _argv(words, sub, verb, arguments):
             argv += [str(v) for v in values]
         elif isinstance(a, argparse._StoreTrueAction):
             argv.append(a.option_strings[-1])
-        elif isinstance(value, dict):  # e.g. describe: {"file": "origin"}
-            argv += [a.option_strings[-1]] + [f"{k}={v}" for k, v in value.items()]
         else:
             argv += [a.option_strings[-1]] + [str(v) for v in values]
     return argv + ["--json"]

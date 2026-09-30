@@ -37,10 +37,6 @@ def hms(seconds: float) -> str:
     return f"{seconds // 3600:02d}:{seconds % 3600 // 60:02d}:{seconds % 60:02d}"
 
 
-def anchor(seconds: float) -> str:
-    return hms(seconds).replace(":", "")
-
-
 def duration(path: Path):
     """Seconds, or None when ffprobe is missing or the file isn't media."""
     if not shutil.which("ffprobe"):
@@ -134,17 +130,20 @@ def _benchmark_file():
     return home() / "benchmark.json"
 
 
-def benchmark(course, rel, seconds=60):
+SAMPLE_SECONDS = 60
+
+
+def benchmark(course, rel):
     """Transcribe a short sample to measure this machine. Stores the real-time factor."""
     name = backend_name()
     source = material.raw_path(course, rel)
     with tempfile.TemporaryDirectory() as tmp:
         audio = Path(tmp) / "sample.wav"
-        extract_audio(source, audio, start=0, seconds=seconds)
+        extract_audio(source, audio, start=0, seconds=SAMPLE_SECONDS)
         began = time.monotonic()
         transcribe_audio(audio, name, course.settings().get("language"))
         spent = time.monotonic() - began
-    factor = spent / seconds
+    factor = spent / SAMPLE_SECONDS
     _benchmark_file().parent.mkdir(parents=True, exist_ok=True)
     _benchmark_file().write_text(json.dumps({"backend": name, "realtime_factor": factor}), "utf-8")
     return factor
@@ -163,8 +162,8 @@ def listing(course, unit=None):
     return rows
 
 
-def estimate(course, unit=None, only_unprocessed=True):
-    rows = [r for r in listing(course, unit) if not (only_unprocessed and r["has_transcript"])]
+def estimate(course, unit=None):
+    rows = [r for r in listing(course, unit) if not r["has_transcript"]]
     seconds = sum(r["seconds"] or 0 for r in rows)
     unknown = sum(1 for r in rows if r["seconds"] is None)
     size = sum(r["bytes"] or 0 for r in rows)
@@ -248,7 +247,6 @@ def transcribe(course, rel):
 def fetch_streams(listing_path, folder, audio_only=False):
     """Download every recording in a university plugin's listing that has a stream URL
     (e.g. HLS) and no file yet. Stream tokens expire, so this runs right after the listing."""
-    import json
     from .course import safe_name
     if not shutil.which("ffmpeg"):
         raise RuntimeError("ffmpeg is needed to download recordings. Install it (macOS: brew install ffmpeg; "

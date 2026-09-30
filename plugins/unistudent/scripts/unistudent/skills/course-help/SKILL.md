@@ -16,16 +16,6 @@ Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool 
    - `us recordings list --json`: recordings not processed.
    - `ls inbox/`: files not added yet.
    - Units without a study pack: `wiki/units/` compared with `study/`.
-5. Offer the commands that apply now, one line each:
-
-| Command | When |
-|---|---|
-| `/unistudent:course-add` | files are in `inbox/` |
-| `/unistudent:course-wiki` | the Wiki is missing or stale |
-| `/unistudent:study-pack` | a unit has no study pack, or new material arrived for one |
-| `/unistudent:course-recordings` | recordings aren't processed |
-| `/unistudent:courses` | switch course |
-| `/unistudent:course-setup` | add another course |
-| `/openu:openu-sync` (or the student's university plugin) | new material on the course site |
+5. Offer, one line each, the commands from the `README.md` command table that match what step 4 found, plus the university plugin's sync skill (e.g. `/openu:openu-sync`) when there is new material on the course site.
 
 Done when: the student has seen what's waiting and the commands that apply.

@@ -3,7 +3,6 @@
 Evidence, strongest first: the file name, then the nearest parent folder name,
 then the first lines of a PDF's first page. Exactly one unit number must be found;
 anything ambiguous or missing goes to unsorted and the student is asked.
-University plugins add their own patterns through Settings ("sort_patterns").
 """
 import logging
 import re
@@ -40,9 +39,9 @@ def _pdf_first_lines(path: Path) -> str:
         return ""
 
 
-def detect_unit(rel_path: str, file_path: Path = None, extra_patterns=()):
+def detect_unit(rel_path: str, file_path: Path = None):
     """Return (unit or None, reason)."""
-    patterns = list(DEFAULT_PATTERNS) + list(extra_patterns)
+    patterns = DEFAULT_PATTERNS
     parts = Path(rel_path).parts
     name = parts[-1]
     for label, text in [("file name", Path(name).stem)] + [

@@ -10,7 +10,6 @@ from pathlib import Path
 
 from .links_check import MD_LINK, WIKILINK, check_links
 
-LABELS = ("✅", "💡", "⚠️", "❌")
 CITED = ("✅", "💡")  # these must link the course material they rest on
 _LABEL_RE = re.compile("✅|💡|⚠️?|❌")
 _MARKER = re.compile(r"^\s*(?:>\s*)*(?:\[![^\]]*\][+-]?\s*)?(?:[-*+]\s+|\d+[.)]\s+)?(?:\*\*|__)?\s*")

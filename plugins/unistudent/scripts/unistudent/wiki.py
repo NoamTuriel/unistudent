@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 
 from . import material
+from .common import problems_summary
 from .convert import convert, kind
 from .course import safe_name, unit_dir
 from .links_check import STUB_MARK, check_links, has_sources
@@ -217,5 +218,4 @@ def check(course):
         if page.name != "index.md" and not has_sources(page):
             problems.append({"kind": "no-sources", "page": str(page)})
     return {"problems": problems,
-            "summary": f"{len(problems)} problems." + "".join(
-                f"\n- {p['kind']}: {p['page']} {p.get('link', '')}" for p in problems)}
+            "summary": problems_summary(problems, lambda p: f"{p['kind']}: {p['page']} {p.get('link', '')}")}
