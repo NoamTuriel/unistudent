@@ -7,14 +7,18 @@ Course skill for introductory macroeconomics. Extends the `economics:economics` 
 
 ## Pages (replaces the generic page list)
 
-| Key | Title | Content |
-|---|---|---|
-| roadmap | `X.1 מפת דרכים - יחידה X` | Overview; memorise vs understand; one table of symbols (symbol · English · meaning · note · topic); per topic: what to memorise, the tool, solving order, question types, mistakes, 🎬; collapsed boxes for the formula-sheet lines and assumptions; checklist; a "mastery level" frontmatter field the student fills. No exam structure: that lives once in the course page |
-| walkthrough | `X.2 הסבר החומר מא' עד ת' - יחידה X` | "The big idea" (anchored in a story or analogy from the slides when there is one), then topic 1..N in the five-part concept structure. End of each topic: a 🎬 box (every relevant segment, start and end time) and a ✏️ box (its practice questions and tag). End of page: memory methods and self-check questions |
-| practice | `X.3 תרגול לפי סדר - יחידה X` | Index table topic → stage 0 / Q&A / assignment / past exams / tag. Stage 0: every slide example as a checkbox with tag and 🎬. Stages 1–2: every question with checkbox and tag; the assignment under exam conditions with a timer and grading criterion. Past exams: pure and challenge (combined with another unit, naming it); repeated questions marked |
-| recordings | `X.4 תוכן עניינים להקלטות - יחידה X` | Per session: time · until · type · what happens · topic; then "question in the practice page ← time in the recording". Mark slide examples never solved in a recording (❌) and examples added in the recording that aren't in the slides |
+Titles follow the course's language setting, like the generic rules: Hebrew when `language: he`, English
+when `language: en` (`X` is the unit number either way).
 
-Each page starts with a navigation line to the other three and to the course's exam page; the current page is bold, not linked.
+| Key | Title (he / en) | Content |
+|---|---|---|
+| roadmap | `X.1 מפת דרכים - יחידה X` / `X.1 Roadmap - Unit X` | Overview; memorise vs understand; one table of symbols (symbol · English · meaning · note · topic); per topic: what to memorise, the tool, solving order, question types, mistakes, 🎬; collapsed boxes for the formula-sheet lines and assumptions; checklist; a "mastery level" frontmatter field the student fills. No exam structure: that lives once in the course page |
+| walkthrough | `X.2 הסבר החומר מא' עד ת' - יחידה X` / `X.2 Walkthrough A-Z - Unit X` | "The big idea" (anchored in a story or analogy from the slides when there is one), then topic 1..N in the five-part concept structure. End of each topic: a 🎬 box (every relevant segment, start and end time) and a ✏️ box (its practice questions and tag). End of page: memory methods and self-check questions |
+| practice | `X.3 תרגול לפי סדר - יחידה X` / `X.3 Practice in order - Unit X` | Index table topic → stage 0 / Q&A / assignment / past exams / tag. Stage 0: every slide example as a checkbox with tag and 🎬. Stages 1–2: every question with checkbox and tag; the assignment under exam conditions with a timer and grading criterion. Past exams: pure and challenge (combined with another unit, naming it); repeated questions marked |
+| practice-short | `X.3b תרגול מקוצר - יחידה X` / `X.3b Short practice - Unit X` | Same index table, but one question per distinct solving pattern per topic (the hardest, when several are "repeated questions" as marked on the full practice page) — see the generic rules' "Short practice" section for the grouping test |
+| recordings | `X.4 תוכן עניינים להקלטות - יחידה X` / `X.4 Recordings index - Unit X` | Per session: time · until · type · what happens · topic; then "question in the practice page ← time in the recording". Mark slide examples never solved in a recording (❌) and examples added in the recording that aren't in the slides |
+
+Each page starts with a navigation line to the other pages and to the course's exam page; the current page is bold, not linked.
 
 ## Tags
 
