@@ -95,13 +95,10 @@ def has_sources(page: Path) -> bool:
     if SOURCES_LINE.search(text):
         return True
     # Pages of entries (glossary, question bank) cite per entry: a link into the material counts.
-    links = [t for _, t in MD_LINK.findall(CODE_BLOCK.sub("", text))] + _wikilink_targets(text)
+    body = CODE_BLOCK.sub("", text)
+    links = [t for _, t in MD_LINK.findall(body)] + [name for name, _, _ in WIKILINK.findall(body)]
     for target in links:
         path = unquote(target.strip("<>").partition("#")[0])
         if re.search(r"(^|/)(sources|recordings)/", path) and (page.parent / path).exists():
             return True
     return False
-
-
-def _wikilink_targets(text):
-    return [name for name, _, _ in WIKILINK.findall(CODE_BLOCK.sub("", text))]

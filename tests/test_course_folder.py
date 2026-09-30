@@ -30,6 +30,19 @@ class CourseFromOwnFolder(CourseTestCase):
         self.assertTrue((course / "README.md").exists())
         self.assertTrue((course / "inbox").is_dir())
 
+    def test_a_course_folder_with_retired_settings_still_loads(self):
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro")
+        path = course / ".unistudent" / "settings.json"
+        settings = json.loads(path.read_text("utf-8"))
+        settings.update({"origin_mode": "site", "lecturer": "x", "recording_segments": [], "sort_patterns": []})
+        path.write_text(json.dumps(settings), "utf-8")
+
+        run_json("import", self.make_own_folder(), "--course", course)
+        units = {rel: e["unit"] for rel, e in run_json("manifest", "--course", course)["files"].items()}
+        self.assertEqual(units["יחידה 1 - מבוא/שאלות עם תשובות.pdf"], 1)
+        self.assertEqual(units["שקפים/שיעור 2 - יחידה 2.pdf"], 2)
+
     def test_every_imported_file_is_in_manifest_once_and_never_copied(self):
         own = self.make_own_folder()
         course = self.tmp / "Macro"

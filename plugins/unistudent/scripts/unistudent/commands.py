@@ -1,7 +1,7 @@
 """Commands for the Wiki, the inbox, checks, preferences, study packs, recordings and the course site."""
 from pathlib import Path
 
-from .common import UserError, resolve_course
+from .common import UserError, problems_summary, resolve_course
 from .course import (SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
                      list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, safe_name, unit_dir,
                      write_generated_reference, write_setup_progress)
@@ -59,9 +59,9 @@ def register(add, with_course):
                     report["problems"] += part["problems"]
                 else:
                     report["problems"] += check_links(one, course.root)
-        report["summary"] = f"{len(report['problems'])} problems." + "".join(
-            f"\n- {p['kind']}: {p['page']}:{p.get('line', '')} {p.get('link', p.get('text', ''))[:80]}"
-            for p in report["problems"])
+        report["summary"] = problems_summary(
+            report["problems"],
+            lambda p: f"{p['kind']}: {p['page']}:{p.get('line', '')} {p.get('link', p.get('text', ''))[:80]}")
         return report
 
     p = with_course(add("check", cmd_check, "check links (and grounding labels) in pages"))
@@ -108,20 +108,24 @@ def register(add, with_course):
     p.add_argument("--text", nargs="+")
     p.add_argument("--scope", choices=["course", "general"], default="course")
 
-    def cmd_university(args):
-        path = generated_university_file(args.university)
+    def fallback(args, path, name, noun, need, heading, sections):
+        """Shared status/save for a generated fallback (ADR 0005): `noun` names it, `need` the missing-option message."""
         if args.action == "status":
             exists = path.exists()
             return {"generated": exists, "path": str(path),
                     "content": path.read_text("utf-8") if exists else None,
-                    "summary": (f"Reusing the generated fallback for {args.university} ({path})." if exists
-                                else f"No generated fallback yet for {args.university}.")}
-        if not args.url or not args.organizing:
-            raise UserError("Give both --url and --organizing.")
-        write_generated_reference(path, f"{args.university}: how the student reaches the course site",
-                                  [("Site", args.url),
-                                   ("How the student organizes and prioritizes material", args.organizing)])
-        return {"path": str(path), "summary": f"Saved a generated fallback for {args.university} at {path}."}
+                    "summary": (f"Reusing the generated {noun} for {name} ({path})." if exists
+                                else f"No generated {noun} yet for {name}.")}
+        if not all(words for _, words in sections):
+            raise UserError(need)
+        write_generated_reference(path, heading, sections)
+        return {"path": str(path), "summary": f"Saved a generated {noun} for {name} at {path}."}
+
+    def cmd_university(args):
+        return fallback(args, generated_university_file(args.university), args.university, "fallback",
+                        "Give both --url and --organizing.",
+                        f"{args.university}: how the student reaches the course site",
+                        [("Site", args.url), ("How the student organizes and prioritizes material", args.organizing)])
 
     p = add("university", cmd_university, "check for or save a generated university fallback (no installed plugin)")
     p.add_argument("action", choices=["status", "save"])
@@ -130,19 +134,10 @@ def register(add, with_course):
     p.add_argument("--organizing", nargs="+", help="how the student organizes and prioritizes material")
 
     def cmd_course_skill(args):
-        path = generated_course_skill_file(args.field, args.course_name)
-        if args.action == "status":
-            exists = path.exists()
-            return {"generated": exists, "path": str(path),
-                    "content": path.read_text("utf-8") if exists else None,
-                    "summary": (f"Reusing the generated study-pack fallback for {args.course_name} ({path})."
-                                if exists else f"No generated study-pack fallback yet for {args.course_name}.")}
-        if not args.emphasis or not args.summarize:
-            raise UserError("Give both --emphasis and --summarize.")
-        write_generated_reference(path, f"{args.field} — {args.course_name}: generated study-pack rules",
-                                  [("What to emphasize", args.emphasis), ("How to summarize", args.summarize)])
-        return {"path": str(path),
-                "summary": f"Saved a generated study-pack fallback for {args.course_name} at {path}."}
+        return fallback(args, generated_course_skill_file(args.field, args.course_name), args.course_name,
+                        "study-pack fallback", "Give both --emphasis and --summarize.",
+                        f"{args.field} — {args.course_name}: generated study-pack rules",
+                        [("What to emphasize", args.emphasis), ("How to summarize", args.summarize)])
 
     p = add("course-skill", cmd_course_skill,
             "check for or save a generated course/subject study-pack fallback (no installed course skill)")

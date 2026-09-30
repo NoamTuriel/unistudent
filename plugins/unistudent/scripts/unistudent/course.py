@@ -18,14 +18,10 @@ DEFAULT_SETTINGS = {
     "format": "obsidian",          # obsidian | markdown
     "course_skill": None,          # e.g. "macro"; None → generic rules
     "university": None,            # e.g. "openu"; None → core only
-    "origin_mode": "own-folder",   # where material comes from: site | own-folder | both
     "recording_level": None,       # None (not asked yet) | 0 skip | 1 download only | 3 transcript + summary
     "frame_analysis": None,        # None (not asked yet) | True | False: per-segment vision calls (opt-in, costly)
     "recordings_dir": None,        # local non-synced folder when the course folder syncs
-    "lecturer": None,
-    "recording_segments": [],      # unit spans inside recordings: {"unit": 4, "from": "<rec> 00:00:00", "to": "<rec> 01:39:00"}
     "exam_date": None,
-    "sort_patterns": [],
     "unit_answers": {},            # raw path → unit number or "general"
 }
 

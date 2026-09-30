@@ -85,7 +85,6 @@ def cmd_setup(args):
         "format": args.format,
         "course_skill": args.course_skill,
         "university": args.university,
-        "origin_mode": args.origin_mode,
     }.items() if v is not None})
     synced = is_synced_folder(course.root)
     if synced and not settings.get("recordings_dir"):
@@ -199,7 +198,6 @@ def build_parser():
     p.add_argument("--format", choices=["obsidian", "markdown"])
     p.add_argument("--course-skill")
     p.add_argument("--university")
-    p.add_argument("--origin-mode", choices=["site", "own-folder", "both"])
     p.add_argument("--import", dest="import_dir")
     p.add_argument("--tier", choices=["official", "added"], default="added")
 

@@ -3,7 +3,7 @@ name: macro
 description: "Course skill: introductory macroeconomics (מבוא למקרו-כלכלה). Study-pack pages and exam patterns; extends the economics field skill."
 ---
 
-Course skill for introductory macroeconomics. Extends the `economics:economics` field skill: invoke it too. Only rules that stay true every semester live here; the lecturer, the unit spans inside recordings and the exam date are in the course's Settings (`lecturer`, `recording_segments`, `exam_date`).
+Course skill for introductory macroeconomics. Extends the `economics:economics` field skill: invoke it too. Only rules that stay true every semester live here; the exam date is in the course's Settings (`exam_date`), and which unit each recording belongs to is in the Manifest.
 
 ## Pages (replaces the generic page list)
 

@@ -48,11 +48,10 @@ def iter_files(folder: Path):
 
 
 def _entry_unit(course, rel, file_path):
-    settings = course.settings()
-    answers = settings.get("unit_answers", {})
+    answers = course.settings().get("unit_answers", {})
     if rel in answers:
         return answers[rel], "student answer"
-    return detect_unit(rel, file_path, settings.get("sort_patterns", []))
+    return detect_unit(rel, file_path)
 
 
 def _free_rel(files, rel, source_path, prefix):
@@ -62,7 +61,7 @@ def _free_rel(files, rel, source_path, prefix):
     return f"{prefix}/{rel}"
 
 
-def import_folder(course, folder, tier="added", origin="student-folder"):
+def import_folder(course, folder, tier="added"):
     """Register every file of `folder` without copying. Returns the list of new Raw paths."""
     folder = Path(folder).resolve()
     manifest = course.manifest()
@@ -78,7 +77,7 @@ def import_folder(course, folder, tier="added", origin="student-folder"):
             added.append(rel)  # changed on disk: re-registered below
         unit, reason = _entry_unit(course, rel, path)
         files[rel] = {
-            "origin": origin,
+            "origin": "student-folder",
             "tier": tier,
             "source_path": str(path),
             "size": path.stat().st_size,
@@ -92,7 +91,7 @@ def import_folder(course, folder, tier="added", origin="student-folder"):
     return added
 
 
-def add_file(course, path, tier="added", origin="inbox", rel=None, move=True, replace=False, note=None):
+def add_file(course, path, tier="added", origin="inbox", rel=None, replace=False, note=None):
     """Put one file into Raw as a real file (inbox and downloads). Returns its Raw path.
     With replace=True a file at the same Raw path is updated instead of kept beside."""
     path = Path(path)
@@ -111,15 +110,12 @@ def add_file(course, path, tier="added", origin="inbox", rel=None, move=True, re
         stored = Path(recordings_dir) / rel
         stored.parent.mkdir(parents=True, exist_ok=True)
         if stored.resolve() != path.resolve():
-            (shutil.move if move else shutil.copy2)(str(path), str(stored))
+            shutil.move(str(path), str(stored))
         links.make_link(stored, target)
     elif target.resolve() != path.resolve():
         if target.is_symlink():
             target.unlink()
-        if move:
-            shutil.move(str(path), str(target))
-        else:
-            shutil.copy2(path, target)
+        shutil.move(str(path), str(target))
     real = target.resolve() if target.exists() else Path(recordings_dir) / rel
     unit, reason = _entry_unit(course, rel, real)
     files[rel] = {

@@ -12,11 +12,7 @@ Input: the course folder, the unit, the chosen pages, the resolved rules (generi
 2. **Topics:** define the unit's 4–6 topics and their tags as the rules say. Every page uses this one list.
 3. **Write each chosen page** into `study/Unit N/`. Content comes from the Wiki only. Label every paragraph as the course context (`.unistudent/context.md`) says. Link paths are relative to the page.
 4. **Practice page:** every question in the unit's question-bank entries appears once, under its topic.
-5. **Short practice page (if chosen):** group the same questions by how they're solved (same method and
-   steps, even with different numbers, is one group), keep only the hardest question per group, and keep
-   every group that solves things a different way regardless of difficulty. The resolved rules say exactly
-   what counts as "the same" and "hardest" for this course; when unsure whether two questions are the same
-   group, read both solutions before deciding — surface wording never decides it alone.
+5. **Short practice page (if chosen):** build it as the resolved rules' short-practice section says.
 6. **Check:** run `us check --labels "study/Unit N"` (`us`: the UniStudent MCP tool `check`, or the `unistudent` command) and fix everything it reports.
 
 Done when: every chosen page exists, every question-bank entry for the unit is on the practice page (and, if chosen, the short practice page has at least one question per topic), and the check reports 0 problems. Return the page list and one line per page on what it covers.

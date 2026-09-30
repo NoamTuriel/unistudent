@@ -48,7 +48,7 @@ Ask: download from the course website, use a folder they already have, or both.
 - Neither: offer their own folder and the inbox only.
 - Own folder: ask for it, and ask whether it is the lecturer's material (official) or other material (added).
 
-Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <he|en> --origin-mode <site|own-folder|both> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`.
+Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <he|en> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`.
 
 Then resolve unsorted files: run `us unsorted --json`. If any, ask one grouped question (unit number, or "general" for whole-course files such as past exams) and record each answer with `us assign "<path>" <unit|general>`.
 
@@ -77,13 +77,8 @@ Then, in plain words (no unexplained "MCP", "context file" or "grounding" withou
 - **Adding more material later:** drop new files in the course folder's `inbox`, then run `/unistudent:course-add` (or just mention it — Claude will notice next time).
 - **Reconnecting a new AI session:** open the AI app (any of them — Claude Code, Cowork, Cursor, etc.) inside this course folder and it picks the course up automatically. If it doesn't, or the session isn't rooted in the folder, paste this one line: `Read AGENTS.md in <course folder path> before answering.`
 
-Then suggest one concrete next step, chosen from what's actually true for this course (not a generic list) — e.g. "Unit 1 has material ready; want a study pack for it?" or "There are 3 recordings — want a roadmap of what's covered in each?" — and only after that, offer the rest of the menu:
-
-- Build a study pack for a unit (`/unistudent:study-pack`)
-- Process recordings (`/unistudent:course-recordings`)
-- Add more material (`/unistudent:course-add`)
-- Sync the course site (university plugin)
+Then suggest one concrete next step, chosen from what's actually true for this course (not a generic list) — e.g. "Unit 1 has material ready; want a study pack for it?" or "There are 3 recordings — want a roadmap of what's covered in each?" — and only after that, offer the rest of the commands from the course folder's `README.md` table (and the university plugin's sync skill, if there is one).
 
 In Cowork, suggest one project per course with this folder connected. In Claude Code, suggest starting Claude inside the folder.
 
-Done when: the student has seen the explanation, both plain-language points above, a concrete suggestion, and the menu.
+Done when: the student has seen the explanation, both plain-language points above, a concrete suggestion, and the other commands.
