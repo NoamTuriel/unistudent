@@ -9,3 +9,6 @@ build/
 # Kept on this machine only, never pushed.
 .scratch/
 docs/review-*.md
+
+# Local Claude Code overrides
+.claude/settings.local.json
