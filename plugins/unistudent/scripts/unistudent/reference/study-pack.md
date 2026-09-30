@@ -46,7 +46,8 @@ everything worth practicing — not the fewest questions overall.
 
 - Two questions are **the same** when solving them takes the same method and the same steps, even with
   different numbers or a different scenario. They are **different** when the method or steps differ, even
-  if one is much easier than the other.
+  if one is much easier than the other. When unsure whether two questions are the same, read both
+  solutions before deciding: surface wording never decides it alone.
 - Group each topic's questions (across every stage: slide examples, Q&A, assignment, past exams) by that
   test. From each group of "the same" questions, keep only the **hardest** one (the most steps, the most
   combined concepts, or an explicit challenge / combined-unit question) and drop the rest.
