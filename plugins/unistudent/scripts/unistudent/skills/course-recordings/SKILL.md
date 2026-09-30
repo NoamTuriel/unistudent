@@ -22,7 +22,9 @@ If `realtime_factor` is empty and a recording exists, offer a one-minute benchma
 
 Show: number of recordings, hours of audio, GB, estimated time on this machine, and that Claude will also read each transcript (tokens). Ask: all of them, only unit N, or not now. Record the answer with `us context --recording-level <0 skip|1 download only|3 transcript and summary>`.
 
-Done when: the student said yes to a specific list, or no.
+Then ask a **separate** question about frame analysis (looking at what's on screen, e.g. slides), only if a video-analysis tool is installed: show `frame_analysis_segments` from the same estimate (one extra AI call per segment — real cost, distinct from transcription) and ask yes/no. Default to no unless the student asks for it. Record with `us context --frame-analysis <0 off|1 on>`. Skip this question (and never turn it on) if no video-analysis tool is installed, or if it was already answered for this course.
+
+Done when: the student said yes to a specific list of recordings, or no; and, if relevant, frame analysis is explicitly on or off.
 
 ## 3. Transcribe
 
@@ -32,7 +34,7 @@ Done when: every chosen recording has a `transcript.md`.
 
 ## 4. Table of contents and summary
 
-For each transcript, **delegate** to one `recording-summarizer` worker. Each writes `toc.md` and `summary.md` next to the transcript and returns a three-line summary. Only those three lines come back to you.
+For each transcript, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `summary.md` next to the transcript and returns a three-line summary. Only those three lines come back to you.
 
 Done when: every transcript has `toc.md` and `summary.md`.
 

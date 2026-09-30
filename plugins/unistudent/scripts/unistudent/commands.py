@@ -239,7 +239,9 @@ def register(add, with_course):
                       else "time unknown: run `recordings benchmark` first")
             est["summary"] = (f"{est['recordings']} recordings, {est['hours']} h of audio, {est['gigabytes']} GB; "
                               f"{timing}. Backend: {est['backend']}"
-                              + ("" if est["backend_installed"] else " (not installed)") + ".")
+                              + ("" if est["backend_installed"] else " (not installed)") + ". "
+                              f"Frame analysis (separate opt-in): {est['frame_analysis_segments']} segments, "
+                              "one vision call each.")
             return est
         if args.action == "fetch":
             if len(args.paths) != 2:
