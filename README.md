@@ -8,7 +8,7 @@
 Turn your course into your own private, sandboxed Wiki, and get answers grounded in nothing but your own material.</p>
 
 <p align="center">
-  <a href="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/NoamTuriel/unistudent/tests.yml?branch=main&label=tested" alt="tested" /></a>
+  <a href="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/NoamTuriel/unistudent/tests.yml?branch=main&label=tested&logo=github&logoColor=white" alt="tested" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6.svg" alt="license: MIT" /></a>
   <img src="https://img.shields.io/badge/MCP-compatible-38bdf8.svg" alt="MCP compatible" />
   <img src="https://img.shields.io/badge/Agent%20Skills-compatible-10b981.svg" alt="Agent Skills compatible" />
