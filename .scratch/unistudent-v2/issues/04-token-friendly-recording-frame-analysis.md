@@ -4,11 +4,10 @@
 
 **Blocked by:** None
 
-**Status:** ready-for-agent
+**Status:** done (2026-09-30)
 
-**Deferred:** not part of this implementation pass — filed for later.
 
-- [ ] `course-recordings` shows a separate cost estimate and asks a separate yes/no for frame analysis, distinct from the existing recording-level question
-- [ ] `recording-summarizer.md` never calls `get_frame_at`/`analyze_moment` unless that opt-in was explicitly chosen, regardless of whether `mcp-video-analyzer` is installed
-- [ ] The choice is remembered per course (same pattern as the existing recording-level setting)
-- [ ] A test confirms recording-summarizer's behavior differs correctly with the opt-in on vs. off, holding recording level constant
+- [x] `course-recordings` shows a separate cost estimate and asks a separate yes/no for frame analysis, distinct from the existing recording-level question
+- [x] `recording-summarizer.md` never calls `get_frame_at`/`analyze_moment` unless that opt-in was explicitly chosen, regardless of whether `mcp-video-analyzer` is installed
+- [x] The choice is remembered per course (same pattern as the existing recording-level setting)
+- [x] A test confirms recording-summarizer's behavior differs correctly with the opt-in on vs. off, holding recording level constant

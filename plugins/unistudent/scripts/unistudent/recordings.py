@@ -7,6 +7,7 @@ Speech-to-text backends (picked per machine, same output):
   fake      tests only (UNISTUDENT_STT_BACKEND=fake)
 """
 import json
+import math
 import os
 import platform
 import shutil
@@ -172,6 +173,9 @@ def estimate(course, unit=None, only_unprocessed=True):
     except (FileNotFoundError, KeyError, ValueError):
         factor = None
     name = backend_name()
+    # One vision call per ~PARAGRAPH_SECONDS segment (toc.md's row spacing): a separate,
+    # explicit opt-in (ticket 04), never triggered just because a video-analysis tool is installed.
+    segments = sum(math.ceil(r["seconds"] / PARAGRAPH_SECONDS) for r in rows if r["seconds"])
     return {
         "recordings": len(rows), "hours": round(seconds / 3600, 2), "unknown_duration": unknown,
         "gigabytes": round(size / 1e9, 2), "backend": name, "backend_installed": backend_available(name),
@@ -179,6 +183,8 @@ def estimate(course, unit=None, only_unprocessed=True):
         "realtime_factor": factor,
         "estimated_hours": round(seconds * factor / 3600, 2) if factor else None,
         "files": [r["path"] for r in rows],
+        "frame_analysis_segments": segments,
+        "frame_analysis": course.settings().get("frame_analysis"),
     }
 
 

@@ -170,7 +170,8 @@ def cmd_courses(args):
 def cmd_context(args):
     course = resolve_course(args)
     course.update_settings(exam_date=args.exam_date,
-                           recording_level=int(args.recording_level) if args.recording_level is not None else None)
+                           recording_level=int(args.recording_level) if args.recording_level is not None else None,
+                           frame_analysis=(args.frame_analysis == "1") if args.frame_analysis is not None else None)
     write_context_files(course)
     return {"summary": f"Context file written: {course.root / 'CLAUDE.md'}"}
 
@@ -221,6 +222,8 @@ def build_parser():
     p.add_argument("--exam-date")
     p.add_argument("--recording-level", choices=["0", "1", "3"],
                    help="0 skip, 1 download only, 3 transcript and summary")
+    p.add_argument("--frame-analysis", choices=["0", "1"],
+                   help="0 off, 1 on: per-segment vision calls when indexing recordings (separate opt-in, costly)")
 
     from . import commands
     commands.register(add, with_course)
