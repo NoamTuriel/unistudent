@@ -5,21 +5,26 @@
 <h1 align="center">UniStudent</h1>
 
 <p align="center"><strong>An AI plugin for university students.</strong><br>
-Stop feeding your AI the whole internet — feed it your actual course, and get answers you can trust.</p>
+Turn your course into your own private, sandboxed Wiki, and get answers grounded in nothing but your own material.</p>
 
 <p align="center">
+  <a href="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/NoamTuriel/unistudent/tests.yml?branch=main&label=tested" alt="tested" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6.svg" alt="license: MIT" /></a>
   <img src="https://img.shields.io/badge/MCP-compatible-38bdf8.svg" alt="MCP compatible" />
   <img src="https://img.shields.io/badge/Agent%20Skills-compatible-10b981.svg" alt="Agent Skills compatible" />
   <img src="https://img.shields.io/badge/python-3.9%2B-3776AB.svg" alt="python 3.9+" />
 </p>
 
-**What this gives you:**
+## 🧠 Create your own sandbox Wiki
 
-- 📥 **Fetches and organizes your material** — pulls new files straight from your university's course site into one tidy course folder, sorted by unit
-- 🧠 **A private, sandboxed Wiki, built just for your course** — an AI-only knowledge base made from nothing but your own material, so every answer is grounded, not guessed
-- 📝 **Out-of-the-box unit summary packs** — roadmaps, walkthroughs and practice sets, ready to study from with no setup
-- 🎙️ **Recording analysis** — transcribes your lectures and times every announcement and "this will be on the exam" moment, so nothing a teacher says gets lost
+1. **Fetch & organize** — pull everything your course has to offer, straight from your university's site or your own folders: slides, books, past exams, recordings — sorted into one tidy course folder, unit by unit.
+2. **Analyze** — every document, book and recording gets read, transcribed and understood, then turned into the Wiki: a private, sandboxed, AI-only knowledge base built from nothing but your own course.
+
+## 🎓 What your Wiki gives you
+
+- **Study packs, made clear** — a roadmap of what to memorize versus understand, an exercise map covering every question type, and plain explanations for every concept, generated for you the moment your Wiki exists.
+- **A recordings roadmap** — never miss what a teacher says. Know exactly when each topic is explained, when an example is shown, and when something important is announced — down to the minute, every time.
+- **Answers grounded only in your material** — ask anything about your course and get an answer built only from what your course actually teaches, never the wider internet.
 
 > A general AI answers from the whole internet: methods your course doesn't teach, other notation,
 > material from other courses. Your exam grades your course's way. UniStudent keeps the AI inside your
