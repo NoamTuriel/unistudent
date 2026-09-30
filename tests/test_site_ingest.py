@@ -6,7 +6,7 @@ The university plugin (e.g. openu) owns reaching the site. It hands the core a l
 import json
 import unittest
 
-from helpers import CourseTestCase, make_pdf, run, run_json, write
+from helpers import CourseTestCase, can_read_pdfs, make_pdf, run, run_json, write
 
 
 def listing(*items):
@@ -49,6 +49,8 @@ class SiteIngest(CourseTestCase):
         self.assertEqual(status["downloaded"], ["https://example.edu/f/1"])
 
     def test_a_second_sync_reports_only_what_changed(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         make_pdf(self.staged / "a.pdf", ["Unit 1 v1"])
         self.ingest(listing({"url": "https://example.edu/f/1", "file": "a.pdf", "name": "a.pdf", "section": "Unit 1"}))
 

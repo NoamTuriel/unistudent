@@ -2,7 +2,7 @@
 import shutil
 import unittest
 
-from helpers import CourseTestCase, make_pdf, run, run_json, write
+from helpers import CourseTestCase, can_read_pdfs, make_pdf, run, run_json, write
 
 
 def make_docx(path, paragraphs):
@@ -31,6 +31,8 @@ class WikiBuild(CourseTestCase):
         return run_json("wiki", "build", "--course", self.course, *extra)
 
     def test_every_document_becomes_a_markdown_source_page_with_its_pages_and_origin(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         self.build()
         page = (self.wiki / "sources" / "unit-04" / "slides.md").read_text("utf-8")
         self.assertIn("source: Unit 4 - money/slides.pdf", page)
@@ -78,6 +80,8 @@ class WikiBuild(CourseTestCase):
         self.assertEqual(kinds, ["broken-link", "no-sources"])
 
     def test_a_page_of_entries_citing_the_material_needs_no_page_level_sources_line(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         self.build()
         (self.wiki / "glossary.md").write_text(
             "# Glossary\n\n### Money multiplier\nIt is 1/r. [slides](sources/unit-04/slides.md#page-1)\n", "utf-8")

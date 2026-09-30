@@ -6,7 +6,7 @@ these tests pin down the grader it uses, against hand-written answers.
 import json
 import unittest
 
-from helpers import CourseTestCase, make_pdf, run, run_json, write
+from helpers import CourseTestCase, can_read_pdfs, make_pdf, run, run_json, write
 
 GOOD = """## The money multiplier
 
@@ -40,6 +40,8 @@ class GroundingLabels(CourseTestCase):
         return sorted(p["kind"] for p in self.check(text)["problems"])
 
     def test_a_well_grounded_answer_has_no_problems(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         report = self.check(GOOD)
         self.assertEqual(report["problems"], [])
         self.assertEqual([p["label"] for p in report["paragraphs"]], ["✅", "✅"])
@@ -56,16 +58,22 @@ class GroundingLabels(CourseTestCase):
                          ["broken-anchor"])
 
     def test_a_sources_block_and_an_introduced_list_belong_to_the_paragraph_before(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         text = ("✅ The course solves this in five steps:\n1. Change in reserves.\n2. Excess reserves.\n\n"
                 "Sources: [slides](wiki/sources/unit-04/slides.md#page-1)\n")
         self.assertEqual(self.kinds(text), [])
 
     def test_a_list_right_after_a_labelled_paragraph_shares_its_label(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         text = ("✅ The course teaches five steps. Sources: [s](wiki/sources/unit-04/slides.md#page-1)\n\n"
                 "1. Change in reserves.\n2. Excess reserves.\n")
         self.assertEqual(self.kinds(text), [])
 
     def test_a_follow_on_paragraph_without_a_label_is_flagged(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         text = ("❌ In this course the multiplier is 1/r. Sources: [s](wiki/sources/unit-04/slides.md#page-1)\n\n"
                 "Outside this course the textbook formula includes the currency ratio.\n")
         self.assertEqual(self.kinds(text), ["unlabeled"])
@@ -76,6 +84,8 @@ class GroundingLabels(CourseTestCase):
         self.assertEqual(self.kinds(text), [])
 
     def test_my_own_explanation_of_course_material_is_its_own_label_and_cites_what_it_explains(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         text = ("💡 Think of a piggy bank that lends out most of each coin: every loan comes back as a new "
                 "deposit. Sources: [slides](wiki/sources/unit-04/slides.md#page-1)\n")
         report = self.check(text)
@@ -85,12 +95,16 @@ class GroundingLabels(CourseTestCase):
                          ["no-citation"])
 
     def test_outside_and_conflict_labels_need_no_citation(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         text = ("⚠️ The course material doesn't cover the IS-LM model; this is general knowledge.\n\n"
                 "❌ In this course the multiplier is 1/r. Sources: [s](wiki/sources/unit-04/slides.md#page-1) "
                 "Textbooks often add a currency-drain term.\n")
         self.assertEqual(self.kinds(text), [])
 
     def test_grading_a_case(self):
+        if not can_read_pdfs():
+            self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         case = {"id": "multiplier", "question": "What is the money multiplier?",
                 "must_include_labels": ["✅"], "must_not_include_labels": ["⚠️"],
                 "must_cite": ["sources/unit-04/slides.md"]}

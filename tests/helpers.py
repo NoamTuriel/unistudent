@@ -1,8 +1,10 @@
 """Shared test helpers: run the CLI the way a skill does, and build fixture folders."""
 import contextlib
+import importlib.util
 import io
 import json
 import os
+import shutil
 import sys
 import tempfile
 import unittest
@@ -12,6 +14,11 @@ SCRIPTS = Path(__file__).resolve().parents[1] / "plugins" / "unistudent" / "scri
 sys.path.insert(0, str(SCRIPTS))
 
 from unistudent import cli  # noqa: E402
+
+
+def can_read_pdfs():
+    """Whether convert.py has a PDF text tool to work with (pdftotext or pypdf, both optional)."""
+    return shutil.which("pdftotext") is not None or importlib.util.find_spec("pypdf") is not None
 
 
 def run(*argv):
