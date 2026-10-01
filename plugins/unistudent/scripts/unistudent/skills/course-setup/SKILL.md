@@ -78,9 +78,11 @@ If downloading from the site: run the university plugin's sync skill (e.g. `open
 
 Before moving on, ask once for anything else the course gave them that hasn't come up yet: other books, solution sets, past exams, anything else from the university. More material now means better summaries and answers later.
 
-Then, if the course has recordings, run `us recordings estimate --json` and ask whether to include them. Say it's recommended but slow, with the numbers. Record the choice with `us context --recording-level <0 skip|1 download only|3 transcript and summary>`. Transcription itself happens later, in `/unistudent:course-recordings`: point there.
+Then, if the course has recordings, run `us recordings estimate --json` and ask whether to include them. Say it's recommended but slow, with the numbers, and why it's worth it: a transcript lets the AI answer from what the lecturer said, link to the exact minute, and catch spoken announcements ("this will be on the exam"). Record the choice with `us context --recording-level <0 skip|1 download only|3 transcript and summary>`. Transcription itself happens later, in `/unistudent:course-recordings`: point there.
 
-Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), and the recording level is recorded.
+If they want transcripts (3) and `backend_installed` is false, they need a speech-to-text tool, and it isn't part of the plugin. Say so plainly and **recommend installing it now**: it's a separate download that runs on their own computer (large: about a gigabyte or more, with the language model fetched the first time it runs), and nothing is sent anywhere. Then **ask whether to install it for them**. Yes → run `install_run` from the estimate (ask your shell tool; if you can't run commands, show it for them to run), then run `us recordings estimate --json` again and confirm `backend_installed` is true. If `ffmpeg` is missing too (check with `which ffmpeg`, or `where ffmpeg` on Windows), offer to install it the same way: macOS `brew install ffmpeg`, Windows `winget install ffmpeg`, Linux your package manager. No → record level 1 (download only), and tell them they can add it any time and run `/unistudent:course-recordings`.
+
+Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), the recording level is recorded, and if they chose transcripts the speech-to-text tool is installed (or they chose download only).
 
 ## 5. Analyze (build the Wiki)
 
