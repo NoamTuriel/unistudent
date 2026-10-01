@@ -29,6 +29,20 @@ MODELS = {
     ("mlx", None): "mlx-community/whisper-large-v3-turbo",
 }
 PARAGRAPH_SECONDS = 60
+
+SYNCED_MARKERS = ("mobile documents", "icloud", "google drive", "googledrive", "my drive",
+                  "dropbox", "onedrive", "box sync")
+
+
+def is_synced_folder(path: Path) -> bool:
+    """iCloud, Google Drive, Dropbox and OneDrive evict big files, so recordings stay out of them."""
+    return any(marker in part.lower() for part in Path(path).parts for marker in SYNCED_MARKERS)
+
+
+def recordings_root() -> Path:
+    """Where recordings of synced course folders live: local, never synced."""
+    return Path(os.environ.get("UNISTUDENT_RECORDINGS_ROOT") or Path.home() / "UniStudent recordings")
+
 PACKAGES = {"mlx": "mlx-whisper", "faster": "faster-whisper"}
 
 
@@ -147,7 +161,7 @@ SAMPLE_SECONDS = 60
 def benchmark(course, rel):
     """Transcribe a short sample to measure this machine. Stores the real-time factor."""
     name = backend_name()
-    source = material.raw_path(course, rel)
+    source = material.path_of(course, rel)
     with tempfile.TemporaryDirectory() as tmp:
         audio = Path(tmp) / "sample.wav"
         extract_audio(source, audio, start=0, seconds=SAMPLE_SECONDS)
@@ -165,7 +179,7 @@ def listing(course, unit=None):
     for rel, info in recording_pages(course).items():
         if unit is not None and unit_dir(info["unit"]) != unit_dir(unit):
             continue
-        path = material.raw_path(course, rel)
+        path = material.path_of(course, rel)
         rows.append({"path": rel, "unit": info["unit"], "processed": info["processed"],
                      "has_transcript": (course.wiki / info["folder"] / "transcript.md").exists(),
                      "wiki_folder": info["folder"], "seconds": duration(path),
@@ -203,7 +217,7 @@ def write_transcript(course, rel, segments, name):
     info = recording_pages(course)[rel]
     folder = course.wiki / info["folder"]
     folder.mkdir(parents=True, exist_ok=True)
-    source = material.raw_path(course, rel)
+    source = material.path_of(course, rel)
     total = segments[-1][1] if segments else 0
     lines = ["---", f"source: {rel}", f"unit: {info['unit'] if info['unit'] is not None else 'unsorted'}",
              f"duration: {hms(total)}", f"backend: {name}", "---", "",
@@ -224,7 +238,7 @@ def write_transcript(course, rel, segments, name):
     # A sidecar next to the video lets video tools (e.g. mcp-video-analyzer) use this transcript,
     # but only where the video lives in a folder the plugin owns.
     real = source.resolve()
-    owned = [course.raw.resolve()] + ([Path(course.settings()["recordings_dir"]).resolve()]
+    owned = [(course.raw if course.legacy else course.material).resolve()] + ([Path(course.settings()["recordings_dir"]).resolve()]
                                       if course.settings().get("recordings_dir") else [])
     if any(str(real).startswith(str(root) + os.sep) for root in owned):
         real.with_suffix(".vtt").write_text(vtt, "utf-8")
@@ -245,7 +259,7 @@ def transcribe(course, rel):
     name = backend_name()
     if not backend_available(name):
         raise RuntimeError(install_hint(name))
-    source = material.raw_path(course, rel)
+    source = material.path_of(course, rel)
     with tempfile.TemporaryDirectory() as tmp:
         audio = Path(tmp) / "audio.wav"
         if name == "fake":

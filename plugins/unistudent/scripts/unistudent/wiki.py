@@ -1,10 +1,11 @@
-"""Building the Wiki from Raw (the deterministic part).
+"""Building the Wiki from the Material folder (the deterministic part).
 
 The script converts documents, and writes the index and the generated block of each
 unit page. Claude writes the rest (glossary, question bank, course page, the
 methods/notation/assumptions of each unit) through the wiki skill; those parts are
 never touched by a rebuild.
 """
+import os
 import re
 from pathlib import Path
 
@@ -12,7 +13,7 @@ from . import material
 from .common import problems_summary
 from .convert import convert, kind
 from .course import safe_name, unit_dir
-from .links_check import STUB_MARK, check_links, has_sources
+from .links_check import MD_LINK, STUB_MARK, check_links, has_sources
 
 GEN_START = "<!-- unistudent:generated:start -->"
 GEN_END = "<!-- unistudent:generated:end -->"
@@ -48,7 +49,7 @@ STUBS = {
 
 
 def _plan_pages(course):
-    """Stable Raw path → Wiki page mapping (sorted, so collisions resolve the same way every time)."""
+    """Stable Material folder path → Wiki page mapping (sorted, so collisions resolve the same way every time)."""
     plan, used = {}, set()
     for rel, entry in sorted(course.manifest()["files"].items()):
         if kind(rel) != "document":
@@ -124,11 +125,12 @@ def recording_pages(course):
 def build(course, force=False):
     wiki = course.wiki
     wiki.mkdir(parents=True, exist_ok=True)
+    found = material.scan(course)  # the folder is the truth: follow moves, drop deletions, take new files as added
     manifest = course.manifest()["files"]
     state = course.read_state("wiki.json", {})
     plan = _plan_pages(course)
 
-    # Pages whose Raw file disappeared or moved to another unit.
+    # Pages whose file was deleted, moved or renamed (the scan above already followed it in the Manifest).
     for rel, info in list(state.items()):
         if plan.get(rel) != info.get("page"):
             old = wiki / info["page"]
@@ -144,7 +146,7 @@ def build(course, force=False):
         if not force and info and info.get("fingerprint") == entry.get("fingerprint") and target.exists():
             needs_visual += [{"source": rel, "pages": info.get("empty_pages", [])}] if info.get("empty_pages") else []
             continue
-        conversion = convert(material.raw_path(course, rel))
+        conversion = convert(material.path_of(course, rel))
         target.parent.mkdir(parents=True, exist_ok=True)
         target.write_text(_source_page(rel, entry, conversion), "utf-8")
         state[rel] = {"page": page, "fingerprint": entry.get("fingerprint"),
@@ -200,9 +202,12 @@ def build(course, force=False):
     index += ["", "## What was and wasn't analyzed", "", f"- {_link('Coverage of every file', 'coverage.md')}"]
     (wiki / "index.md").write_text("\n".join(index) + "\n", "utf-8")
     covered = coverage(course, write=True)
+    roadmaps = write_roadmaps(course, recordings)
 
     return {
         "converted": converted,
+        "folder": {k: len(v) for k, v in found.items()},
+        "roadmaps": roadmaps,
         "units_touched": sorted(touched),
         "pages": len(plan),
         "recordings": list(recordings),
@@ -215,8 +220,43 @@ def build(course, force=False):
     }
 
 
+def _for_the_vault(path: Path) -> str:
+    """A Wiki page as the student reads it in the Study vault: no frontmatter, no links into the hidden Wiki,
+    headings two levels down."""
+    text = re.sub(r"\A---\n.*?\n---\n", "", path.read_text("utf-8"), flags=re.S)
+    return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(lambda m: m.group(1), text)).strip()
+
+
+def write_roadmaps(course, recordings):
+    """One recordings roadmap per unit in the Study vault, from the hidden Wiki's recording pages: what each processed
+    recording covers, with the announcements and exam hints the lecturer made, and a link to the video."""
+    if course.legacy:
+        return []
+    by_unit = {}
+    for rel, info in recordings.items():
+        if info["processed"]:
+            by_unit.setdefault(unit_dir(info["unit"]), []).append((rel, info))
+    written = []
+    for folder, recs in sorted(by_unit.items()):
+        unit = recs[0][1]["unit"]
+        page = course.pack_folder(unit) / f"{course.label('roadmap')}.md"
+        lines = [f"# {course.label('roadmap')}: {course.unit_label(unit)}", ""]
+        for rel, info in recs:
+            try:
+                video = Path(os.path.relpath(material.path_of(course, rel), page.parent)).as_posix()
+            except ValueError:  # a recording on another drive (Windows): link it by address
+                video = material.path_of(course, rel).as_uri()
+            lines += [f"## {Path(rel).name}", "", _link("recording", video), ""]
+            for name in ("toc.md", "summary.md"):
+                if (course.wiki / info["folder"] / name).exists():
+                    lines += [_for_the_vault(course.wiki / info["folder"] / name), ""]
+        _write_generated(page, "\n".join(lines))
+        written.append(page.relative_to(course.root).as_posix())
+    return written
+
+
 def coverage(course, write=False):
-    """What the Wiki did and did not read, per Raw file: analyzed, failed (with the reason), skipped (with who
+    """What the Wiki did and did not read, per file: analyzed, failed (with the reason), skipped (with who
     chose it) or pending. With write=True (the build) also saved as wiki/coverage.md, so a later session knows
     what is NOT in the Wiki. Showing it changes nothing on disk."""
     state = course.read_state("wiki.json", {})

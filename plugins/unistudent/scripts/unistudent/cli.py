@@ -12,7 +12,7 @@ from pathlib import Path
 from . import material
 from .common import UserError, resolve_course
 from .course import Course, Registry, find_course, general_preferences_file, safe_name
-from .links import is_synced_folder, recordings_root
+from .recordings import is_synced_folder, recordings_root
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
 CONTEXT_MARK = "<!-- unistudent:context -->"
@@ -25,18 +25,25 @@ def render(template_name, **values):
     return text
 
 
+def _rel(course: Course, folder: Path) -> str:
+    return folder.relative_to(course.root).as_posix()
+
+
 def write_context_files(course: Course):
     settings = course.settings()
     exam = []
     if settings.get("exam_date"):
         exam.append(f"- Exam date: {settings['exam_date']}")
-    exam.append("- Exam format, formula sheet and lecturer emphasis: see `wiki/course.md` "
+    exam.append(f"- Exam format, formula sheet and lecturer emphasis: see `{_rel(course, course.wiki)}/course.md` "
                 "(filled when the Wiki is built).")
     others = [c for c in Registry().courses() if c["path"] != str(course.root)]
-    other_lines = [f"- {c['name']}: `{Path(c['path']) / 'wiki'}`" for c in others] or ["- None."]
+    other_lines = [f"- {c['name']}: `{Course(c['path']).wiki}`" for c in others] or ["- None."]
     context = render("context.md",
                      course_name=settings["course_name"],
                      language=settings.get("language", "he"),
+                     official=course.label("official"), added=course.label("added"),
+                     wiki=_rel(course, course.wiki), inbox=_rel(course, course.inbox),
+                     study=_rel(course, course.study), material=_rel(course, course.material),
                      general_preferences=general_preferences_file(),
                      other_courses="\n".join(other_lines),
                      exam_section="\n".join(exam))
@@ -52,7 +59,9 @@ def write_context_files(course: Course):
     readme = course.root / "README.md"
     if not readme.exists():
         lang = "he" if settings.get("language") == "he" else "en"
-        readme.write_text(render(f"README.{lang}.md", course_name=settings["course_name"]), "utf-8")
+        readme.write_text(render(f"README.{lang}.md", course_name=settings["course_name"], inbox=_rel(course, course.inbox),
+                                 material=_rel(course, course.material), study=_rel(course, course.study),
+                                 official=course.label("official"), added=course.label("added")), "utf-8")
 
 
 def _write_or_point(path: Path, content: str, pointer: str):
@@ -76,8 +85,9 @@ def refresh_other_contexts(course: Course):
 
 def cmd_setup(args):
     course = Course(args.path)
-    for folder in (course.raw, course.wiki, course.materials, course.study, course.inbox):
-        folder.mkdir(parents=True, exist_ok=True)
+    if course.exists() and course.legacy:
+        raise UserError("This course folder has the old layout (raw, materials, wiki, study). "
+                        f"Run `us migrate --course \"{course.root}\"` first: it shows what it will move, then moves it.")
     settings = course.settings()
     settings.update({k: v for k, v in {
         "course_name": args.name or settings["course_name"] or course.root.name,
@@ -90,25 +100,25 @@ def cmd_setup(args):
     if synced and not settings.get("recordings_dir"):
         settings["recordings_dir"] = str(recordings_root() / safe_name(settings["course_name"]))
     course.save_settings(settings)
+    course.ensure_layout()
     if not course.preferences_file.exists():
         course.preferences_file.write_text("# Course preferences\n\n", "utf-8")
     Registry().add(course, settings["course_name"])
     refresh_other_contexts(course)
-    added = []
-    if args.import_dir:
-        added = material.import_folder(course, args.import_dir, tier=args.tier)
-    else:
-        material.rebuild_materials(course)
+    added = material.import_folder(course, args.import_dir, tier=args.tier) if args.import_dir else []
     write_context_files(course)
+    names = course.folder_names()
     return {
         "course": str(course.root),
         "course_name": settings["course_name"],
+        "inbox": names["inbox"], "material": names["material"], "study": names["study"],
         "imported": len(added),
         "synced": synced,
         "recordings_dir": settings.get("recordings_dir"),
         "unsorted": material.unsorted(course),
         "summary": f"Course folder ready at {course.root} ({len(added)} new files, "
-                   f"{len(material.unsorted(course))} unsorted).",
+                   f"{len(material.unsorted(course))} unsorted). Drop new material in {names['inbox']}; "
+                   f"study from {names['study']}.",
     }
 
 
@@ -116,7 +126,31 @@ def cmd_import(args):
     course = resolve_course(args)
     added = material.import_folder(course, args.folder, tier=args.tier)
     return {"imported": added, "unsorted": material.unsorted(course),
-            "summary": f"{len(added)} new or changed files; {len(material.unsorted(course))} unsorted."}
+            "summary": f"{len(added)} new or changed files copied in; {len(material.unsorted(course))} unsorted."}
+
+
+def cmd_migrate(args):
+    from . import migrate
+    course = resolve_course(args)
+    if not course.legacy:
+        return {"applied": False, "moves": [], "conflicts": [], "summary": "Already in the new layout: nothing to move."}
+    found = migrate.plan(course)
+    result = {"applied": False, "moves": found["moves"], "conflicts": found["conflicts"], "missing": found["missing"]}
+    listing = "\n".join(f"- {m['how']}: {m['from']} -> {m['to']}" for m in found["moves"])
+    if not args.apply:
+        warn = f"\nThese would overwrite a different file: {', '.join(found['conflicts'])}" if found["conflicts"] else ""
+        result["summary"] = (f"{len(found['moves'])} moves, none done yet:\n{listing}{warn}\n"
+                             "Run again with --apply to do them. Files from your own folder are copied, never moved.")
+        return result
+    left = migrate.apply(course, found)
+    readme = course.root / "README.md"
+    if readme.exists() and "`raw/`" in readme.read_text("utf-8"):  # the generated one: describes folders that are gone
+        readme.unlink()
+    write_context_files(course)
+    result.update(applied=True, left_behind=left)
+    result["summary"] = (f"Moved {len(found['moves'])} items into the new layout ({course.folder_names()['study']} is "
+                         f"your study vault)." + (f" Still there, not ours to remove: {', '.join(left)}." if left else ""))
+    return result
 
 
 def cmd_manifest(args):
@@ -132,10 +166,10 @@ def cmd_unsorted(args):
 def cmd_assign(args):
     course = resolve_course(args)
     try:
-        material.assign(course, args.path, args.unit)
+        new = material.assign(course, args.path, args.unit)
     except KeyError:
         raise UserError(f"Not in the Manifest: {args.path}")
-    return {"summary": f"{args.path} → {course.unit_label(course.manifest()['files'][args.path]['unit'])}"}
+    return {"path": new, "summary": f"{args.path} → {new} ({course.unit_label(course.manifest()['files'][new]['unit'])})"}
 
 
 def cmd_courses(args):
@@ -201,9 +235,13 @@ def build_parser():
     p.add_argument("--import", dest="import_dir")
     p.add_argument("--tier", choices=["official", "added"], default="added")
 
-    p = with_course(add("import", cmd_import, "register a folder's files without copying"))
+    p = with_course(add("import", cmd_import, "copy a folder's files into the Material folder (the originals stay where they are)"))
     p.add_argument("folder")
     p.add_argument("--tier", choices=["official", "added"], default="added")
+
+    p = with_course(add("migrate", cmd_migrate, "move a course folder from the old layout (raw, materials, wiki, study) "
+                                                "to the three visible folders: lists the moves first"))
+    p.add_argument("--apply", action="store_true", help="do the moves (without it, only list them)")
 
     with_course(add("manifest", cmd_manifest, "print the Manifest"))
     with_course(add("unsorted", cmd_unsorted, "list files with no unit"))

@@ -6,10 +6,17 @@ from pathlib import Path
 
 STATE_DIR = ".unistudent"
 
-# Folder names are always English; unit titles inside pages follow the course language.
+LAYOUT = 2  # 1 = the old layout (raw, materials, wiki, study at the top): still read, moved by `us migrate`
+
+# The visible folder names and the labels inside them, one table per language (ADR 0007). A new language is one
+# more entry; a language with no entry falls back to English. The Hidden folder keeps English names.
 LABELS = {
-    "he": {"unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין"},
-    "en": {"unit": "Unit {n}", "general": "General", "unsorted": "Unsorted"},
+    "he": {"inbox": "1-קבצים-חדשים", "material": "2-חומרי-הקורס", "study": "3-{course}-ללמוד-מכאן",
+           "official": "רשמי", "added": "נוסף", "unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין",
+           "roadmap": "מפת הקלטות"},
+    "en": {"inbox": "1-inbox", "material": "2-course-material", "study": "3-{course}-study-from-here",
+           "official": "official", "added": "added", "unit": "Unit {n}", "general": "General", "unsorted": "Unsorted",
+           "roadmap": "Recordings roadmap"},
 }
 
 DEFAULT_SETTINGS = {
@@ -22,7 +29,8 @@ DEFAULT_SETTINGS = {
     "frame_analysis": None,        # None (not asked yet) | True | False: per-segment vision calls (opt-in, costly)
     "recordings_dir": None,        # local non-synced folder when the course folder syncs
     "exam_date": None,
-    "unit_answers": {},            # raw path → unit number or "general"
+    "layout": 1,                   # 2 once the course folder has the three visible folders
+    "folders": {},                 # the visible folder names chosen at setup: inbox, material, study
 }
 
 
@@ -44,6 +52,25 @@ def parse_unit(value):
     if number < 0:
         raise ValueError(f"A unit number can't be negative: {value!r}.")
     return number
+
+
+def parse_tier_folder(name):
+    """"official" or "added" when `name` is a trust-level folder in any language, else None."""
+    return next((t for table in LABELS.values() for t in ("official", "added") if name == table[t]), None)
+
+
+def parse_unit_folder(name):
+    """(True, unit) when `name` is a unit folder in any language: a number, "general" or None (unsorted)."""
+    for table in LABELS.values():
+        if name == table["general"]:
+            return True, "general"
+        if name == table["unsorted"]:
+            return True, None
+        head, tail = table["unit"].split("{n}")
+        match = re.fullmatch(re.escape(head) + r"(\d+)" + re.escape(tail), name)
+        if match:
+            return True, int(match.group(1))
+    return False, None
 
 
 def unit_dir(unit) -> str:
@@ -84,24 +111,57 @@ class Course:
         return self.root / STATE_DIR
 
     @property
-    def raw(self):
+    def legacy(self):
+        """True for a course folder in the old layout (raw, materials, wiki, study), until `us migrate`."""
+        return self.settings().get("layout") != LAYOUT
+
+    @property
+    def raw(self):  # old layout only
         return self.root / "raw"
 
     @property
     def wiki(self):
-        return self.root / "wiki"
+        return self.root / "wiki" if self.legacy else self.state / "wiki"
+
+    def folder_names(self, language=None, course_name=None):
+        """The three visible folder names: the stored ones, or those the labels table gives."""
+        settings = self.settings()
+        table = LABELS.get(language or settings["language"], LABELS["en"])
+        name = safe_name(course_name or settings["course_name"] or self.root.name)
+        computed = {k: table[k].format(course=name) for k in ("inbox", "material", "study")}
+        return computed if language else {**computed, **settings.get("folders", {})}
+
+    def _folder(self, key, old):
+        return self.root / (old if self.legacy else self.folder_names()[key])
 
     @property
-    def materials(self):
-        return self.root / "materials"
+    def material(self):
+        return self._folder("material", "materials")
 
     @property
     def study(self):
-        return self.root / "study"
+        return self._folder("study", "study")
 
     @property
     def inbox(self):
-        return self.root / "inbox"
+        return self._folder("inbox", "inbox")
+
+    def ensure_layout(self):
+        """Create the three visible folders in the settings' language, renaming existing ones when it changed."""
+        settings = self.settings()
+        wanted = self.folder_names(settings["language"])
+        for key, name in wanted.items():
+            old = settings.get("folders", {}).get(key)
+            if old and old != name and (self.root / old).is_dir() and not (self.root / name).exists():
+                (self.root / old).rename(self.root / name)
+        settings.update(layout=LAYOUT, folders=wanted)
+        self.save_settings(settings)
+        for name in wanted.values():
+            (self.root / name).mkdir(parents=True, exist_ok=True)
+
+    def pack_folder(self, unit):
+        """Where a unit's study pack lives in the Study vault."""
+        return self.study / self.unit_folder(unit)
 
     @property
     def preferences_file(self):
@@ -142,13 +202,13 @@ class Course:
         return LABELS.get(lang, LABELS["en"])[key].format(**kw)
 
     def unit_folder(self, unit):
-        """Folder name for a unit in materials/ and study/: English on every course."""
+        """Folder name for a unit (in the Material folder and the Study vault), in the course language."""
         unit = parse_unit(unit)
         if unit is None:
-            return LABELS["en"]["unsorted"]
+            return self.label("unsorted")
         if unit == "general":
-            return LABELS["en"]["general"]
-        return LABELS["en"]["unit"].format(n=unit)
+            return self.label("general")
+        return self.label("unit", n=unit)
 
     def unit_label(self, unit):
         """A unit's title in the course language, for page content."""
