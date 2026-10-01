@@ -49,11 +49,19 @@ def duration(path: Path):
         return None
 
 
-def install_hint(name):
-    """Install into the Python that actually runs UniStudent (not whichever pip is first on PATH)."""
+def install_run(name):
+    """The command that installs the engine into the Python that actually runs UniStudent (not whichever pip is first
+    on PATH). An environment made by `uvx` has no pip, but `uv pip install --python` can fill it."""
+    import importlib.util
     import sys
     package = PACKAGES.get(name, name)
-    return (f"Speech-to-text isn't installed. Run: \"{sys.executable}\" -m pip install {package} "
+    if importlib.util.find_spec("pip") is None and shutil.which("uv"):
+        return f'uv pip install --python "{sys.executable}" {package}'
+    return f'"{sys.executable}" -m pip install {package}'
+
+
+def install_hint(name):
+    return (f"Speech-to-text isn't installed. Run: {install_run(name)} "
             "(or reinstall UniStudent with its 'stt' extra: uv tool install --force \"unistudent[stt] @ <repo>\").")
 
 
@@ -179,6 +187,7 @@ def estimate(course, unit=None):
         "recordings": len(rows), "hours": round(seconds / 3600, 2), "unknown_duration": unknown,
         "gigabytes": round(size / 1e9, 2), "backend": name, "backend_installed": backend_available(name),
         "install_command": None if backend_available(name) else install_hint(name),
+        "install_run": None if backend_available(name) else install_run(name),
         "realtime_factor": factor,
         "estimated_hours": round(seconds * factor / 3600, 2) if factor else None,
         "files": [r["path"] for r in rows],
