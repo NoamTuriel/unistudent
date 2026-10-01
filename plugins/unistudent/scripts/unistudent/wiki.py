@@ -229,7 +229,10 @@ def build(course, force=False):
                 if any(items for _, _, items in found_in):
                     lines += ["", f"{title} (the lecturer said, in a recording):", ""]
                     for r, i, items in found_in:
-                        lines += [f"- {Path(r).name} ({_link('summary', '../' + i['folder'] + '/summary.md')}): {item}"
+                        # the summary's links are relative to its own folder; the unit page is one level over
+                        here = lambda m, f=i["folder"]: f"](<../{f}/transcript.md{m.group(1)}>)"
+                        lines += [f"- {Path(r).name} ({_link('summary', '../' + i['folder'] + '/summary.md')}): "
+                                  + re.sub(r"\]\(<?transcript\.md(#\d+)>?\)", here, item)
                                   for item in items]
         lines += ["", f"Questions: {_link('question bank', '../question-bank.md')} (tag #{folder})"]
         path = wiki / "units" / f"{folder}.md"
