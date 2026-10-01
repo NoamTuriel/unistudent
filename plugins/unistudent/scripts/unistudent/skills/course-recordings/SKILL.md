@@ -34,14 +34,14 @@ Done when: every chosen recording has a `transcript.md`.
 
 ## 4. Table of contents and summary
 
-For each transcript, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `summary.md` next to the transcript and returns a three-line summary. Only those three lines come back to you.
+For each transcript, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `summary.md` next to the transcript (in the hidden Wiki) and returns a three-line summary. Only those three lines come back to you.
 
 Done when: every transcript has `toc.md` and `summary.md`.
 
 ## 5. Update
 
-Run `us wiki build` (the unit pages now link the summaries), then `us wiki check`.
+Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, with the announcements and exam hints, is written into the student's Study vault), then `us wiki check`.
 
 Done when: `us wiki check` reports 0 problems. If a unit with a study pack got new recordings, offer `/unistudent:study-pack N` for proposed changes.
 
-Report: which recordings are done, and the announcements and "this will be on the exam" moments the summarizers found.
+Report: which recordings are done (and that each unit's roadmap is in the study vault), and the announcements and "this will be on the exam" moments the summarizers found.

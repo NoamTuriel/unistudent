@@ -15,13 +15,13 @@ Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool 
 Before the first question of a new setup, tell the student the big picture in their language, in plain words, as a short list (a resumed setup gets one line instead: "We're continuing: here's where we are and what's left"):
 
 - **What we're building:** a personal study assistant for this one course. Your course material goes into one organized place (a "Wiki" that the AI can search), so it answers from *your* course, not from the whole internet, and marks every paragraph with how far to trust it.
-- **The steps:** 1. your university (and the plugins that help), 2. your course, 3. where to keep it, 4. fetching your material, 5. analyzing it into the Wiki, 6. how to use it.
+- **The steps:** 1. your university (and the plugins that help), 2. your course, 3. your language, 4. where to keep it, 5. fetching your material, 6. analyzing it into the Wiki, 7. how to use it.
 - **It takes time, and it's worth it.** Fetching and analyzing are the slow parts, longer for a big course or for recordings. It's done once per course; after that every answer is fast, grounded in your material, and easy to check.
 - **Every step comes with its reason.** You may stop at any point and run setup again: it picks up where it stopped.
 
 **Keep the student oriented all the way through.** Setup is long and heavy, so:
 
-- **Before each step**, say in one line where you are ("Step 4 of 6: fetching your material"), what's about to happen, and whether it will take a while.
+- **Before each step**, say in one line where you are ("Step 5 of 7: fetching your material"), what's about to happen, and whether it will take a while.
 - **During a long job** (fetching, building the Wiki, transcribing), say it has started and what you're waiting for. When it finishes, say what happened in one or two lines, and what comes next.
 - **After each step**, record it (`us setup-progress advance`, see step 0) and say so once: "Saved: if you close this, run setup again and I'll continue from here."
 - **If they come back later or you're resuming**, start with a recap: what's done, what's left, what's next. Don't re-ask anything already recorded.
@@ -31,7 +31,7 @@ Done when: the student has seen the overview (or the one-line recap), and none o
 
 ## 0. Resume, if setup was started before
 
-Run `us setup-progress status --course-name "<course, if you already know it>"` once you know the course name (step 2), or `us setup-progress list --json` before that if you don't. If there's progress for this course, say so ("Picking up where we left off, after <stage>") and skip straight to the stage after the last one recorded, using the answers already stored instead of asking again. After finishing each numbered stage below, record it: `us setup-progress advance --course-name "<course>" --stage <stage> [--answer key=value ...]` (stage names: `university`, `course`, `path`, `format`, `fetch-and-organize`, `analyze`, `capabilities`). Progress is kept per course name, so record `university` together with `course` once the course name is known (step 2); the later stages each have their own record line below. Recording the last stage (`capabilities`) clears the progress automatically.
+Run `us setup-progress status --course-name "<course, if you already know it>"` once you know the course name (step 2), or `us setup-progress list --json` before that if you don't. If there's progress for this course, say so ("Picking up where we left off, after <stage>") and skip straight to the stage after the last one recorded, using the answers already stored instead of asking again. After finishing each numbered stage below, record it: `us setup-progress advance --course-name "<course>" --stage <stage> [--answer key=value ...]` (stage names: `university`, `course`, `language`, `path`, `format`, `fetch-and-organize`, `analyze`, `capabilities`). Progress is kept per course name, so record `university` together with `course` once the course name is known (step 2); the later stages each have their own record line below. Recording the last stage (`capabilities`) clears the progress automatically.
 
 ## 1. University
 
@@ -55,17 +55,23 @@ Record both stages now: `us setup-progress advance --course-name "<course>" --st
 
 Done when: you have the course name and the course skill (or none), the student has been told which plugins fit their university and course (or that none do), and `university` and `course` are recorded.
 
-## 3. Storage and format
+## 3. Language
 
-Ask where to keep the course folder. Say why in a sentence: everything for the course goes in this one folder (the original files, the Wiki, your study packs), so the AI reads one place and never mixes up courses, and you always know where things are. Suggest `<their documents folder>/University/<course name>`. On a device bridge, request access to that one folder only. Record it: `us setup-progress advance --course-name "<course>" --stage path --answer path=<folder>`.
+Ask which language the course folder should speak. Say why in a sentence: it names the folders you'll see, and the units and trust-level folders inside them, in your language; it's also the language of the Wiki's notes, of the answers, and the one recordings are transcribed in. Offer Hebrew and English (recommend the language the course is taught in), or another language they name. Hebrew and English have ready-made folder names; for any other language the folder names are English and everything else still follows their language. Say that plainly, and don't promise translated folder names. Record it: `us setup-progress advance --course-name "<course>" --stage language --answer language=<he|en|other code>`.
 
-If the folder is inside iCloud, Google Drive, Dropbox or OneDrive, tell them in one sentence: recordings will be kept in a local folder that doesn't sync, because synced folders break links and push big files to the cloud.
+Done when: you have a language code and the student knows what it changes, and `language` is recorded.
 
-Then ask which app they'll read their notes and study packs in, and record that stage too (`--stage format --answer format=<obsidian|markdown> --answer app=<their choice>`) — see step 0. Offer: Obsidian, Word (docx), OneNote, Google Docs, or plain Markdown / something else. Recommend Obsidian, and say why in a sentence: it's the best fit, because it opens the Wiki and study packs as they are, with working links between pages and callouts. Obsidian → format `obsidian`. Any other choice → format `markdown` (standard links, PNG graphs): the study packs stay Markdown files, and they copy a finished pack into Word, OneNote or Google Docs, where the PNG graphs paste or insert as pictures. Say that plainly, so they know what to expect, and that they can switch to Obsidian later.
+## 4. Storage and format
+
+Ask where to keep the course folder. Say why in a sentence: everything for the course goes in this one folder (your files, your study packs, and a hidden area for the Wiki the AI reads), so it reads one place and never mixes up courses, and you always know where things are. Suggest `<their documents folder>/University/<course name>`. On a device bridge, request access to that one folder only. Record it: `us setup-progress advance --course-name "<course>" --stage path --answer path=<folder>`.
+
+If the folder is inside iCloud, Google Drive, Dropbox or OneDrive, tell them in one sentence: recordings will be kept in a local folder that doesn't sync, because synced folders push big files to the cloud and can evict them.
+
+Then ask which app they'll read their notes and study packs in, and record that stage too (`--stage format --answer format=<obsidian|markdown> --answer app=<their choice>`) — see step 0. Offer: Obsidian, Word (docx), OneNote, Google Docs, or plain Markdown / something else. Recommend Obsidian, and say why in a sentence: it's the best fit, because it opens the study packs as they are, with working links between pages and callouts: you will open the course's study folder as an Obsidian vault. Obsidian → format `obsidian`. Any other choice → format `markdown` (standard links, PNG graphs): the study packs stay Markdown files, and they copy a finished pack into Word, OneNote or Google Docs, where the PNG graphs paste or insert as pictures. Say that plainly, so they know what to expect, and that they can switch to Obsidian later.
 
 Done when: you have a folder path, a format and the app they'll use, each recorded as its own stage.
 
-## 4. Fetch and organize material
+## 5. Fetch and organize material
 
 First explain this step, in plain words, before asking anything:
 
@@ -78,11 +84,11 @@ Then ask: download from the course website, use a folder they already have, or b
 
 - A university plugin or a generated fallback is available (step 1): offer all three.
 - Neither: offer their own folder and the inbox only.
-- Own folder: ask for it, and ask whether it is the lecturer's material (official) or other material (added).
+- Own folder: ask for it, and ask whether it is the lecturer's material (official) or other material (added). Tell them it is copied in once and their original files are left exactly where they are; nothing of theirs is moved or changed.
 
-Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <he|en> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`.
+Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <the language from step 3> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`.
 
-Then resolve unsorted files: run `us unsorted --json`. If any, ask one grouped question (unit number, or "general" for whole-course files such as past exams) and record each answer with `us assign "<path>" <unit|general>`.
+Setup creates the three folders the student will see: its result names them (`inbox`, `material`, `study`). Then resolve unsorted files: run `us unsorted --json`. If any, ask one grouped question (unit number, or "general" for whole-course files such as past exams) and record each answer with `us assign "<path>" <unit|general>`.
 
 If downloading from the site: run the university plugin's sync skill (e.g. `openu:openu-sync`) or, with a generated fallback, fetch using its saved notes. Fetching can be slow — say so up front, and confirm what came in when it's done.
 
@@ -96,23 +102,25 @@ Record it: `us setup-progress advance --course-name "<course>" --stage fetch-and
 
 Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), the recording level is recorded, and if they chose transcripts the speech-to-text tool is installed (or they chose download only).
 
-## 5. Analyze (build the Wiki)
+## 6. Analyze (build the Wiki)
 
 Tell the student in plain words what's about to happen and why: the AI reads all the material you gathered and turns it into the Wiki, a knowledge base of its own: one page per unit, a glossary, a bank of questions, and a source page for each file. Why: an AI can't hold a whole course in its head, and re-reading every file each time is slow and error-prone. With the Wiki it finds the right place at once, answers from your material, and can point back to the exact page or moment, instead of guessing. Say honestly that this can take a while, and that it is done once: later additions are added without starting over.
 
 Read `<this skill's base directory>/../course-wiki/SKILL.md` and follow it for the whole course. Then run `us context --exam-date <date>` if the student knows the exam date (ask once; skipping is fine).
 
-Then show the student what was and wasn't analyzed: run `us wiki coverage --json` and tell them the counts (analyzed, failed, skipped, still pending) in plain words, and name each failed or skipped file with its reason and what to do about it (for example "this PDF has no text layer: I can read it visually if you want", "these recordings were skipped at your choice: run `/unistudent:course-recordings` any time"). Ask what to do about any gap worth fixing. The same list is saved in the course folder's `wiki/coverage.md`, so any later session knows what is not in the Wiki. Record it: `us setup-progress advance --course-name "<course>" --stage analyze`.
+Then show the student what was and wasn't analyzed: run `us wiki coverage --json` and tell them the counts (analyzed, failed, skipped, still pending) in plain words, and name each failed or skipped file with its reason and what to do about it (for example "this PDF has no text layer: I can read it visually if you want", "these recordings were skipped at your choice: run `/unistudent:course-recordings` any time"). Ask what to do about any gap worth fixing. The same list is saved as `coverage.md` in the Wiki (in the hidden `.unistudent` folder), so any later session knows what is not in the Wiki. Record it: `us setup-progress advance --course-name "<course>" --stage analyze`.
 
 Done when: `us wiki check` reports 0 problems, the student has seen the coverage summary, and `analyze` is recorded.
 
-## 6. Capabilities: explain, then show, what this can do
+## 7. Capabilities: explain, then show, what this can do
 
-Explain in the student's language, in five short lines, following the course folder's `README.md`: what each folder is, the inbox, and the grounding labels (✅ ⚠️ ❌).
+Explain in the student's language, in a few short lines, following the course folder's `README.md`, using the real folder names from `us courses current`: the three folders and the grounding labels (✅ 💡 ⚠️ ❌).
 
 Then, in plain words (no unexplained "MCP", "context file" or "grounding" without a one-clause gloss), cover both of these every time, not only if asked:
 
-- **Adding more material later:** drop new files in the course folder's `inbox`, then run `/unistudent:course-add` (or just mention it — Claude will notice next time).
+- **The three folders:** the inbox (drop new files here; it is emptied once they're added), the Material folder (the real files of the course, in `official` and `added` folders, then by unit; they may move, rename or delete files there, and moving a file between official and added changes how far it's trusted), and the study folder (their **Study vault**: open that folder as a vault in Obsidian, or in their other app; it holds only what was made for them to study from: study packs and a recordings roadmap per unit). Everything else is in a hidden `.unistudent` folder they never need to open.
+- **Deleting in the Material folder deletes the only copy:** there is no second copy. The computer's Trash can bring a file back, so use it carefully. (Files imported from their own folder were copied: those originals are still where they were.)
+- **Adding more material later:** drop new files in the inbox, then run `/unistudent:course-add` (or just mention it — Claude will notice next time).
 - **Reconnecting a new AI session:** open the AI app (any of them — Claude Code, Cowork, Cursor, etc.) inside this course folder and it picks the course up automatically. If it doesn't, or the session isn't rooted in the folder, paste this one line: `Read AGENTS.md in <course folder path> before answering.`
 
 Then suggest one concrete next step, chosen from what's actually true for this course (not a generic list) — e.g. "Unit 1 has material ready; want a study pack for it?" or "There are 3 recordings — want a roadmap of what's covered in each?" — and only after that, offer the rest of the commands from the course folder's `README.md` table (and the university plugin's sync skill, if there is one).
