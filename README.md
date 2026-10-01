@@ -67,7 +67,7 @@ The skills are split across three plugins. `unistudent` is the core and works fo
 
 ## Install
 
-You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything else) and, for recordings only, [ffmpeg](https://ffmpeg.org).
+You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything else) and, for recordings only, [ffmpeg](https://ffmpeg.org). On a Mac, the `uv` installer may leave `uvx` off the PATH that apps see (zsh doesn't read the file it edits): add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshenv`, restart the app, and in a desktop app's MCP settings use the full path from `which uvx`.
 
 **Claude Code**
 
