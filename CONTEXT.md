@@ -7,8 +7,15 @@ A family of Claude plugins that turns a university course's material into a per-
 ### Courses and storage
 
 **Course folder**:
-The single self-contained folder holding everything for one course a student takes.
+The single self-contained folder holding everything for one course a student takes. It shows the student three folders (Inbox, Material folder, Study vault) and hides the rest in the Hidden folder.
 _Avoid_: vault, workspace, project folder
+
+**Hidden folder**:
+The course folder's dot-folder (`.unistudent`) holding everything the student never uses: Settings, Manifest, the Wiki, jobs, saved state.
+
+**Study vault**:
+The one visible folder holding only what UniStudent made for the student to study from (study packs, recording roadmaps), opened as an Obsidian vault or in any other app. Its name says what it is for, in the student's language.
+_Avoid_: study folder, summaries folder, output folder
 
 **Settings**:
 The per-course, local-only record of the student's choices for that course folder.
@@ -20,15 +27,15 @@ _Avoid_: course list
 
 ### Material
 
-**Raw**:
-The untouched mirror of every original file in a course folder.
-_Avoid_: downloads, sources folder
+**Material folder**:
+The visible folder holding the real files of the course, sorted by trust level (official or added) and unit. The student may move, rename or delete files in it; where a file sits is the truth. Not to be confused with *course material*, which is what the AI answers from.
+_Avoid_: raw, materials, downloads, sources folder
 
 **Manifest**:
-The record of every file in Raw, with its origin and state.
+The record of every file in the Material folder, with its origin and state.
 
 **Origin**:
-Where a file in Raw came from: the course site, the student's own folder, or the inbox.
+Where a file in the Material folder came from: the course site, the student's own folder, or the inbox.
 _Avoid_: source (reserved for citations)
 
 **Inbox**:
@@ -41,7 +48,7 @@ _Avoid_: video, lecture
 ### Knowledge and output
 
 **Wiki**:
-The derived, AI-oriented Markdown knowledge base of one course, rebuilt from Raw.
+The derived, AI-oriented Markdown knowledge base of one course, rebuilt from the Material folder and kept in the Hidden folder: the student never opens it.
 _Avoid_: LLM wiki, knowledge base, index
 
 **Study pack**:
