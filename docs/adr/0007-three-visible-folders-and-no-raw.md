@@ -1,0 +1,7 @@
+# Three visible folders, a hidden folder for everything else, and no Raw
+
+A course folder shows the student three folders (numbered so they sort in the order the student uses them): the Inbox, the Material folder (the real files, sorted by trust level and unit) and the Study vault (only what UniStudent made to study from). Everything else (Settings, Manifest, Wiki, jobs, state) lives in the Hidden folder, and the Wiki is never shown. The visible folder names, and the unit and trust-level folders inside them, follow the language the student picks in setup; the Hidden folder keeps English names.
+
+There is no Raw. The Material folder holds the only copy of each file. The student may move, rename or delete files there: where a file sits is the truth, and the Wiki build follows moves by fingerprint. Files imported from the student's own folder are copied in once and the originals are left alone; Inbox files are moved in.
+
+This supersedes ADR 0003 (Raw plus links) and the "every folder name is English" rule in `docs/spec/v1.md`. We chose it because the student asked for one clear place to study from and one to feed, and because links into a hidden store brought OS-specific link code (symlinks, junctions, index fallbacks) and "is this the real file?" confusion for no benefit once the student may reorganize the folder anyway. We accept that deleting a file in the Material folder deletes the only copy (the system Trash can recover it, and setup says so), and that a recording is copied once on import from the student's own folder.
