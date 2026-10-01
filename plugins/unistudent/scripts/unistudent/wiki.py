@@ -339,6 +339,8 @@ def relink_vault(course):
     for found in course.material.rglob("*") if course.material.is_dir() else []:
         on_disk.setdefault(found.name, []).append(found)
 
+    wiki_dir = course.wiki.resolve()
+
     def resolve(page, path):
         return (page.parent / unquote(path)).resolve()
 
@@ -352,8 +354,8 @@ def relink_vault(course):
                 return match.group(0)
             local = Path(url2pathname(parsed.path)) if parsed.scheme else resolve(page, raw.partition("#")[0])
             anchor = raw.partition("#")[2]
-            if local.is_relative_to(course.wiki):  # an old link into the Wiki
-                inner = local.relative_to(course.wiki).as_posix()
+            if local.is_relative_to(wiki_dir):  # an old link into the Wiki
+                inner = local.relative_to(wiki_dir).as_posix()
                 rel = page_source.get(inner)
                 where = re.fullmatch(r"page-(\d+)", anchor)
                 if rel:
