@@ -19,7 +19,7 @@ from pathlib import Path
 from . import material
 from .course import home
 from .course import unit_dir
-from .wiki import recording_pages
+from .wiki import recording_pages, video_link
 
 # Hebrew-tuned models by ivrit.ai; other languages use the multilingual model.
 MODELS = {
@@ -225,7 +225,7 @@ def write_transcript(course, rel, segments, name):
     lines = ["---", f"source: {rel}", f"unit: {info['unit'] if info['unit'] is not None else 'unsorted'}",
              f"duration: {hms(total)}", f"backend: {name}", "---", "",
              f"# {Path(rel).name}: transcript", "",
-             f"Sources: [recording]({source.resolve().as_uri()})", ""]
+             "Sources: " + video_link(course, rel, folder), ""]
     block_start, block = None, []
     for start, _, text in segments:
         if block_start is None or start - block_start >= PARAGRAPH_SECONDS:

@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .common import UserError
 from .convert import kind
-from .course import parse_tier_folder, parse_unit, parse_unit_folder
+from .course import parse_tier_folder, parse_unit, parse_unit_folder, safe_name
 from .sorting import detect_unit
 
 SKIP_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
@@ -63,6 +63,30 @@ def _free_name(folder: Path, name: str, taken=()):
     while (folder / candidate).exists() or _key(candidate) in taken:
         candidate, n = f"{stem} ({n}){suffix}", n + 1
     return candidate
+
+
+def wiki_folders(files):
+    """{recording rel: its Wiki folder}. A folder, once given, stays in the Manifest entry, so a recording that is
+    renamed or moved between trust levels keeps its transcript and summary, and a newcomer of the same name can't take them."""
+    used = {e["wiki_folder"] for e in files.values() if e.get("wiki_folder")}
+    out = {}
+    for rel, entry in sorted(files.items()):
+        if kind(rel) != "recording":
+            continue
+        folder = entry.get("wiki_folder")
+        if not folder:
+            stem = safe_name(Path(rel).stem)
+            folder, n = f"recordings/{stem}", 2
+            while folder in used:
+                folder, n = f"recordings/{stem} ({n})", n + 1
+            used.add(folder)
+        out[rel] = folder
+    return out
+
+
+def assign_wiki_folders(files):
+    for rel, folder in wiki_folders(files).items():
+        files[rel]["wiki_folder"] = folder
 
 
 def _slot(course, tier, unit):
@@ -145,6 +169,7 @@ def add_file(course, path, tier="added", origin="inbox", hint=None, replace_rel=
     if note:
         entry["origin_note"] = note
     files[rel] = entry
+    assign_wiki_folders(files)
     course.save_manifest(manifest)
     return rel
 
@@ -296,5 +321,6 @@ def scan(course):
         result["moved"] = [(a, f"{slot}/{name}" if b == rel else b) for a, b in result["moved"]]
     result["dropped"] = sorted(gone)
     manifest["files"] = kept
+    assign_wiki_folders(kept)
     course.save_manifest(manifest)
     return result
