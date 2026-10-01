@@ -21,7 +21,8 @@ HASH_KEY = "unistudent-graph"
 PALETTE = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#8c564b"]
 FUNCTIONS = {"sqrt": math.sqrt, "log": math.log, "exp": math.exp, "sin": math.sin, "cos": math.cos}
 FORMULA_HELP = "Use x, numbers, + - * / ^ and the functions sqrt, log, exp, sin, cos."
-INSTALL_HELP = ("Drawing graphs needs matplotlib, which is not installed. Add it with: "
+INSTALL_HELP = ("Drawing graphs needs matplotlib, which is not installed here. If the UniStudent MCP tool `graph` "
+                "is available, call it instead: it includes matplotlib. Otherwise add it with: "
                 "pip install matplotlib (or pip install \"unistudent[graphs]\"). "
                 "Until then, link the slide page and describe the graph in one line.")
 KINDS = ("points", "vertical", "horizontal", "formula", "sketch")

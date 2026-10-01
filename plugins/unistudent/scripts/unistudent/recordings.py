@@ -17,6 +17,7 @@ import time
 from pathlib import Path
 
 from . import material
+from .common import UserError
 from .course import home
 from .course import unit_dir
 from .wiki import recording_pages, video_link
@@ -83,6 +84,37 @@ def install_run(name):
 def install_hint(name):
     return (f"Speech-to-text isn't installed. Run: {install_run(name)} "
             "For advanced users: or reinstall UniStudent with its 'stt' extra (uv tool install --force \"unistudent[stt] @ <repo>\").")
+
+
+def _approved_file(course):
+    return course.state / "approved-recordings.json"
+
+
+def approved(course):
+    try:
+        return json.loads(_approved_file(course).read_text("utf-8"))
+    except (FileNotFoundError, ValueError):
+        return []
+
+
+def approve(course, rels):
+    """Record the recordings the student said yes to: `transcribe` runs only these."""
+    known = recording_pages(course)
+    unknown = [r for r in rels if r not in known]
+    if unknown:
+        raise UserError("Not a recording in this course: " + ", ".join(unknown))
+    chosen = approved(course) + [r for r in rels if r not in approved(course)]
+    _approved_file(course).parent.mkdir(parents=True, exist_ok=True)
+    _approved_file(course).write_text(json.dumps(chosen, ensure_ascii=False), "utf-8")
+    return chosen
+
+
+def require_approved(course, rels):
+    missing = [r for r in rels if r not in approved(course)]
+    if missing:
+        raise UserError("Not approved by the student: " + ", ".join(missing)
+                        + ". Show the student the numbered list of recordings (full path, length, estimate), "
+                        "then run `us recordings approve` with the ones they chose.")
 
 
 def start_background(course, rels):
@@ -270,7 +302,10 @@ def transcribe(course, rel):
         else:
             extract_audio(source, audio)
         segments = transcribe_audio(audio, name, course.settings().get("language"))
-    return write_transcript(course, rel, segments, name)
+    path = write_transcript(course, rel, segments, name)
+    left = [r for r in approved(course) if r != rel]
+    _approved_file(course).write_text(json.dumps(left, ensure_ascii=False), "utf-8")
+    return path
 
 
 def fetch_streams(listing_path, folder, audio_only=False):

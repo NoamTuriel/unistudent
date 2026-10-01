@@ -184,6 +184,7 @@ class RecordingRoadmap(CourseTestCase):
         run_json("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
         f = folders(course)
         with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "approve", "--course", course, "official/Unit 4/session 5.mp4")
             run_json("recordings", "transcribe", "--course", course, "official/Unit 4/session 5.mp4")
         rec = f.wiki / "recordings" / "session 5"
         write(rec / "toc.md", "| 00:12:47 | exam question | [00:12:47](transcript.md#001230) |\n")

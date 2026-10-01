@@ -28,6 +28,7 @@ class Citations(CourseTestCase):
         write(own / "Unit 4" / "session 5.mp4", b"\x00" * 64)
         run_json("setup", self.course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
         with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "approve", "--course", self.course, "official/Unit 4/session 5.mp4")
             run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
         self.f = folders(self.course)
         rec = self.f.wiki / "recordings" / "session 5"

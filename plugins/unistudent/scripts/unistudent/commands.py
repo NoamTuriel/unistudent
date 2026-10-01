@@ -319,6 +319,10 @@ def register(add, with_course):
             factor = recordings.benchmark(course, args.paths[0])
             return {"realtime_factor": factor,
                     "summary": f"This machine transcribes 1 hour of audio in about {factor:.2f} h."}
+        if args.action == "approve":
+            chosen = recordings.approve(course, args.paths)
+            return {"approved": chosen, "summary": "Approved for transcription:\n" + "\n".join(chosen)}
+        recordings.require_approved(course, args.paths)
         if args.background:
             job = recordings.start_background(course, args.paths)
             return {**job, "summary": f"Transcribing {len(args.paths)} recordings in the background. "
@@ -326,8 +330,8 @@ def register(add, with_course):
         done = [str(recordings.transcribe(course, rel)) for rel in args.paths]
         return {"transcripts": done, "summary": "Transcribed:\n" + "\n".join(done)}
 
-    p = with_course(add("recordings", cmd_recordings, "list, estimate, benchmark or transcribe recordings"))
-    p.add_argument("action", choices=["list", "estimate", "benchmark", "transcribe", "fetch"])
+    p = with_course(add("recordings", cmd_recordings, "list, estimate, benchmark, approve or transcribe recordings (transcribe only runs what the student approved)"))
+    p.add_argument("action", choices=["list", "estimate", "benchmark", "approve", "transcribe", "fetch"])
     p.add_argument("paths", nargs="*", help="recording paths in the Material folder (fetch: listing JSON and download folder)")
     p.add_argument("--audio-only", action="store_true", help="fetch: keep only the sound (enough for transcripts)")
     p.add_argument("--background", action="store_true",

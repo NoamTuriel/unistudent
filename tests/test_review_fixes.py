@@ -159,6 +159,7 @@ class WikiFollowsMoves(CourseTestCase):
             write(self.tmp / tier / "Unit 4" / "s.mp4", content)
         run_json("import", self.tmp / "official", "--course", self.course, "--tier", "official")
         with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "approve", "--course", self.course, "official/Unit 4/s.mp4")
             run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/s.mp4")
         run_json("import", self.tmp / "added", "--course", self.course, "--tier", "added")
         rows = {r["path"]: r for r in run_json("recordings", "list", "--course", self.course)["recordings"]}
@@ -174,6 +175,7 @@ class WikiFollowsMoves(CourseTestCase):
         write(self.tmp / "own" / "Unit 4" / "s.mp4", b"\x00" * 64)
         run_json("import", self.tmp / "own", "--course", self.course, "--tier", "official")
         with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "approve", "--course", self.course, "official/Unit 4/s.mp4")
             run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/s.mp4")
         transcript = self.f.wiki / "recordings" / "s" / "transcript.md"
         self.assertNotIn("file://", transcript.read_text("utf-8"))
@@ -212,6 +214,7 @@ class RoadmapsAndAnnouncements(CourseTestCase):
         run_json("setup", self.course, "--name", "Macro", "--language", "en", "--import", self.tmp / "own", "--tier", "official")
         self.f = folders(self.course)
         with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "approve", "--course", self.course, "official/Unit 4/session 5.mp4")
             run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
         self.rec = self.f.wiki / "recordings" / "session 5"
         write(self.rec / "toc.md", "Sources: [transcript](transcript.md)\n\n| 00:01:00 | exam question | [00:01:00](transcript.md#000100) |\n")
