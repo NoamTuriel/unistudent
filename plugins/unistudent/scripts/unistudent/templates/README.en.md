@@ -2,6 +2,8 @@
 
 This folder is your whole course in one place. Claude answers questions about the course **only from the material here**, not from the internet, so answers match your course's methods, notation and assumptions: the things your exam grades.
 
+Two words used below: the **Wiki** is a hidden set of pages the AI reads to answer from your material (you never open it), and a **vault** is simply a folder that a notes app such as Obsidian opens as its library.
+
 ## What's here
 
 You see three folders, numbered in the order you use them. Everything else is hidden in `.unistudent/` (the Wiki, settings and saved state), so it can't be broken by accident.

@@ -16,7 +16,9 @@ class SetupProgress(CourseTestCase):
             ("course", {"course_skill": "macro"}),
             ("path", {"path": "/tmp/Macro"}),
             ("format", {"format": "obsidian"}),
-            ("fetch-and-organize", {"origin_mode": "own-folder"}),
+            ("fetch", {"origin_mode": "own-folder"}),
+            ("sort", {}),
+            ("recordings", {"recording_level": "1"}),
             ("analyze", {}),
         ]
         for stage, answers in stages_and_answers:

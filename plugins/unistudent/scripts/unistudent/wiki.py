@@ -8,6 +8,7 @@ never touched by a rebuild.
 import os
 import re
 from pathlib import Path
+from urllib.parse import unquote
 
 from . import material
 from .common import problems_summary
@@ -107,19 +108,50 @@ def _link(label, target):
 
 
 def recording_pages(course):
-    """Recordings and their Wiki folders (filled by the recordings pipeline).
-    Folder names are unique and stable: sorted, with a suffix on name clashes."""
-    out, used = {}, set()
-    for rel, entry in sorted(course.manifest()["files"].items()):
-        if kind(rel) == "recording":
-            stem = safe_name(Path(rel).stem)
-            folder, n = f"recordings/{stem}", 2
-            while folder in used:
-                folder, n = f"recordings/{stem} ({n})", n + 1
-            used.add(folder)
-            out[rel] = {"folder": folder, "unit": entry.get("unit"),
-                        "processed": (course.wiki / folder / "summary.md").exists()}
-    return out
+    """Recordings and their Wiki folders (filled by the recordings pipeline). The folder is kept in the Manifest entry."""
+    files = course.manifest()["files"]
+    return {rel: {"folder": folder, "unit": files[rel].get("unit"),
+                  "processed": (course.wiki / folder / "summary.md").exists()}
+            for rel, folder in material.wiki_folders(files).items()}
+
+
+def _video_path(course, rel, from_dir):
+    video = material.path_of(course, rel)
+    try:
+        return Path(os.path.relpath(video, from_dir)).as_posix()
+    except ValueError:  # another drive (Windows): link it by address
+        return video.as_uri()
+
+
+def _target(path):
+    return f"<{path}>" if " " in path else path
+
+
+def video_link(course, rel, from_dir):
+    """A link to the recording's file, computed now (not remembered), so it follows moves of the file or the folder."""
+    return _link("recording", _video_path(course, rel, from_dir))
+
+
+def _relink_pages(wiki, moved):
+    """Links in Wiki pages (written by Claude between builds) to a source page that moved follow it to its new place."""
+    for page in wiki.rglob("*.md"):
+        text = page.read_text("utf-8")
+
+        def fix(match):
+            raw = match.group(2)
+            target = raw.strip("<>")
+            path, hash_, anchor = target.partition("#")
+            if not path or "://" in path:
+                return match.group(0)
+            here = os.path.normpath(os.path.join(page.parent.relative_to(wiki).as_posix(), unquote(path))).replace(os.sep, "/")
+            if here not in moved:
+                return match.group(0)
+            new = Path(os.path.relpath(wiki / moved[here], page.parent)).as_posix() + hash_ + anchor
+            return match.group(0).replace(raw, f"<{new}>" if " " in new or raw.startswith("<") else new, 1)
+
+        patched = MD_LINK.sub(fix, text)
+        if patched != text:
+            page.write_text(patched, "utf-8")
 
 
 def build(course, force=False):
@@ -131,8 +163,14 @@ def build(course, force=False):
     plan = _plan_pages(course)
 
     # Pages whose file was deleted, moved or renamed (the scan above already followed it in the Manifest).
+    moved_pages = {}
     for rel, info in list(state.items()):
         if plan.get(rel) != info.get("page"):
+            successor = plan.get(rel) or next(  # the same content, now at another path: its page moved
+                (page for new, page in sorted(plan.items(), key=lambda i: Path(i[0]).name != Path(rel).name)
+                 if new not in state and manifest[new].get("fingerprint") == info.get("fingerprint")), None)
+            if successor and successor != info["page"]:
+                moved_pages[info["page"]] = successor
             old = wiki / info["page"]
             if old.exists():
                 old.unlink()
@@ -158,6 +196,7 @@ def build(course, force=False):
         if conversion.empty_pages:
             needs_visual.append({"source": rel, "pages": conversion.empty_pages})
     course.write_state("wiki.json", state)
+    _relink_pages(wiki, {old: new for old, new in moved_pages.items() if (wiki / new).exists()})
 
     images = [rel for rel in manifest if kind(rel) == "image"]
     recordings = recording_pages(course)
@@ -183,6 +222,14 @@ def build(course, force=False):
             for r, i in recs:
                 status = _link("summary", f"../{i['folder']}/summary.md") if i["processed"] else "not processed yet"
                 lines.append(f"- {Path(r).name}: {status}")
+            for title, heading in (("Announcements", "Announcements"), ("This will be on the exam", "This will be on the exam")):
+                found_in = [(r, i, _section((wiki / i["folder"] / "summary.md").read_text("utf-8"), heading))
+                            for r, i in recs if i["processed"]]
+                if any(items for _, _, items in found_in):
+                    lines += ["", f"{title} (the lecturer said, in a recording):", ""]
+                    for r, i, items in found_in:
+                        lines += [f"- {Path(r).name} ({_link('summary', '../' + i['folder'] + '/summary.md')}): {item}"
+                                  for item in items]
         lines += ["", f"Questions: {_link('question bank', '../question-bank.md')} (tag #{folder})"]
         path = wiki / "units" / f"{folder}.md"
         _write_generated(path, "\n".join(lines))
@@ -201,6 +248,14 @@ def build(course, force=False):
             index.append(f"- {Path(rel).name} ({course.unit_label(info['unit'])}): {status}")
     index += ["", "## What was and wasn't analyzed", "", f"- {_link('Coverage of every file', 'coverage.md')}"]
     (wiki / "index.md").write_text("\n".join(index) + "\n", "utf-8")
+    for rel, info in recordings.items():
+        transcript = wiki / info["folder"] / "transcript.md"
+        if transcript.exists():
+            text = transcript.read_text("utf-8")
+            patched = re.sub(r"(?m)^Sources: \[recording\]\(.*\)$",
+                             lambda _: "Sources: " + video_link(course, rel, transcript.parent), text, count=1)
+            if patched != text:
+                transcript.write_text(patched, "utf-8")
     covered = coverage(course, write=True)
     roadmaps = write_roadmaps(course, recordings)
 
@@ -220,11 +275,25 @@ def build(course, force=False):
     }
 
 
-def _for_the_vault(path: Path) -> str:
+def _section(text, title):
+    """The lines under the `## ` heading that contains `title`, up to the next `## ` heading."""
+    match = re.search(rf'(?ms)^## [^\n]*{re.escape(title)}[^\n]*\n(.*?)(?=^## |\Z)', text)
+    return [re.sub(r"^\s*[-*]\s+", "", l).strip() for l in match.group(1).splitlines() if l.strip()] if match else []
+
+
+def _for_the_vault(path: Path, video=None) -> str:
     """A Wiki page as the student reads it in the Study vault: no frontmatter, no links into the hidden Wiki,
     headings two levels down."""
     text = re.sub(r"\A---\n.*?\n---\n", "", path.read_text("utf-8"), flags=re.S)
-    return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(lambda m: m.group(1), text)).strip()
+
+    def keep(match):  # a time in the transcript becomes a time in the video; other links into the hidden Wiki go
+        stamp = re.fullmatch(r"(?:.*transcript\.md)?#(\d\d)(\d\d)(\d\d)", match.group(2).strip("<>"))
+        if not (video and stamp):
+            return match.group(1)
+        seconds = int(stamp[1]) * 3600 + int(stamp[2]) * 60 + int(stamp[3])
+        return _link(match.group(1), f"{video}#t={seconds}")
+
+    return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(keep, text)).strip()
 
 
 def write_roadmaps(course, recordings):
@@ -242,17 +311,41 @@ def write_roadmaps(course, recordings):
         page = course.pack_folder(unit) / f"{course.label('roadmap')}.md"
         lines = [f"# {course.label('roadmap')}: {course.unit_label(unit)}", ""]
         for rel, info in recs:
-            try:
-                video = Path(os.path.relpath(material.path_of(course, rel), page.parent)).as_posix()
-            except ValueError:  # a recording on another drive (Windows): link it by address
-                video = material.path_of(course, rel).as_uri()
-            lines += [f"## {Path(rel).name}", "", _link("recording", video), ""]
+            video = _video_path(course, rel, page.parent)
+            lines += [f"## {Path(rel).name}", "", f"[recording]({_target(video)})", ""]
             for name in ("toc.md", "summary.md"):
                 if (course.wiki / info["folder"] / name).exists():
-                    lines += [_for_the_vault(course.wiki / info["folder"] / name), ""]
+                    lines += [_for_the_vault(course.wiki / info["folder"] / name, video), ""]
+        lines[2:2] = ["✅ Made from the transcripts and summaries of these recordings; the times open the video. "
+                      + "Sources: " + ", ".join(video_link(course, r, page.parent) for r, _ in recs), ""]
         _write_generated(page, "\n".join(lines))
         written.append(page.relative_to(course.root).as_posix())
+    _remove_stale_roadmaps(course, written)
     return written
+
+
+def _remove_stale_roadmaps(course, written):
+    """A roadmap whose recordings are gone, or lost their summaries, is removed (what the student added around the
+    generated block stays)."""
+    from .course import LABELS
+    names = {table["roadmap"] + ".md" for table in LABELS.values()}
+    keep = {course.root / w for w in written}
+    for page in sorted(course.study.rglob("*.md")) if course.study.is_dir() else []:
+        if page.name not in names or page in keep:
+            continue
+        text = page.read_text("utf-8")
+        if GEN_START not in text or GEN_END not in text:
+            continue
+        head, rest = text.split(GEN_START, 1)
+        outside = (head + rest.split(GEN_END, 1)[1]).strip()
+        if outside:
+            page.write_text(outside + "\n", "utf-8")
+        else:
+            page.unlink()
+            try:
+                page.parent.rmdir()
+            except OSError:
+                pass
 
 
 def coverage(course, write=False):

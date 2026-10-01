@@ -138,11 +138,13 @@ def graph_problems(page: Path, text: str):
 
 def check_page(page: Path, root: Path):
     """Label and citation problems in one answer or study-pack page."""
-    from .wiki import GEN_START
+    from .wiki import GEN_END, GEN_START
     page = Path(page)
     text = page.read_text("utf-8")
-    if GEN_START in text:  # a page UniStudent generates (the recordings roadmap): the checks that apply are links
-        return {"paragraphs": [], "problems": check_links(page, root)}
+    if GEN_START in text and GEN_END in text:  # the block UniStudent generates (the recordings roadmap) is checked for
+        start = text.index(GEN_START)         # links only; everything around it for labels (line numbers stay)
+        end = text.index(GEN_END, start) + len(GEN_END)
+        text = text[:start] + re.sub(r"[^\n]", "", text[start:end]) + text[end:]
     found = paragraphs(text)
     problems = graph_problems(page, text)
     for p in found:

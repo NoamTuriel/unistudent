@@ -6,6 +6,7 @@ from the current folder, then from the Registry's active course.
 """
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -86,9 +87,9 @@ def refresh_other_contexts(course: Course):
 
 def cmd_setup(args):
     course = Course(args.path)
-    if course.exists() and course.legacy:
-        raise UserError("This course folder has the old layout (raw, materials, wiki, study). "
-                        f"Run `us migrate --course \"{course.root}\"` first: it shows what it will move, then moves it.")
+    if course.exists():
+        material.require_new_layout(course)
+    before = course.settings() if course.exists() else None
     settings = course.settings()
     settings.update({k: v for k, v in {
         "course_name": args.name or settings["course_name"] or course.root.name,
@@ -101,7 +102,14 @@ def cmd_setup(args):
     if synced and not settings.get("recordings_dir"):
         settings["recordings_dir"] = str(recordings_root() / safe_name(settings["course_name"]))
     course.save_settings(settings)
-    course.ensure_layout()
+    try:
+        renamed = course.ensure_layout()
+    except UserError:
+        if before is not None:
+            course.save_settings(before)  # the choice that couldn't be carried out is not remembered
+        raise
+    if renamed:
+        material.scan(course)  # the folders inside the Material folder were renamed: follow them in the Manifest
     if not course.preferences_file.exists():
         course.preferences_file.write_text("# Course preferences\n\n", "utf-8")
     Registry().add(course, settings["course_name"])
@@ -145,8 +153,9 @@ def cmd_migrate(args):
         return result
     left = migrate.apply(course, found)
     readme = course.root / "README.md"
-    if readme.exists() and "`raw/`" in readme.read_text("utf-8"):  # the generated one: describes folders that are gone
-        readme.unlink()
+    if readme.exists():  # a course folder of layout 1 had the old README (it describes folders that are gone): keep it aside
+        aside = readme.with_name("README.old-layout.md")
+        readme.replace(aside if not aside.exists() else readme.with_name(f"README.old-layout-{os.getpid()}.md"))
     write_context_files(course)
     result.update(applied=True, left_behind=left)
     result["summary"] = (f"Moved {len(found['moves'])} items into the new layout ({course.folder_names()['study']} is "
@@ -160,12 +169,14 @@ def cmd_manifest(args):
 
 def cmd_unsorted(args):
     course = resolve_course(args)
+    material.require_new_layout(course)
     files = material.unsorted(course)
     return {"files": files, "summary": "\n".join(files) or "Nothing unsorted."}
 
 
 def cmd_assign(args):
     course = resolve_course(args)
+    material.require_new_layout(course)
     try:
         new = material.assign(course, args.path, args.unit)
     except KeyError:

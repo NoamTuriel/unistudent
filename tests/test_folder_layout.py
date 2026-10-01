@@ -151,10 +151,11 @@ class MaterialFolder(CourseTestCase):
 
     def test_deleting_a_file_removes_it_from_the_manifest_and_the_wiki(self):
         write(self.f.inbox / "Unit 4 notes.txt", "money multiplier")
+        write(self.f.inbox / "Unit 4 other.txt", "elasticity")
         run_json("add", "--course", self.course)
         (self.m / "added" / "Unit 4" / "Unit 4 notes.txt").unlink()
         run_json("wiki", "build", "--course", self.course)
-        self.assertEqual(self.manifest(), {})
+        self.assertEqual(list(self.manifest()), ["added/Unit 4/Unit 4 other.txt"])
         self.assertFalse((self.f.wiki / "sources" / "unit-04" / "Unit 4 notes.md").exists())
 
     def test_a_file_the_student_drops_straight_into_the_material_folder_is_added_and_sorted(self):
@@ -226,10 +227,10 @@ class OldLayout(CourseTestCase):
         self.course = self.tmp / "Old"
         make_old_course(self.course, self.tmp / "own")
 
-    def test_an_old_layout_folder_still_builds_its_wiki_where_it_always_was(self):
-        result = run_json("wiki", "build", "--course", self.course)
-        self.assertEqual(result["pages"], 2)
-        self.assertTrue((self.course / "wiki" / "sources" / "unit-04" / "slides.md").exists())
+    def test_an_old_layout_folder_does_not_build_until_it_is_migrated(self):
+        code, out = run("wiki", "build", "--course", self.course)
+        self.assertEqual(code, 1)
+        self.assertIn("us migrate --apply", out)
         self.assertFalse((self.course / ".unistudent" / "wiki").exists())
 
     def test_adding_to_an_old_layout_folder_says_to_migrate_first(self):
