@@ -24,7 +24,7 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 | practice-short | `N.3b תרגול מקוצר` / `N.3b Short practice` | Every topic's questions, but only one per distinct way of solving it — for revising fast, not for full practice | |
 | recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | Per recording: time · until · type · what happens · topic. Only when the unit's recordings have transcripts | ✓ when transcripts exist |
 
-Save to `study/Unit N/` (folder names are always English; page titles and content follow the course language).
+Save to the unit's folder in the Study vault (`pack_folder` in the result of `us study changes --unit N`): its name, the page titles and the content all follow the course language. The vault holds only study packs and the generated recordings roadmap.
 
 ## Concept structure (walkthrough)
 
@@ -61,8 +61,8 @@ everything worth practicing — not the fewest questions overall.
 Where the course material explains a concept with a graph (X and Y axes with lines or curves), or a question or its solution explicitly needs one, show it on the walkthrough and practice pages (and on a kept short-practice question, the same as on the full practice page). Never on the roadmap, the recordings index or the navigation line, and never a graph that decorates a page the course didn't illustrate. A student preference such as "no graphs" or "only the key ones" overrides this.
 
 1. **Find it:** the Wiki text only hints at a slide's graph (axis labels, words like "curve" or "shifts"), so open that slide page and read it visually, including image-only pages.
-2. **Write a Graph spec** into `study/Unit N/graphs/<name>.json`. Keep it short: the axes' labels and every curve with the course's own names. Label each axis with the name in the course language plus the course's symbol in brackets, e.g. `כמות הכסף (M)`, and name a curve by its name plus its symbol when the course gives one. A curve is two points, a vertical or horizontal value, a formula in `x`, or a sketch of a few rough points on a 0–10 grid (for conceptual "what would happen if" graphs; the tool draws it as a smooth curve with no numbers). A shifted curve names the curve it moves from (`shift_of`). Points of interest give two curve names (the tool finds the crossing) or coordinates.
-3. **Draw it:** `us graph "study/Unit N/graphs/<name>.json"` (`us`: the UniStudent MCP tool `graph`, or the `unistudent` command). Fix the spec and draw again when it reports a problem. Open the PNG next to the slide page once and fix every difference: the graph must be as close to the course's own as possible (the same curves with the same slopes and shapes, the same labels, the same crossings and points, the same relative positions), because the student will compare the two.
+2. **Write a Graph spec** into `<pack folder>/graphs/<name>.json`. Keep it short: the axes' labels and every curve with the course's own names. Label each axis with the name in the course language plus the course's symbol in brackets, e.g. `כמות הכסף (M)`, and name a curve by its name plus its symbol when the course gives one. A curve is two points, a vertical or horizontal value, a formula in `x`, or a sketch of a few rough points on a 0–10 grid (for conceptual "what would happen if" graphs; the tool draws it as a smooth curve with no numbers). A shifted curve names the curve it moves from (`shift_of`). Points of interest give two curve names (the tool finds the crossing) or coordinates.
+3. **Draw it:** `us graph "<pack folder>/graphs/<name>.json"` (`us`: the UniStudent MCP tool `graph`, or the `unistudent` command). Fix the spec and draw again when it reports a problem. Open the PNG next to the slide page once and fix every difference: the graph must be as close to the course's own as possible (the same curves with the same slopes and shapes, the same labels, the same crossings and points, the same relative positions), because the student will compare the two.
 4. **Embed it** with a standard image link, alt text saying in words what the graph shows (which curve shifts, which way, what happens to each variable), and on the next line a caption starting with a grounding label: ✅ and a link to the slide page when it reproduces the course's graph, 💡 when it only illustrates. ⚠️ is not valid for a graph.
 5. **Without drawing** (the tool says matplotlib is missing): write no image link; write the slide page link and one line describing the graph, and tell the student once how to add matplotlib.
 
@@ -70,8 +70,8 @@ Flow and cause-and-effect pictures are plain Mermaid blocks, no tool.
 
 ## Links
 
-- To material: Wiki source pages with page anchors (`wiki/sources/unit-04/slides.md#page-3`).
-- To recordings: the transcript anchor (`wiki/recordings/<rec>/transcript.md#001230`) plus the video file link (`file://…`). The video link opens the file; Obsidian's Media Extended plugin can jump to the time.
+- To material: Wiki source pages with page anchors. The Wiki is hidden at `.unistudent/wiki/` in the course folder, so from a page in `<vault>/<unit folder>/` the link is `../../.unistudent/wiki/sources/unit-04/slides.md#page-3`.
+- To recordings: the transcript anchor (`../../.unistudent/wiki/recordings/<rec>/transcript.md#001230`) plus a link to the video file in the Material folder (`../../<material folder>/official/<unit folder>/<file>`). The video link opens the file; Obsidian's Media Extended plugin can jump to the time.
 - Obsidian format: wikilinks and callouts (`> [!tip]`) are fine. Plain Markdown: standard links and blockquotes only.
 - A navigation line at the top of every page linking the unit's other pages.
 

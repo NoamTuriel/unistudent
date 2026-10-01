@@ -45,7 +45,7 @@ Done when: every chosen item has a `file`, or is reported as failed.
 
 ## 6. Hand over
 
-Run `us ingest --json "<Downloads>/<listing file>" "<Downloads>"`. The core moves the listed files into Raw, sorts them, updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`.
+Run `us ingest --json "<Downloads>/<listing file>" "<Downloads>"`. The core moves the listed files into the course's Material folder (`official`, by unit), updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`.
 
 - `unsorted`: ask one grouped question and record answers with `us assign`.
 - `missing`: retry those downloads once, then report them.

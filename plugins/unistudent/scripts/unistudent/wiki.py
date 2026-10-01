@@ -257,7 +257,7 @@ def write_roadmaps(course, recordings):
 
 def coverage(course, write=False):
     """What the Wiki did and did not read, per file: analyzed, failed (with the reason), skipped (with who
-    chose it) or pending. With write=True (the build) also saved as wiki/coverage.md, so a later session knows
+    chose it) or pending. With write=True (the build) also saved as coverage.md in the Wiki, so a later session knows
     what is NOT in the Wiki. Showing it changes nothing on disk."""
     state = course.read_state("wiki.json", {})
     level = course.settings().get("recording_level")

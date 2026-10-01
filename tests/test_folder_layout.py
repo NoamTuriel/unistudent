@@ -30,6 +30,12 @@ class VisibleFolders(CourseTestCase):
         run_json("add", "--course", course)
         self.assertTrue((course / "2-חומרי-הקורס" / "נוסף" / "יחידה 3" / "Unit 3 notes.txt").is_file())
 
+    def test_the_closing_suggestion_to_use_the_hebrew_inbox_needs_no_label(self):
+        course = self.tmp / "Macro"
+        run_json("setup", course, "--name", "Macro", "--language", "he")
+        page = write(course / "answer.md", "⚠️ The course material doesn't cover it.\n\nDrop notes into `1-קבצים-חדשים/` and run course-add.\n")
+        self.assertEqual(run_json("check", page, "--labels", "--course", course)["problems"], [])
+
     def test_a_language_with_no_table_falls_back_to_english_names(self):
         course = self.tmp / "Macro"
         run_json("setup", course, "--name", "Macro", "--language", "fr")
