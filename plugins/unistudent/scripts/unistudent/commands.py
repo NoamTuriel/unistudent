@@ -15,10 +15,12 @@ def register(add, with_course):
         course = resolve_course(args)
         if args.action == "check":
             return wiki.check(course)
+        if args.action == "coverage":
+            return wiki.coverage(course)
         return wiki.build(course, force=args.force)
 
-    p = with_course(add("wiki", cmd_wiki, "build or check the Wiki"))
-    p.add_argument("action", choices=["build", "check"])
+    p = with_course(add("wiki", cmd_wiki, "build or check the Wiki, or show which files it did and did not read"))
+    p.add_argument("action", choices=["build", "check", "coverage"])
     p.add_argument("--force", action="store_true", help="convert every file again")
 
     def cmd_add(args):
