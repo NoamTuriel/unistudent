@@ -26,6 +26,10 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 
 Save to the unit's folder in the Study vault (`pack_folder` in the result of `us study changes --unit N`): its name, the page titles and the content all follow the course language. The vault holds only study packs and the generated recordings roadmap.
 
+## Announcements and exam hints (roadmap)
+
+The unit page in the Wiki collects what the lecturer said in this unit's recordings: `Announcements` (dates, assignments, who to work with, exam information) and `This will be on the exam`. The roadmap page always has a section for them, every line with its recording and time link (✅, citing the recording summary). Leave it out only when the unit page lists none. These are first-class: never summarise them away.
+
 ## Concept structure (walkthrough)
 
 `### <concept> — <English name>`, then in this order:

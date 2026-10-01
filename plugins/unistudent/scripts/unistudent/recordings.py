@@ -19,7 +19,7 @@ from pathlib import Path
 from . import material
 from .course import home
 from .course import unit_dir
-from .wiki import recording_pages
+from .wiki import recording_pages, video_link
 
 # Hebrew-tuned models by ivrit.ai; other languages use the multilingual model.
 MODELS = {
@@ -69,17 +69,20 @@ def install_run(name):
     import importlib.util
     import sys
     package = PACKAGES.get(name, name)
-    python = f'"{sys.executable}"' if " " in sys.executable else sys.executable  # quoted only if it must be (PowerShell)
+    python = sys.executable
+    if " " in python:  # quoted only if it must be; PowerShell needs the call operator before a quoted path (a POSIX shell must not get it)
+        python = f'& "{python}"' if platform.system() == "Windows" else f'"{python}"'
     if importlib.util.find_spec("pip") is not None:
         return f"{python} -m pip install {package}"
     if shutil.which("uv"):
-        return f"uv pip install --python {python} {package}"
+        return f'uv pip install --python "{sys.executable}" {package}' if " " in sys.executable \
+            else f"uv pip install --python {sys.executable} {package}"  # a quoted argument is valid in every shell
     return "(install uv first: https://docs.astral.sh/uv/)"
 
 
 def install_hint(name):
     return (f"Speech-to-text isn't installed. Run: {install_run(name)} "
-            "(or reinstall UniStudent with its 'stt' extra: uv tool install --force \"unistudent[stt] @ <repo>\").")
+            "For advanced users: or reinstall UniStudent with its 'stt' extra (uv tool install --force \"unistudent[stt] @ <repo>\").")
 
 
 def start_background(course, rels):
@@ -222,7 +225,7 @@ def write_transcript(course, rel, segments, name):
     lines = ["---", f"source: {rel}", f"unit: {info['unit'] if info['unit'] is not None else 'unsorted'}",
              f"duration: {hms(total)}", f"backend: {name}", "---", "",
              f"# {Path(rel).name}: transcript", "",
-             f"Sources: [recording]({source.resolve().as_uri()})", ""]
+             "Sources: " + video_link(course, rel, folder), ""]
     block_start, block = None, []
     for start, _, text in segments:
         if block_start is None or start - block_start >= PARAGRAPH_SECONDS:

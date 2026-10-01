@@ -7,12 +7,12 @@ disable-model-invocation: true
 The Wiki is everything an answer about the course may rely on. Every page cites its sources; nothing enters it from outside the course material. The Wiki lives in the hidden folder: its path is `wiki` in `us courses current`, and `<wiki>` below means that folder.
 
 <!-- conventions: keep identical in every UniStudent skill -->
-Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat. **Old layout**: `us courses current` shows `legacy: true` for a course folder made before version 0.4; then stop, offer `us migrate` (it only lists what it would move) and, on a yes, run `us migrate --apply`, then carry on.
 <!-- /conventions -->
 
 ## 1. Convert
 
-Run `us courses current` (say which course), then `us wiki build --json`. The build first reads the Material folder as the student left it: files they moved or renamed are followed, files they deleted leave the Wiki, and new files they put there are added.
+Run `us courses current` (say which course; `legacy: true` → the Old layout convention), then `us wiki build --json`. The build first reads the Material folder as the student left it: files they moved or renamed are followed, files they deleted leave the Wiki, and new files they put there are added.
 
 Done when: the build ran and you have its `units_touched`, `images` and `needs_visual`.
 

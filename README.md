@@ -5,7 +5,7 @@
 <h1 align="center">UniStudent</h1>
 
 <p align="center"><strong>An AI plugin for university students.</strong><br>
-It builds a Wiki out of your course's own files, so the AI answers from what your course teaches and nothing else.</p>
+It builds a Wiki (a hidden set of Markdown pages that only the AI reads) out of your course's own files, so the AI answers from what your course teaches and nothing else.</p>
 
 <p align="center">
   <a href="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/NoamTuriel/unistudent/tests.yml?branch=main&label=tested&logo=github&logoColor=white" alt="tested" /></a>
@@ -103,11 +103,11 @@ args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plu
 
 **Gemini CLI**: the same `mcpServers` block as above, in `~/.gemini/settings.json`.
 
-**Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add NoamTuriel/unistudent` (it reads the skills declared in this repo's Claude plugin files). The skills do their work through the UniStudent MCP server, so add the server too; alternatively `uv tool install` below gives them the `unistudent` command.
+**Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add NoamTuriel/unistudent` (it reads the skills declared in this repo's Claude plugin files). The skills do their work through the UniStudent MCP server, so add the server too; alternatively, for advanced users, `uv tool install` below gives them the `unistudent` command.
 
 Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It first asks your university, and once it knows your university and course it tells you which of the plugins above to install, with the exact command (so you only need `unistudent` to start). If there's no installed plugin for it (like `openu` above), it interviews you once — course site URL, how you organize material — and remembers the answer, so the next course at the same university skips that question. Setup can be stopped and resumed at any point; running it again picks up where you left off.
 
-Optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx), Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon) and matplotlib for the graphs in study packs. (The plugin and the `uvx` setups above already include matplotlib.)
+For advanced users, optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx), Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon) and matplotlib for the graphs in study packs. (The plugin and the `uvx` setups above already include matplotlib.)
 
 ## Works well with
 
@@ -134,7 +134,7 @@ You see three folders, numbered in the order you use them, named in the language
   .unistudent/                   hidden: settings, manifest, the Wiki the AI reads, jobs, saved state
 ```
 
-Open the third folder as your vault (in Obsidian or any other app). In the second you may move, rename or delete files: where a file sits is what counts (moving one between `official/` and `added/` changes how far it is trusted), and the next Wiki build follows. Deleting there deletes the only copy (your system Trash can recover it). A folder of your own is copied in once and your originals are left alone. A course folder made by an earlier version (with `raw/`, `materials/`, `wiki/`, `study/`) keeps working, and `us migrate` shows what it will move and then moves it.
+Open the third folder as your vault (a vault is just a folder that a notes app such as Obsidian opens as its library). In the second you may move, rename or delete files: where a file sits is what counts (moving one between `official/` and `added/` changes how far it is trusted), and the next Wiki build follows. Deleting there deletes the only copy (your system Trash can recover it). A folder of your own is copied in once and your originals are left alone. A course folder made by an earlier version (with `raw/`, `materials/`, `wiki/`, `study/`) needs `us migrate` once: it lists what it would move and changes nothing, then `us migrate --apply` does the moves. Until then the commands that change the course ask you to migrate first.
 
 Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected) and it picks the course up automatically through `AGENTS.md`/`CLAUDE.md`. Claude Code, Cursor, Codex and Gemini CLI read the folder's instruction files on their own (VS Code Copilot does too once its `AGENTS.md` setting is on). Claude Desktop chat reads no folder: create a Project once with the instruction "Start each chat by calling the unistudent `course_context` tool" and every chat should start on your active course, the one you last set up or switched to (it asks which course if there are several and none is active). As a last resort in any app: "Read AGENTS.md in `<course folder path>` before answering".
 
