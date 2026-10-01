@@ -7,6 +7,7 @@ at least one source link, and every link must resolve.
 """
 import re
 from pathlib import Path
+from urllib.parse import unquote
 
 from .links_check import MD_LINK, WIKILINK, check_links
 
@@ -14,14 +15,19 @@ CITED = ("✅", "💡")  # these must link the course material they rest on
 _LABEL_RE = re.compile("✅|💡|⚠️?|❌")
 _MARKER = re.compile(r"^\s*(?:>\s*)*(?:\[![^\]]*\][+-]?\s*)?(?:[-*+]\s+|\d+[.)]\s+)?(?:\*\*|__)?\s*")
 _MIN_PROSE_LETTERS = 15
+IMAGE_LINE = re.compile(r'^\s*!\[[^\]]*\]\((<[^>]+>|[^)\s]+)(?:\s+"[^"]*")?\)\s*$')
 
 
 def _normalise(label):
     return "⚠️" if label.startswith("⚠") else label
 
 
+def _blank_comments(text):
+    return re.sub(r"<!--.*?-->", lambda m: "\n" * m.group().count("\n"), text, flags=re.S)
+
+
 def _blocks(text):
-    text = re.sub(r"<!--.*?-->", "", text, flags=re.S)
+    text = _blank_comments(text)
     lines = text.split("\n")
     if lines and lines[0].strip() == "---":
         end = next((i for i in range(1, len(lines)) if lines[i].strip() == "---"), None)
@@ -38,6 +44,11 @@ def _blocks(text):
         skip = (not stripped or stripped.startswith("#") or stripped.startswith("|")
                 or re.fullmatch(r"[-*_]{3,}", stripped))
         if skip:
+            if current:
+                blocks.append((start, current))
+                current = []
+            continue
+        if IMAGE_LINE.match(line):  # a graph's picture carries no claim; its caption line below does
             if current:
                 blocks.append((start, current))
                 current = []
@@ -98,11 +109,38 @@ def paragraphs(text):
     return out
 
 
+def graph_problems(page: Path, text: str):
+    """Graphs (images in a graphs/ folder) need an existing file and a ✅ or 💡 caption on the next line."""
+    problems, in_code = [], False
+    lines = _blank_comments(text).split("\n")
+    for number, line in enumerate(lines, 1):
+        if line.strip().startswith("```"):
+            in_code = not in_code
+            continue
+        match = None if in_code else IMAGE_LINE.match(line)
+        if not match or "graphs/" not in match.group(1):
+            continue
+        target = match.group(1).strip("<>")
+        where = {"page": str(page), "line": number, "text": target}
+        if not (Path(page).parent / unquote(target)).is_file():
+            problems.append({"kind": "missing-image", **where})
+        caption = lines[number] if number < len(lines) else ""
+        label = _LABEL_RE.match(_MARKER.sub("", caption, count=1))
+        if not label:
+            problems.append({"kind": "graph-no-caption", **where})
+        elif _normalise(label.group(0)) not in CITED:
+            problems.append({"kind": "graph-label", **where})
+        elif not MD_LINK.search(caption) and not WIKILINK.search(caption):
+            problems.append({"kind": "no-citation", **where})
+    return problems
+
+
 def check_page(page: Path, root: Path):
     """Label and citation problems in one answer or study-pack page."""
     page = Path(page)
-    found = paragraphs(page.read_text("utf-8"))
-    problems = []
+    text = page.read_text("utf-8")
+    found = paragraphs(text)
+    problems = graph_problems(page, text)
     for p in found:
         where = {"page": str(page), "line": p["line"], "text": p["text"]}
         if not p["labels_at_start"]:

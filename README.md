@@ -20,7 +20,7 @@ It builds a Wiki out of your course's own files, so the AI answers from what you
 
 ## What you can do with the Wiki
 
-- **Get study packs.** For each unit you get a roadmap of what to memorize and what to understand, a map of the exercise types, and a plain explanation of each concept. They are generated as soon as the Wiki exists.
+- **Get study packs.** For each unit you get a roadmap of what to memorize and what to understand, a map of the exercise types, and a plain explanation of each concept, with the graphs the course uses redrawn. They are generated as soon as the Wiki exists.
 - **Find things in recordings.** Each recording gets a summary that says when a topic is explained, when an example is worked through, and when the lecturer announces something (a deadline, a change, "this will be on the exam"), with the time so you can jump there.
 - **Ask questions about your course.** The answer comes from your course material, not from the wider internet.
 
@@ -85,7 +85,7 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
   "mcpServers": {
     "unistudent": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "--with", "matplotlib", "unistudent-mcp"]
     }
   }
 }
@@ -93,12 +93,12 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
 
 (VS Code calls the top-level key `servers` and wants `"type": "stdio"`. Desktop apps on a Mac often can't see `uvx`: if the server doesn't start, put the full path from `which uvx` in `"command"`, e.g. `/Users/you/.local/bin/uvx`.)
 
-**Codex CLI**: `codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" unistudent-mcp`, or in `~/.codex/config.toml`:
+**Codex CLI**: `codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" --with matplotlib unistudent-mcp`, or in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.unistudent]
 command = "uvx"
-args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "--with", "matplotlib", "unistudent-mcp"]
 ```
 
 **Gemini CLI**: the same `mcpServers` block as above, in `~/.gemini/settings.json`.
@@ -107,7 +107,7 @@ args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plu
 
 Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It first asks your university: if there's no installed plugin for it (like `openu` above), it interviews you once — course site URL, how you organize material — and remembers the answer, so the next course at the same university skips that question. Setup can be stopped and resumed at any point; running it again picks up where you left off.
 
-Optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx) and Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon).
+Optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx), Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon) and matplotlib for the graphs in study packs. (The plugin and the `uvx` setups above already include matplotlib.)
 
 ## Works well with
 

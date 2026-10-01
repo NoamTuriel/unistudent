@@ -56,6 +56,18 @@ everything worth practicing — not the fewest questions overall.
 - Every topic has at least one question here. Keep each kept question's topic tag, source link and
   recording time exactly as on the full Practice page, so it's still checkable and still links back.
 
+## Graphs
+
+Where the course material explains a concept with a graph (X and Y axes with lines or curves), or a question or its solution explicitly needs one, show it on the walkthrough and practice pages (and on a kept short-practice question, the same as on the full practice page). Never on the roadmap, the recordings index or the navigation line, and never a graph that decorates a page the course didn't illustrate. A student preference such as "no graphs" or "only the key ones" overrides this.
+
+1. **Find it:** the Wiki text only hints at a slide's graph (axis labels, words like "curve" or "shifts"), so open that slide page and read it visually, including image-only pages.
+2. **Write a Graph spec** into `study/Unit N/graphs/<name>.json`. Keep it short: the axes' labels and every curve with the course's own names. A curve is two points, a vertical or horizontal value, a formula in `x`, or a sketch of a few rough points on a 0–10 grid (for conceptual "what would happen if" graphs; the tool draws it hand-drawn with no numbers). A shifted curve names the curve it moves from (`shift_of`). Points of interest give two curve names (the tool finds the crossing) or coordinates.
+3. **Draw it:** `us graph "study/Unit N/graphs/<name>.json"` (`us`: the UniStudent MCP tool `graph`, or the `unistudent` command). Fix the spec and draw again when it reports a problem. Open the PNG next to the slide page once and fix any difference.
+4. **Embed it** with a standard image link, alt text saying in words what the graph shows (which curve shifts, which way, what happens to each variable), and on the next line a caption starting with a grounding label: ✅ and a link to the slide page when it reproduces the course's graph, 💡 when it only illustrates. ⚠️ is not valid for a graph.
+5. **Without drawing** (the tool says matplotlib is missing): write no image link; write the slide page link and one line describing the graph, and tell the student once how to add matplotlib.
+
+Flow and cause-and-effect pictures are plain Mermaid blocks, no tool.
+
 ## Links
 
 - To material: Wiki source pages with page anchors (`wiki/sources/unit-04/slides.md#page-3`).
