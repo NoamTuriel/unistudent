@@ -38,7 +38,7 @@ class McpServer(CourseTestCase):
     def test_the_server_tells_the_ai_to_call_course_context_first(self):
         init = self.rpc(self.proc, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
                                                   "clientInfo": {"name": "t", "version": "0"}}, id_=9)
-        self.assertIn("course-context", init["result"]["instructions"])
+        self.assertIn("course_context", init["result"]["instructions"])
         names = [t["name"] for t in self.rpc(self.proc, "tools/list", id_=10)["result"]["tools"]]
         self.assertIn("course_context", names)
 
