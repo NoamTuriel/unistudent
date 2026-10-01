@@ -18,14 +18,14 @@ class VisibleFolders(CourseTestCase):
     def test_setup_in_english_makes_exactly_three_numbered_folders_and_a_hidden_one(self):
         course = self.tmp / "Macro"
         run_json("setup", course, "--name", "Macro", "--language", "en")
-        self.assertEqual(top_level(course), [".unistudent", "1-inbox", "2-course-material", "3-Macro-study-from-here"])
+        self.assertEqual(top_level(course), [".unistudent", "1-inbox", "2-course-material"])
         self.assertFalse(OLD_NAMES & set(top_level(course)))
         self.assertTrue((course / "README.md").exists())
 
     def test_setup_in_hebrew_names_every_folder_in_hebrew_with_the_course_name_in_the_vault(self):
         course = self.tmp / "Macro"
         run_json("setup", course, "--name", "מקרו", "--language", "he")
-        self.assertEqual(top_level(course), [".unistudent", "1-קבצים-חדשים", "2-חומרי-הקורס", "3-מקרו-ללמוד-מכאן"])
+        self.assertEqual(top_level(course), [".unistudent", "1-קבצים-חדשים", "2-חומרי-הקורס"])
         write(course / "1-קבצים-חדשים" / "Unit 3 notes.txt", "money")
         run_json("add", "--course", course)
         self.assertTrue((course / "2-חומרי-הקורס" / "חומר-לא-רשמי" / "יחידה 3" / "Unit 3 notes.txt").is_file())
@@ -39,7 +39,7 @@ class VisibleFolders(CourseTestCase):
     def test_a_language_with_no_table_falls_back_to_english_names(self):
         course = self.tmp / "Macro"
         run_json("setup", course, "--name", "Macro", "--language", "fr")
-        self.assertEqual(top_level(course), [".unistudent", "1-inbox", "2-course-material", "3-Macro-study-from-here"])
+        self.assertEqual(top_level(course), [".unistudent", "1-inbox", "2-course-material"])
 
     def test_the_wiki_and_everything_else_live_in_the_hidden_folder(self):
         course = self.tmp / "Macro"
@@ -50,21 +50,53 @@ class VisibleFolders(CourseTestCase):
         for name in ("settings.json", "manifest.json", "wiki"):
             self.assertTrue((hidden / name).exists(), name)
         self.assertTrue((hidden / "wiki" / "sources" / "unit-01" / "Unit 1 notes.md").exists())
-        self.assertEqual(top_level(course), [".unistudent", "1-inbox", "2-course-material", "3-Macro-study-from-here"])
+        self.assertEqual(top_level(course), [".unistudent", "1-inbox", "2-course-material"])
 
     def test_setup_tells_the_student_where_the_three_folders_are(self):
         result = run_json("setup", self.tmp / "Macro", "--name", "Macro", "--language", "en")
         self.assertEqual((result["inbox"], result["material"], result["study"]),
                          ("1-inbox", "2-course-material", "3-Macro-study-from-here"))
 
-    def test_the_students_readme_names_the_real_folders(self):
+    def test_the_students_readme_names_the_real_folders_and_says_the_third_comes_later(self):
         course = self.tmp / "Macro"
         run_json("setup", course, "--name", "Macro", "--language", "en")
         text = (course / "README.md").read_text("utf-8")
         for name in ("1-inbox", "2-course-material", "3-Macro-study-from-here"):
             self.assertIn(name, text)
+        self.assertIn("appears", text)
         self.assertNotIn("raw/", text)
         self.assertIn(".unistudent/wiki", (course / "AGENTS.md").read_text("utf-8"))
+
+
+class LazyStudyVault(CourseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.course = self.tmp / "Macro"
+        run_json("setup", self.course, "--name", "Macro", "--language", "en")
+        self.vault = self.course / "3-Macro-study-from-here"
+
+    def test_a_missing_study_vault_is_never_a_problem(self):
+        self.assertFalse(self.vault.exists())
+        page = write(self.course / "answer.md", "✅ From the material.\n")
+        self.assertEqual(run_json("check", page, "--course", self.course)["problems"], [])
+        run_json("setup", self.course, "--name", "Macro", "--language", "en")  # setting up again keeps it absent
+        self.assertFalse(self.vault.exists())
+
+    def test_the_first_study_pack_request_creates_it(self):
+        result = run_json("study", "changes", "--course", self.course, "--unit", "1")
+        self.assertTrue(self.vault.is_dir())
+        self.assertEqual(Path(result["pack_folder"]).parent.resolve(), self.vault.resolve())
+
+    def test_an_existing_study_vault_is_left_as_it_is(self):
+        write(self.vault / "Unit 1" / "Study pack.md", "mine")
+        run_json("setup", self.course, "--name", "Macro", "--language", "en")
+        self.assertEqual((self.vault / "Unit 1" / "Study pack.md").read_text("utf-8"), "mine")
+
+    def test_an_existing_study_vault_follows_a_language_change(self):
+        self.vault.mkdir()
+        run_json("setup", self.course, "--name", "Macro", "--language", "he")
+        self.assertTrue((self.course / "3-Macro-ללמוד-מכאן").is_dir())
+        self.assertFalse(self.vault.exists())
 
 
 class MaterialFolder(CourseTestCase):

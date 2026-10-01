@@ -1,4 +1,4 @@
-# Three visible folders, a hidden folder for everything else, and no Raw
+# Three visible folders (the third arrives later, ADR 0008), a hidden folder for everything else, and no Raw
 
 A course folder shows the student three folders (numbered so they sort in the order the student uses them): the Inbox, the Material folder (the real files, sorted by trust level and unit) and the Study vault (only what UniStudent made to study from). Everything else (Settings, Manifest, Wiki, jobs, state) lives in the Hidden folder, and the Wiki is never shown. The visible folder names, and the unit and trust-level folders inside them, follow the language the student picks in setup; the Hidden folder keeps English names.
 

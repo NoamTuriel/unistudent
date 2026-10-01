@@ -68,6 +68,7 @@ def _prose_letters(text):
     return len(re.findall(r"[^\W\d_]", text))
 
 
+_CLOSING_LINE = re.compile(r"(?i)^\W*(?:from|in the lectures|מתוך|בהרצאות)\W*:")
 _SOURCES_START = re.compile(r"(?i)^\s*(?:[-*>]\s*)?(?:\*\*)?(sources|מקורות)(?:\*\*)?\s*:")
 _LIST_LINE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 
@@ -150,6 +151,8 @@ def check_page(page: Path, root: Path):
     for p in found:
         where = {"page": str(page), "line": p["line"], "text": p["text"]}
         if not p["labels_at_start"]:
+            if _CLOSING_LINE.match(p["text"]) or re.match(r"\d+\.3(?!\d)", page.name):
+                continue  # a study pack's closing lines and its Practice page notes are not claims
             if any(f"{name}/" in p["body"] for name in ("inbox", Course(root).inbox.name)) and len(p["body"]) < 300:
                 continue  # the closing "add material to inbox/" suggestion is not a claim
             problems.append({"kind": "unlabeled", **where})

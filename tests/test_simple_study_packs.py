@@ -50,6 +50,15 @@ class PackShape(CourseTestCase):
         self.assertIn("short-practice-page", self.kinds("4.3b Short practice.md", "- Q1\n"))
 
 
+class Labels(PackShape):
+    def test_closing_lines_and_practice_notes_need_no_label(self):
+        write(self.pack / "4.2 Walkthrough.md", TOPIC + "In the lectures: lecture three recording at twelve minutes\n\nFrom: slides.pdf, the multiplier chapter\n")
+        write(self.pack / "4.3 Practice.md", f"- [Q3]({self.slides.as_uri()}): applying the multiplier to a bank deposit\n")
+        for name in ("4.2 Walkthrough.md", "4.3 Practice.md"):
+            result = run_json("check", self.pack / name, "--labels", "--course", self.course)
+            self.assertNotIn("unlabeled", [p["kind"] for p in result["problems"]], name)
+
+
 class Rules(unittest.TestCase):
     def test_generic_rules_bend_to_the_subject_and_close_each_topic(self):
         text = GENERIC.read_text("utf-8")

@@ -140,8 +140,8 @@ class Course:
         return self._folder("inbox")
 
     def ensure_layout(self):
-        """Create the three visible folders in the settings' language, renaming existing ones (and the trust-level and
-        unit folders inside them) when it changed. Returns True when something was renamed. A rename that can't be done
+        """Create the Inbox and the Material folder in the settings' language (the Study vault only appears at the first
+        Study pack, ADR 0008), renaming existing ones (and the trust-level and unit folders inside them) when it changed. Returns True when something was renamed. A rename that can't be done
         stops everything before anything changes: the Settings never say a folder has a name it doesn't have."""
         from .common import UserError
         settings = self.settings()
@@ -165,9 +165,9 @@ class Course:
                             "Close anything that has it open and try again.")
         settings.update(layout=LAYOUT, folders=wanted)
         self.save_settings(settings)
-        for name in wanted.values():
-            (self.root / name).mkdir(parents=True, exist_ok=True)
-        inner = self._rename_inner(self.material, tiers=True) | self._rename_inner(self.study)
+        for key in ("inbox", "material"):
+            (self.root / wanted[key]).mkdir(parents=True, exist_ok=True)
+        inner = self._rename_inner(self.material, tiers=True) | (self.study.is_dir() and self._rename_inner(self.study))
         return bool(renames) or inner
 
     def _rename_inner(self, base, tiers=False):
@@ -195,7 +195,7 @@ class Course:
         return changed
 
     def pack_folder(self, unit):
-        """Where a unit's study pack lives in the Study vault."""
+        """Where a unit's study pack lives in the Study vault (the vault itself is made by the first Study pack request)."""
         return self.study / self.unit_folder(unit)
 
     @property
