@@ -10,13 +10,13 @@ Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool 
 
 1. Run `us setup-progress list --json`. Any entries → tell the student setup for that course stopped partway (after its last recorded stage) and offer to resume it with `/unistudent:course-setup`.
    Run `us generated list --json` too. Any entries → mention once that earlier interviews were saved (show each one's preview and path) and that the student can re-read or delete them.
-2. Run `us courses current --json`. No course → say so and offer `/unistudent:course-setup`. Otherwise start with "Working on: <name>".
-3. Explain from the course folder's `README.md`, in the student's language and in the student's words: the flow (course material → Wiki → study packs), the inbox, and the grounding labels. Keep it to what fits one screen.
+2. Run `us courses current --json`. No course → say so and offer `/unistudent:course-setup`. Otherwise start with "Working on: <name>". If it says `legacy: true`, the course folder has the old layout (raw, materials, wiki, study): offer `us migrate` (it lists every move first, then moves; their own original files are never moved).
+3. Explain from the course folder's `README.md`, in the student's language and in the student's words: the flow (course material → Wiki → study packs), the three folders (inbox, Material folder, Study vault: open that one as the vault), and the grounding labels. Keep it to what fits one screen.
 4. Show what is waiting, from real state:
    - `us unsorted --json`: files that need a unit.
    - `us recordings list --json`: recordings not processed.
-   - `ls inbox/`: files not added yet.
-   - Units without a study pack: `wiki/units/` compared with `study/`.
+   - The inbox folder (`inbox` in `us courses current`): files not added yet.
+   - Units without a study pack: the Wiki's `units/` (in the folder `wiki` names) compared with the unit folders in the Study vault (`study`).
 5. Offer, one line each, the commands from the `README.md` command table that match what step 4 found, plus the university plugin's sync skill (e.g. `/openu:openu-sync`) when there is new material on the course site.
 
 Done when: the student has seen what's waiting and the commands that apply.
