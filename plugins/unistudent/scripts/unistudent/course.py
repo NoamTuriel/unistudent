@@ -244,6 +244,17 @@ def write_generated_reference(path: Path, heading: str, sections: list) -> None:
     path.write_text(body, "utf-8")
 
 
+def list_generated() -> list:
+    """Every generated fallback on disk (university and course/subject), with a one-line preview."""
+    folder = home() / "generated"
+    out = []
+    for path in sorted(folder.rglob("*.md")) if folder.is_dir() else []:
+        lines = [l.strip() for l in path.read_text("utf-8").splitlines() if l.strip()]
+        out.append({"path": str(path), "kind": "university" if path.name == "site.md" else "course",
+                    "preview": lines[0].lstrip("# ") if lines else ""})
+    return out
+
+
 SETUP_STAGES = ["university", "course", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
 
 

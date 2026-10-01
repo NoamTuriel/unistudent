@@ -3,7 +3,7 @@ from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
 from .course import (SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
-                     list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, safe_name, unit_dir,
+                     list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, safe_name, unit_dir,
                      write_generated_reference, write_setup_progress)
 
 
@@ -157,6 +157,13 @@ def register(add, with_course):
     p.add_argument("--course-name", required=True)
     p.add_argument("--emphasis", nargs="+", help="what to emphasize in this course's study packs")
     p.add_argument("--summarize", nargs="+", help="how this course wants material summarized")
+
+    def cmd_generated(args):
+        entries = list_generated()
+        return {"generated": entries,
+                "summary": "\n".join(f"{e['preview']} ({e['path']})" for e in entries) or "Nothing generated yet."}
+
+    add("generated", cmd_generated, "list the generated university and course fallbacks saved for reuse")
 
     def cmd_setup_progress(args):
         if args.action == "list":
