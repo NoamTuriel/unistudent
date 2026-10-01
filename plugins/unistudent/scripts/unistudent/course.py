@@ -147,17 +147,59 @@ class Course:
         return self._folder("inbox", "inbox")
 
     def ensure_layout(self):
-        """Create the three visible folders in the settings' language, renaming existing ones when it changed."""
+        """Create the three visible folders in the settings' language, renaming existing ones (and the trust-level and
+        unit folders inside them) when it changed. Returns True when something was renamed. A rename that can't be done
+        stops everything before anything changes: the Settings never say a folder has a name it doesn't have."""
+        from .common import UserError
         settings = self.settings()
         wanted = self.folder_names(settings["language"])
-        for key, name in wanted.items():
-            old = settings.get("folders", {}).get(key)
-            if old and old != name and (self.root / old).is_dir() and not (self.root / name).exists():
-                (self.root / old).rename(self.root / name)
+        stored = settings.get("folders", {})
+        renames = [(stored[k], name) for k, name in wanted.items()
+                   if stored.get(k) and stored[k] != name and (self.root / stored[k]).is_dir()]
+        for old, new in renames:
+            if (self.root / new).exists() and not (self.root / new).samefile(self.root / old):
+                raise UserError(f"Can't switch the folder names: \"{new}\" already exists next to \"{old}\". Nothing was "
+                                f"changed. Move or rename \"{new}\" aside (or keep your files in \"{old}\") and try again.")
+        done = []
+        try:
+            for old, new in renames:
+                (self.root / old).rename(self.root / new)
+                done.append((old, new))
+        except OSError as error:
+            for old, new in reversed(done):
+                (self.root / new).rename(self.root / old)
+            raise UserError(f"Can't rename the folder \"{old}\" to \"{new}\" ({error}). Nothing was changed. "
+                            "Close anything that has it open and try again.")
         settings.update(layout=LAYOUT, folders=wanted)
         self.save_settings(settings)
         for name in wanted.values():
             (self.root / name).mkdir(parents=True, exist_ok=True)
+        inner = self._rename_inner(self.material, tiers=True) | self._rename_inner(self.study)
+        return bool(renames) or inner
+
+    def _rename_inner(self, base, tiers=False):
+        """Trust-level and unit folders inside `base` take the course language's names. Returns whether any changed."""
+        def rename(folder, name):
+            if folder.name == name or (folder.parent / name).exists():
+                return folder, False
+            return folder.rename(folder.parent / name), True
+
+        changed = False
+        for folder in sorted(p for p in base.iterdir() if p.is_dir()):
+            tier = parse_tier_folder(folder.name) if tiers else None
+            if tiers and not tier:
+                continue
+            if tier:
+                folder, did = rename(folder, self.label(tier))
+                changed |= did
+                children = sorted(p for p in folder.iterdir() if p.is_dir())
+            else:
+                children = [folder]
+            for child in children:
+                known, unit = parse_unit_folder(child.name)
+                if known:
+                    changed |= rename(child, self.unit_folder(unit))[1]
+        return changed
 
     def pack_folder(self, unit):
         """Where a unit's study pack lives in the Study vault."""

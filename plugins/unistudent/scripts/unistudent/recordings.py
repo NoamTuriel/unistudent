@@ -69,11 +69,14 @@ def install_run(name):
     import importlib.util
     import sys
     package = PACKAGES.get(name, name)
-    python = f'"{sys.executable}"' if " " in sys.executable else sys.executable  # quoted only if it must be (PowerShell)
+    python = sys.executable
+    if " " in python:  # quoted only if it must be; PowerShell needs the call operator before a quoted path (a POSIX shell must not get it)
+        python = f'& "{python}"' if platform.system() == "Windows" else f'"{python}"'
     if importlib.util.find_spec("pip") is not None:
         return f"{python} -m pip install {package}"
     if shutil.which("uv"):
-        return f"uv pip install --python {python} {package}"
+        return f'uv pip install --python "{sys.executable}" {package}' if " " in sys.executable \
+            else f"uv pip install --python {sys.executable} {package}"  # a quoted argument is valid in every shell
     return "(install uv first: https://docs.astral.sh/uv/)"
 
 
