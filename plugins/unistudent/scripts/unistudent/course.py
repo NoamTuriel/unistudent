@@ -12,12 +12,14 @@ LAYOUT = 2
 # more entry; a language with no entry falls back to English. The Hidden folder keeps English names.
 LABELS = {
     "he": {"inbox": "1-קבצים-חדשים", "material": "2-חומרי-הקורס", "study": "3-{course}-ללמוד-מכאן",
-           "official": "רשמי", "added": "נוסף", "unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין",
-           "roadmap": "מפת הקלטות"},
+           "official": "חומר-רשמי-של-הקורס", "added": "חומר-לא-רשמי", "unit": "יחידה {n}",
+           "general": "חומר-כללי-לכל-היחידות", "unsorted": "עוד-לא-שויך-ליחידה", "roadmap": "מפת הקלטות"},
     "en": {"inbox": "1-inbox", "material": "2-course-material", "study": "3-{course}-study-from-here",
            "official": "official", "added": "added", "unit": "Unit {n}", "general": "General", "unsorted": "Unsorted",
            "roadmap": "Recordings roadmap"},
 }
+# Hebrew names used before 0.5.0: still recognized (and renamed by `ensure_layout`) in folders made with them.
+OLD_LABELS = [{"official": "רשמי", "added": "נוסף", "unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין"}]
 
 DEFAULT_SETTINGS = {
     "course_name": "",
@@ -56,12 +58,12 @@ def parse_unit(value):
 
 def parse_tier_folder(name):
     """"official" or "added" when `name` is a trust-level folder in any language, else None."""
-    return next((t for table in LABELS.values() for t in ("official", "added") if name == table[t]), None)
+    return next((t for table in (*LABELS.values(), *OLD_LABELS) for t in ("official", "added") if name == table[t]), None)
 
 
 def parse_unit_folder(name):
     """(True, unit) when `name` is a unit folder in any language: a number, "general" or None (unsorted)."""
-    for table in LABELS.values():
+    for table in (*LABELS.values(), *OLD_LABELS):
         if name == table["general"]:
             return True, "general"
         if name == table["unsorted"]:

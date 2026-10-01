@@ -33,8 +33,8 @@ class LanguageChange(CourseTestCase):
         write(folders(course).inbox / "Unit 3 notes.txt", "money")
         run_json("add", "--course", course)
         run_json("setup", course, "--language", "he")
-        self.assertTrue((course / "2-חומרי-הקורס" / "נוסף" / "יחידה 3" / "Unit 3 notes.txt").is_file())
-        self.assertEqual(list(run_json("manifest", "--course", course)["files"]), ["נוסף/יחידה 3/Unit 3 notes.txt"])
+        self.assertTrue((course / "2-חומרי-הקורס" / "חומר-לא-רשמי" / "יחידה 3" / "Unit 3 notes.txt").is_file())
+        self.assertEqual(list(run_json("manifest", "--course", course)["files"]), ["חומר-לא-רשמי/יחידה 3/Unit 3 notes.txt"])
 
 
 class ScanSafety(CourseTestCase):
@@ -91,6 +91,18 @@ class ScanSafety(CourseTestCase):
         files = run_json("manifest", "--course", self.course)["files"]
         self.assertEqual(files["added/Unit 5/c.txt"]["origin_note"], "from B")
         self.assertEqual(files["added/Unit 6/d.txt"]["origin_note"], "from A")
+
+
+class HebrewNames(CourseTestCase):
+    def test_folders_with_the_earlier_hebrew_names_are_recognized_and_renamed(self):
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "he")
+        f = folders(course)
+        write(f.material / "רשמי" / "יחידה 4" / "a.txt", "alpha")
+        run("setup", course, "--name", "Macro", "--language", "he")
+        self.assertTrue((f.material / "חומר-רשמי-של-הקורס" / "יחידה 4" / "a.txt").is_file())
+        self.assertFalse((f.material / "רשמי").exists())
+        self.assertIn("חומר-רשמי-של-הקורס/יחידה 4/a.txt", run_json("manifest", "--course", course)["files"])
 
 
 class ReplaceSafety(CourseTestCase):

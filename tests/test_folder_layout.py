@@ -28,7 +28,7 @@ class VisibleFolders(CourseTestCase):
         self.assertEqual(top_level(course), [".unistudent", "1-קבצים-חדשים", "2-חומרי-הקורס", "3-מקרו-ללמוד-מכאן"])
         write(course / "1-קבצים-חדשים" / "Unit 3 notes.txt", "money")
         run_json("add", "--course", course)
-        self.assertTrue((course / "2-חומרי-הקורס" / "נוסף" / "יחידה 3" / "Unit 3 notes.txt").is_file())
+        self.assertTrue((course / "2-חומרי-הקורס" / "חומר-לא-רשמי" / "יחידה 3" / "Unit 3 notes.txt").is_file())
 
     def test_the_closing_suggestion_to_use_the_hebrew_inbox_needs_no_label(self):
         course = self.tmp / "Macro"
