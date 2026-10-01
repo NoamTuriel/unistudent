@@ -17,6 +17,8 @@ def register(add, with_course):
             return wiki.check(course)
         if args.action == "coverage":
             return wiki.coverage(course)
+        from . import material
+        material.require_new_layout(course)
         return wiki.build(course, force=args.force)
 
     p = with_course(add("wiki", cmd_wiki, "build or check the Wiki, or show which files it did and did not read"))
