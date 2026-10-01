@@ -26,6 +26,17 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 
 Save to the unit's folder in the Study vault (`pack_folder` in the result of `us study changes --unit N`): its name, the page titles and the content all follow the course language. The vault holds only study packs and the generated recordings roadmap.
 
+## Accepted reasoning (when the material has verbal solutions)
+
+A verbal solution justifies an answer in words (Q&A files, assignment solutions and past-exam solutions often do). The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. When the unit has any, the roadmap gets an **Accepted reasoning** section, one block per topic that has verbal solutions. Done when every verbal solution of the unit has been read and each block lists:
+
+- **Say it:** the steps a solution spells out, in the solution's own words, quoted (✅, linked to the solution).
+- **Take as given:** what solutions use without explaining.
+- **Prove it:** what solutions always establish first, which the student must not take as obviously true.
+- **Model answer:** one short justification in the solutions' wording, linked.
+
+A pattern seen across several solutions is 💡, stated with the solutions it comes from. A topic with no verbal solution gets no block, and nothing is invented for it.
+
 ## Announcements and exam hints (roadmap)
 
 The unit page in the Wiki collects what the lecturer said in this unit's recordings: `Announcements` (dates, assignments, who to work with, exam information) and `This will be on the exam`. The roadmap page always has a section for them, every line with its recording and time link (✅, citing the recording summary). Leave it out only when the unit page lists none. These are first-class: never summarise them away.
@@ -77,7 +88,6 @@ Flow and cause-and-effect pictures are plain Mermaid blocks, no tool.
 - Citations point at the student's own file in the Material folder, never at the Wiki (the student does not read it): a full disk link, a `file:` URL with the path percent-encoded (`file:///…/<material folder>/official/<unit folder>/slides.pdf`). Write the page or minute in the link text ("slides, page 3", "lecture 3, 00:12:47"). Read the Wiki page's `source:` line to find the file. A file that failed, was skipped or is not analyzed yet (`coverage.md`) is named as such, not cited as read.
 - Recordings: link the video file the same way; for a time add `#t=<seconds>` and write the time in the text. The transcript is in the Wiki, so it is not linked.
 - `us check` fails a vault page that links into the hidden folder or at a missing file; the Wiki build repairs links after the course folder or a file moves.
-- Wikilinks are only for moving between pages of the vault, never for a citation (a citation is the `file:` link above).
 - Wikilinks are only for moving between pages of the vault, never for a citation (a citation is the `file:` link above).
 - Obsidian format: wikilinks and callouts (`> [!tip]`) are fine. Plain Markdown: standard links and blockquotes only.
 - A navigation line at the top of every page linking the unit's other pages.

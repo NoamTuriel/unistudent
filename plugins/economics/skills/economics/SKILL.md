@@ -32,3 +32,4 @@ Economics questions are mostly "what changes when X shifts". For every model in 
 - **Memorise vs understand:** everything not on the course's formula sheet must be memorised. Check the formula sheet line by line for what applies to this unit.
 - **Common mistakes:** take them mainly from the explanations of wrong answers in the Q&A files and the assignment solutions.
 - The assumptions that apply, in a collapsed box.
+- **Accepted reasoning:** the generic section, with the solutions' justification as a chain: which curve or variable moves, in which direction, so what happens to each variable, ending in the answer. In **Say it**, quote how the solutions name each curve and each direction of change, and which assumption they state out loud. In **Prove it**, list the steps a solution gives that look obvious (an assumption holding, why a curve shifts, why a variable stays fixed). The student's own wording is checked against these quotes.
