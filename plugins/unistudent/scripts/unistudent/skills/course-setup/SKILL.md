@@ -22,13 +22,17 @@ Ask which university.
 - None installed, but a generated fallback already exists (`us university status --university "<name>" --json` says `generated: true`): reuse it silently — no re-interview.
 - Neither: interview them once — ask for the course site's URL and how they organize and prioritize material (by week? by topic? exams and solutions kept separately?). Show back what you're about to save, and on confirmation run `us university save --university "<name>" --url "<url>" --organizing "<summary>"`. Say plainly: this is remembered, so next course at the same university skips this question.
 
-Done when: you know the university and, if relevant, how to reach its site (installed plugin, generated fallback, or "own folder only for now").
+Then run `us plugins recommend --university "<name>" --json`. If it returns a plugin you don't already have (you can tell from the course skills and sync skills you can see; if you can't tell, say what the plugin is for and how to add it, and don't claim it's missing), say in one plain sentence what it gives them and give its `install` command. Offer it, never insist: they can install it and run setup again (it resumes), or skip and carry on with the generic rules or the generated fallback. Nothing returned → say nothing about plugins.
+
+Done when: you know the university and, if relevant, how to reach its site (installed plugin, generated fallback, or "own folder only for now"), and any plugin the command recommended has been offered once.
 
 ## 2. Course
 
 Ask which course. Offer the installed course skills by name (skills whose description starts with "Course skill:", e.g. `economics:macro`), plus "My course isn't listed". Not listed → generic rules; record no course skill.
 
-Done when: you have the course name and the course skill (or none).
+Once you have the course name, run `us plugins recommend --university "<name>" --course-name "<course>" --field "<field, if you know it>" --json` and give the student one combined list of every recommended plugin they don't already have, each with what it gives them and its `install` command, plus the `other_apps` line if they aren't using Claude. Skip any you already offered in step 1. They can install now (then run setup again, it resumes here) or skip.
+
+Done when: you have the course name and the course skill (or none), and the student has been told which plugins fit their university and course (or that none do).
 
 ## 3. Storage and format
 

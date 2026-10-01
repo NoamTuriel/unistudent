@@ -3,7 +3,8 @@ from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
 from .course import (SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
-                     list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, safe_name, unit_dir,
+                     list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, recommend_plugins,
+                     safe_name, unit_dir,
                      write_generated_reference, write_setup_progress)
 
 
@@ -157,6 +158,24 @@ def register(add, with_course):
     p.add_argument("--course-name", required=True)
     p.add_argument("--emphasis", nargs="+", help="what to emphasize in this course's study packs")
     p.add_argument("--summarize", nargs="+", help="how this course wants material summarized")
+
+    def cmd_plugins(args):
+        if not (args.university or args.field or args.course_name):
+            raise UserError("Give at least one of --university, --field or --course-name.")
+        found = [{"name": p["name"], "kind": p["kind"], "gives": p["gives"],
+                  "install": f"/plugin install {p['name']}@unistudent"}
+                 for p in recommend_plugins(args.university or "", args.field or "", " ".join(args.course_name or []))]
+        other = ("In another app (Cursor, Codex, Gemini CLI...), add the skills with "
+                 "`npx skills@latest add NoamTuriel/unistudent`.")
+        summary = ("\n".join(f"{p['name']}: {p['gives']}. To add it: {p['install']}" for p in found) + "\n" + other
+                   if found else "No plugin for this university or course yet: carry on with the generic rules.")
+        return {"plugins": found, "other_apps": other, "summary": summary}
+
+    p = add("plugins", cmd_plugins, "recommend the plugins to install for a university and course (never installs)")
+    p.add_argument("action", choices=["recommend"])
+    p.add_argument("--university")
+    p.add_argument("--field", help="broad academic field, e.g. economics")
+    p.add_argument("--course-name", nargs="+")
 
     def cmd_generated(args):
         entries = list_generated()
