@@ -20,6 +20,25 @@ class Recordings(CourseTestCase):
         self._stt.__exit__(None, None, None)
         super().tearDown()
 
+    def test_transcribing_needs_the_students_approval_of_that_recording(self):
+        rec = "official/Unit 4/session 5.mp4"
+        code, out = run("recordings", "transcribe", "--course", self.course, rec)
+        self.assertEqual(code, 1)
+        self.assertIn("Not approved", out)
+        self.assertEqual(run_json("recordings", "estimate", "--course", self.course)["recordings"], 1)
+        run_json("recordings", "approve", "--course", self.course, rec)
+        run_json("recordings", "transcribe", "--course", self.course, rec)
+        self.assertEqual(run_json("recordings", "estimate", "--course", self.course)["recordings"], 0)
+        # The approval is used up: transcribing again needs a new yes.
+        code, out = run("recordings", "transcribe", "--course", self.course, rec)
+        self.assertEqual(code, 1)
+        self.assertIn("Not approved", out)
+
+    def test_approving_something_that_is_not_a_recording_is_refused(self):
+        code, out = run("recordings", "approve", "--course", self.course, "official/Unit 4/nope.mp4")
+        self.assertEqual(code, 1)
+        self.assertIn("Not a recording", out)
+
     def test_estimate_lists_what_would_be_processed(self):
         est = run_json("recordings", "estimate", "--course", self.course)
         self.assertEqual(est["recordings"], 1)
@@ -36,6 +55,7 @@ class Recordings(CourseTestCase):
         self.assertIn(est["install_run"], est["install_command"])
 
     def test_transcript_has_timestamped_paragraphs_and_passes_the_wiki_check(self):
+        run_json("recordings", "approve", "--course", self.course, "official/Unit 4/session 5.mp4")
         run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
         transcript = (folders(self.course).wiki / "recordings" / "session 5" / "transcript.md").read_text("utf-8")
         self.assertIn("source: official/Unit 4/session 5.mp4", transcript)
@@ -51,6 +71,7 @@ class Recordings(CourseTestCase):
 
     def test_background_transcription_returns_at_once_and_finishes(self):
         import time
+        run_json("recordings", "approve", "--course", self.course, "official/Unit 4/session 5.mp4")
         job = run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4", "--background")
         self.assertTrue(job["log"].endswith(".log"))
         transcript = folders(self.course).wiki / "recordings" / "session 5" / "transcript.md"
@@ -64,6 +85,7 @@ class Recordings(CourseTestCase):
         self.assertTrue(transcript.exists(), log.read_text("utf-8"))
 
     def test_a_recording_counts_as_processed_once_its_summary_exists(self):
+        run_json("recordings", "approve", "--course", self.course, "official/Unit 4/session 5.mp4")
         run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
         folder = folders(self.course).wiki / "recordings" / "session 5"
         write(folder / "summary.md", "# Summary\n\nSources: [transcript](transcript.md)\n")

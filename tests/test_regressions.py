@@ -16,6 +16,7 @@ class Regressions(CourseTestCase):
             run_json("add", "--course", course)
             self.assertEqual((local / "Macro" / "added" / "Unit 1" / "session.mp4").read_bytes()[:1], b"\x01")
             self.assertEqual((local / "Macro" / "added" / "Unit 2" / "session.mp4").read_bytes()[:1], b"\x02")
+            run_json("recordings", "approve", "--course", course, "added/Unit 1/session.mp4", "added/Unit 2/session.mp4")
             run_json("recordings", "transcribe", "--course", course, "added/Unit 1/session.mp4", "added/Unit 2/session.mp4")
         names = sorted(p.parent.name for p in (folders(course).wiki / "recordings").rglob("transcript.md"))
         self.assertEqual(names, ["session", "session (2)"])

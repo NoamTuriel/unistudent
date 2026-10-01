@@ -34,3 +34,28 @@ class Skills(unittest.TestCase):
 
 if __name__ == "__main__":
     unittest.main()
+
+
+class TranscriptionAndGraphRules(unittest.TestCase):
+    """Ticket 17: the student picks recordings by number before any run, and graphs go through the tool first."""
+    SKILLS = CORE
+
+    def test_course_recordings_shows_a_numbered_list_before_the_first_transcription(self):
+        text = (self.SKILLS / "course-recordings" / "SKILL.md").read_text("utf-8")
+        self.assertIn("numbered list", text)
+        self.assertIn("full path", text)
+        self.assertIn('"All" is not an answer', text)
+        self.assertLess(text.index("numbered list"), text.index("recordings approve"))
+        self.assertLess(text.index("recordings approve"), text.index("recordings transcribe"))
+        self.assertIn("Sit back and relax", text)
+
+    def test_setup_transcribes_nothing_and_asks_per_recording(self):
+        text = (self.SKILLS / "course-setup" / "SKILL.md").read_text("utf-8")
+        self.assertIn("ask me per recording", text)
+        self.assertNotIn("recordings transcribe", text)
+
+    def test_graph_instructions_name_the_mcp_tool_before_any_install_request(self):
+        text = (CORE / "reference" / "study-pack.md").read_text("utf-8") if (CORE / "reference").exists() else \
+            (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
+        self.assertLess(text.index("MCP tool `graph` first"), text.index("how to add matplotlib"))
+        self.assertIn("Never ask the student to install anything before the MCP tool has been tried", text)

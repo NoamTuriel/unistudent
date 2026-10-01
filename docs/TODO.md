@@ -3,17 +3,9 @@
 Open work found by the 2026-10-01 review and the work after it. Every item below was settled in a grilling session with the owner; remove an item when it ships.
 
 ## Build order
-1. **0.5.4**: the transcription guard and the matplotlib fix (they cost time or money today).
+1. Done in 0.5.4: the transcription guard (`us recordings approve`) and the matplotlib order (ticket 17).
 2. **0.6.0**: all the Study pack changes in one pass (bloat, links, Practice page, accepted reasoning). They all rewrite `reference/study-pack.md` and the economics skill, so check them against one real unit pack.
 3. Then: the lazy Study vault, then Material sorting, then docs tools.
-
-## 0.5.4
-- **Transcription needs a yes for each recording.** The plugin once transcribed the wrong videos for 5 hours. Today `course-setup` asks one yes/no for the whole course (recording level 0, 1 or 3) and `course-recordings` asks about "all of them". Change:
-  1. **One numbered list, nothing runs.** Every recording as `N. <full path> - X min, estimated Y on this machine`. The student answers with numbers ("1, 4, 7") or "none"; "all" is not accepted.
-  2. **Then one go.** Only the chosen recordings are analysed, after a line like "Sit back and relax, this might take a while." The student can keep working, as `--background` already allows.
-  3. **The tool enforces it.** `us recordings transcribe` takes explicit approved paths only and does nothing with none (no "transcribe everything" default). The setup question shrinks to "skip" or "ask me per recording". The frame-analysis question stays separate.
-  Tests: transcribing with no approved list does nothing; the skills name the numbered list before the first transcription.
-- **Graphs: the student is asked to install matplotlib that the MCP tool already has.** `.mcp.json` runs the MCP server with matplotlib, but the plain `us` command (and `INSTALL_HELP` in `graph.py`) does not, and step 5 of the graphs section in `reference/study-pack.md` tells the AI to ask. Fix: try the MCP `graph` tool first; ask the student to install anything only when the tool itself reports matplotlib missing. Test: the skills' graph instructions name the MCP tool first.
 
 ## 0.6.0: Study pack changes
 - **Every part earns its place.** The template bends to the subject: no "Formula: none" line, no forced memory trick. Rewrite the concept structure in `study-pack.md` and the economics skill's "always these five parts". Grounding emoji (✅ 💡 ⚠️ ❌) stay in packs as they are; ticket 16 is unchanged.
