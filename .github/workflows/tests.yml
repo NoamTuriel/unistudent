@@ -15,5 +15,5 @@ jobs:
         with:
           python-version: ${{ matrix.python }}
       - if: matrix.extras == 'full'
-        run: pip install "./plugins/unistudent[docs]"
+        run: pip install "./plugins/unistudent[docs,graphs]"
       - run: python -m unittest discover -s tests -v

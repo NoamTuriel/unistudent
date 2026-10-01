@@ -17,11 +17,13 @@ Field skill for economics. It adds to or overrides the generic study-pack rules 
 
 When two units use the same name for different concepts (e.g. two "multipliers"), add a cross-reference warning after the trick, in both units.
 
-## Diagrams and shifts
+## Graphs and shifts
 
 Economics questions are mostly "what changes when X shifts". For every model in the unit:
 
-- Name the axes and every curve as the course labels them.
+- Name the axes and every curve as the course labels them, and draw the graph the course shows for it (the generic rules' graphs section says when and how). Standard ones: supply and demand, the money market, IS-LM, the labour market.
+- Course graphs are conceptual, so use sketch curves (no formulas, no numbers) unless the course puts numbers on the axes.
+- Draw a shift as the original curve, the moved curve (`shift_of`) and the old and new equilibrium points, labelled as the course labels them.
 - For each change the material covers: which curve shifts, which direction, and what happens to each variable, as a chain (X ↑ → Y ↓ → …).
 - The assumptions the model relies on, quoting the course's assumptions sheet by number when it has one.
 

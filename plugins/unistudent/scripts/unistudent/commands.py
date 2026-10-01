@@ -68,6 +68,17 @@ def register(add, with_course):
     p.add_argument("files", nargs="+", help="Markdown files or folders")
     p.add_argument("--labels", action="store_true", help="also require one grounding label per paragraph")
 
+    def cmd_graph(args):
+        from . import graph
+        result = graph.draw(args.spec, force=args.force)
+        result["summary"] = (f"Drew {result['png']}" if result["drawn"]
+                             else f"{result['png']} is up to date (the spec has not changed).")
+        return result
+
+    p = add("graph", cmd_graph, "draw a Graph spec (JSON) to a PNG next to it")
+    p.add_argument("spec", help="the Graph spec file; the PNG is saved beside it")
+    p.add_argument("--force", action="store_true", help="draw again even if the spec has not changed")
+
     def cmd_eval_grade(args):
         import json
         from . import labels

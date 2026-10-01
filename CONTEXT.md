@@ -48,6 +48,10 @@ _Avoid_: LLM wiki, knowledge base, index
 The set of student-facing pages generated for one unit.
 _Avoid_: unit summary, unit pack
 
+**Graph**:
+A picture in a study pack with X and Y axes and the lines or curves drawn on them, reproducing one the course material shows.
+_Avoid_: diagram, plot, chart, figure (a figure is the picture inside the course material itself)
+
 **Unit**:
 A chapter of the course as the course itself numbers it (יחידה).
 
