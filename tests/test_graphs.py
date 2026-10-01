@@ -19,7 +19,7 @@ FORMULA = {"x": "x", "y": "y",
 
 class GraphCommand(CourseTestCase):
     def spec(self, data, name="curve"):
-        return write(self.tmp / "study" / "Unit 1" / "graphs" / f"{name}.json", json.dumps(data, ensure_ascii=False))
+        return write(self.tmp / "vault" / "Unit 1" / "graphs" / f"{name}.json", json.dumps(data, ensure_ascii=False))
 
     def test_a_spec_is_drawn_next_to_itself_and_not_redrawn_until_it_changes(self):
         if not HAS_MATPLOTLIB:
@@ -77,7 +77,7 @@ class GraphCommand(CourseTestCase):
 
 PAGE = """## Money market
 
-✅ The money market clears where supply meets demand. Sources: [slides p.1](../../wiki/index.md)
+✅ The money market clears where supply meets demand. Sources: [slides p.1](../../.unistudent/wiki/index.md)
 
 ![Md shifts right, the interest rate falls](graphs/money.png)
 {caption}
@@ -89,8 +89,8 @@ class GraphCaptions(CourseTestCase):
         super().setUp()
         self.course = self.tmp / "Macro"
         run("setup", self.course, "--name", "Macro", "--language", "en")
-        write(self.course / "wiki" / "index.md", "# Wiki\n")
-        self.folder = self.course / "study" / "Unit 1"
+        write(self.course / ".unistudent" / "wiki" / "index.md", "# Wiki\n")
+        self.folder = self.course / "3-Macro-study-from-here" / "Unit 1"
         write(self.folder / "graphs" / "money.png", b"\x89PNG")
 
     def kinds(self, caption):
@@ -98,9 +98,9 @@ class GraphCaptions(CourseTestCase):
         return sorted(p["kind"] for p in run_json("check", "--course", self.course, page, "--labels")["problems"])
 
     def test_a_graph_with_a_labelled_caption_passes(self):
-        self.assertEqual(self.kinds("✅ Fig 3 [slides](../../wiki/index.md)"), [])
-        self.assertEqual(self.kinds("✅ Money market graph from the slides. [slides p.1](../../wiki/index.md)"), [])
-        self.assertEqual(self.kinds("💡 An illustration of the money market. [slides p.1](../../wiki/index.md)"), [])
+        self.assertEqual(self.kinds("✅ Fig 3 [slides](../../.unistudent/wiki/index.md)"), [])
+        self.assertEqual(self.kinds("✅ Money market graph from the slides. [slides p.1](../../.unistudent/wiki/index.md)"), [])
+        self.assertEqual(self.kinds("💡 An illustration of the money market. [slides p.1](../../.unistudent/wiki/index.md)"), [])
 
     def test_a_graph_needs_a_caption_with_a_label_that_is_not_outside_the_course(self):
         self.assertEqual(self.kinds(""), ["graph-no-caption"])
@@ -110,7 +110,7 @@ class GraphCaptions(CourseTestCase):
 
     def test_a_missing_image_file_is_reported(self):
         (self.folder / "graphs" / "money.png").unlink()
-        self.assertEqual(self.kinds("✅ Money market graph. [slides p.1](../../wiki/index.md)"), ["missing-image"])
+        self.assertEqual(self.kinds("✅ Money market graph. [slides p.1](../../.unistudent/wiki/index.md)"), ["missing-image"])
 
 
 if __name__ == "__main__":
