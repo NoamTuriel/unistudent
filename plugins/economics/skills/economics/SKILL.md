@@ -5,17 +5,17 @@ description: "Field skill: study-pack rules for economics courses (concept struc
 
 Field skill for economics. It adds to or overrides the generic study-pack rules (`unistudent/reference/study-pack.md`); a course skill can override it in turn.
 
-## Concept structure (replaces the generic one)
+## Concepts (replaces the generic menu)
 
-`### <concept> — <English name>`, always these five parts, with these bold labels. The simple explanation and the trick are your own words, so they carry 💡; the deep explanation is 💡 when it reasons only from what the Wiki states, and ⚠️ when it brings in theory the course doesn't teach.
+`### <concept> — <English name>`. Like the generic rules, a topic bends to its subject: write only the parts the concept has, and never a part with nothing to say. Draw from this menu, in this order. The simple explanation and the trick are your own words, so they carry 💡; the deep explanation is 💡 when it reasons only from what the Wiki states, and ⚠️ when it brings in theory the course doesn't teach.
 
-1. **In plain words:** one sentence saying what it is.
-2. **Simple explanation:** for a young child, with a concrete everyday example (pocket money, a piggy bank, a shop). No jargon, no formulas.
-3. **Deep explanation:** *why* it is true, mathematically or economically. A derivation, or a cause-and-effect chain, and how it connects to the unit's other concepts. For example, why the multiplier is 1/r: the sum of a geometric series of loans and deposits.
-4. **Formula:** the formula or identity on its own line, each symbol explained. None → "none: a qualitative concept".
-5. **Trick:** a memory trick in a tip box.
+- **In plain words:** one sentence saying what it is.
+- **Simple explanation:** for a young child, with a concrete everyday example (pocket money, a piggy bank, a shop). No jargon, no formulas.
+- **Deep explanation:** *why* it is true, mathematically or economically. A derivation, or a cause-and-effect chain, and how it connects to the unit's other concepts. For example, why the multiplier is 1/r: the sum of a geometric series of loans and deposits.
+- **Formula:** the formula or identity on its own line, each symbol explained. A qualitative concept has no formula line.
+- **Trick:** a memory trick, only when a real one exists.
 
-When two units use the same name for different concepts (e.g. two "multipliers"), add a cross-reference warning after the trick, in both units.
+When two units use the same name for different concepts (e.g. two "multipliers"), add a cross-reference warning at the end of the concept, in both units.
 
 ## Graphs and shifts
 
@@ -32,4 +32,7 @@ Economics questions are mostly "what changes when X shifts". For every model in 
 - **Memorise vs understand:** everything not on the course's formula sheet must be memorised. Check the formula sheet line by line for what applies to this unit.
 - **Common mistakes:** take them mainly from the explanations of wrong answers in the Q&A files and the assignment solutions.
 - The assumptions that apply, in a collapsed box.
-- **Accepted reasoning:** the generic section, with the solutions' justification as a chain: which curve or variable moves, in which direction, so what happens to each variable, ending in the answer. In **Say it**, quote how the solutions name each curve and each direction of change, and which assumption they state out loud. In **Prove it**, list the steps a solution gives that look obvious (an assumption holding, why a curve shifts, why a variable stays fixed). The student's own wording is checked against these quotes.
+
+## How to answer (in each topic)
+
+The generic "How to answer" block, with the solutions' justification as a chain: which curve or variable moves, in which direction, so what happens to each variable, ending in the answer. In **Say it**, quote how the solutions name each curve and each direction of change, and which assumption they state out loud. In **Prove it**, list the steps a solution gives that look obvious (an assumption holding, why a curve shifts, why a variable stays fixed). The student's own wording is checked against these quotes. The roadmap only points to it.

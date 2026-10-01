@@ -12,17 +12,12 @@ when `language: en` (`X` is the unit number either way).
 
 | Key | Title (he / en) | Content |
 |---|---|---|
-| roadmap | `X.1 מפת דרכים - יחידה X` / `X.1 Roadmap - Unit X` | Overview; memorise vs understand; one table of symbols (symbol · English · meaning · note · topic); per topic: what to memorise, the tool, solving order, question types, mistakes, 🎬; collapsed boxes for the formula-sheet lines and assumptions; checklist; a "mastery level" frontmatter field the student fills. No exam structure: that lives once in the course page |
-| walkthrough | `X.2 הסבר החומר מא' עד ת' - יחידה X` / `X.2 Walkthrough A-Z - Unit X` | "The big idea" (anchored in a story or analogy from the slides when there is one), then topic 1..N in the five-part concept structure. End of each topic: a 🎬 box (every relevant segment, start and end time) and a ✏️ box (its practice questions and tag). End of page: memory methods and self-check questions |
-| practice | `X.3 תרגול לפי סדר - יחידה X` / `X.3 Practice in order - Unit X` | Index table topic → stage 0 / Q&A / assignment / past exams / tag. Stage 0: every slide example as a checkbox with tag and 🎬. Stages 1–2: every question with checkbox and tag; the assignment under exam conditions with a timer and grading criterion. Past exams: pure and challenge (combined with another unit, naming it); repeated questions marked |
-| practice-short | `X.3b תרגול מקוצר - יחידה X` / `X.3b Short practice - Unit X` | Same index table, but one question per distinct solving pattern per topic (the hardest, when several are "repeated questions" as marked on the full practice page) — see the generic rules' "Short practice" section for the grouping test |
-| recordings | `X.4 תוכן עניינים להקלטות - יחידה X` / `X.4 Recordings index - Unit X` | Per session: time · until · type · what happens · topic; then "question in the practice page ← time in the recording". Mark slide examples never solved in a recording (❌) and examples added in the recording that aren't in the slides |
+| roadmap | `X.1 מפת דרכים - יחידה X` / `X.1 Roadmap - Unit X` | Overview; memorise vs understand; one table of symbols (symbol · English · meaning · note · topic); per topic: what to memorise, the tool, solving order, question types, mistakes, a pointer to the topic's "How to answer"; collapsed boxes for the formula-sheet lines and assumptions; checklist; a "mastery level" frontmatter field the student fills. No exam structure: that lives once in the course page |
+| walkthrough | `X.2 הסבר החומר מא' עד ת' - יחידה X` / `X.2 Walkthrough A-Z - Unit X` | "The big idea" (anchored in a story or analogy from the slides when there is one), then topic 1..N with the concepts it has (economics skill's menu). End of each topic: its "How to answer" block, then the two closing lines (In the lectures, From). End of page: memory methods and self-check questions |
+| practice | `X.3 תרגול - יחידה X` / `X.3 Practice - Unit X` | The generic Practice page: table of topics, each topic's questions easy to hard, the Short version at the end. Past-exam questions that combine another unit name it |
+| recordings | `X.4 תוכן עניינים להקלטות - יחידה X` / `X.4 Recordings index - Unit X` | Per session: time · until · type · what happens · topic; then "question in the Practice page ← time in the recording". Mark slide examples never solved in a recording (❌) and examples added in the recording that aren't in the slides |
 
 Each page starts with a navigation line to the other pages and to the course's exam page; the current page is bold, not linked.
-
-## Tags
-
-Topic tags `#יX/נN_short_name` (e.g. `#י5/נ4_שינוי_כמות_הכסף`); combined questions `#יX/אתגר_משולב_עם_יחידהY`. Searching by tag is what makes "past exams by topic" work, so every question gets one.
 
 ## No duplication
 
@@ -30,7 +25,7 @@ One symbols table per unit (in X.1 only). The exam structure and the sources lis
 
 ## Graphs
 
-Macro graphs are conceptual: sketch curves, no numbers. Reproduce only the graphs the unit's slides show, on the X.2 walkthrough and X.3 practice pages, taking axis and curve names exactly as the slide writes them (for example the money market's demand and supply curves against the interest rate).
+Macro graphs are conceptual: sketch curves, no numbers. Reproduce only the graphs the unit's slides show, in the X.2 walkthrough topics only, taking axis and curve names exactly as the slide writes them (for example the money market's demand and supply curves against the interest rate).
 
 ## Exam patterns
 
