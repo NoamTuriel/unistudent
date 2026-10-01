@@ -58,7 +58,7 @@ def register(add, with_course):
             pages = sorted(page.rglob("*.md")) if page.is_dir() else [page]
             for one in pages:
                 if one.resolve().is_relative_to(course.study.resolve()):
-                    report["problems"] += check_vault_page(one, course.wiki.parent)
+                    report["problems"] += check_vault_page(one, course.state)
                 if args.labels:
                     part = labels.check_page(one, course.root)
                     report["paragraphs"] += part["paragraphs"]
