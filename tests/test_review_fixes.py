@@ -200,6 +200,56 @@ class ReplaceSafety(CourseTestCase):
         self.assertEqual(sorted(p.name for p in (folders(self.course).material / "official" / "Unit 1").iterdir()), ["notes.md"])
 
 
+class WikiFollowsMoves(CourseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.course = self.tmp / "Macro"
+        run_json("setup", self.course, "--name", "Macro", "--language", "en")
+        self.f = folders(self.course)
+
+    def test_moving_a_source_rewrites_the_links_to_its_old_wiki_page(self):  # D6
+        write(self.f.inbox / "Unit 4 notes.txt", "money multiplier")
+        run_json("add", "--course", self.course)
+        write(self.f.wiki / "glossary.md", "### multiplier\nSources: [n](<sources/unit-04/Unit 4 notes.md#page-1>)\n")
+        write(self.f.wiki / "units" / "unit-04.md", "x\n\nSources: [n](<../sources/unit-04/Unit 4 notes.md#page-1>)\n")
+        (self.f.material / "added" / "Unit 5").mkdir()
+        shutil.move(str(self.f.material / "added" / "Unit 4" / "Unit 4 notes.txt"),
+                    str(self.f.material / "added" / "Unit 5" / "Unit 4 notes.txt"))
+        run_json("wiki", "build", "--course", self.course)
+        self.assertIn("(<sources/unit-05/Unit 4 notes.md#page-1>)", (self.f.wiki / "glossary.md").read_text("utf-8"))
+        self.assertIn("(<../sources/unit-05/Unit 4 notes.md#page-1>)", (self.f.wiki / "units" / "unit-04.md").read_text("utf-8"))
+        self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
+
+    def test_a_recording_keeps_its_wiki_folder_when_a_same_named_one_arrives(self):  # D6
+        for tier, content in (("official", b"A" * 64), ("added", b"B" * 64)):
+            write(self.tmp / tier / "Unit 4" / "s.mp4", content)
+        run_json("import", self.tmp / "official", "--course", self.course, "--tier", "official")
+        with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/s.mp4")
+        run_json("import", self.tmp / "added", "--course", self.course, "--tier", "added")
+        rows = {r["path"]: r for r in run_json("recordings", "list", "--course", self.course)["recordings"]}
+        self.assertTrue(rows["official/Unit 4/s.mp4"]["has_transcript"])
+        self.assertFalse(rows["added/Unit 4/s.mp4"]["has_transcript"])
+        # the other one is deleted: the first keeps its folder instead of taking the freed name
+        (self.f.material / "added" / "Unit 4" / "s.mp4").unlink()
+        run_json("wiki", "build", "--course", self.course)
+        rows = {r["path"]: r for r in run_json("recordings", "list", "--course", self.course)["recordings"]}
+        self.assertTrue(rows["official/Unit 4/s.mp4"]["has_transcript"])
+
+    def test_the_transcripts_video_link_is_relative_and_follows_a_move(self):  # D7
+        write(self.tmp / "own" / "Unit 4" / "s.mp4", b"\x00" * 64)
+        run_json("import", self.tmp / "own", "--course", self.course, "--tier", "official")
+        with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/s.mp4")
+        transcript = self.f.wiki / "recordings" / "s" / "transcript.md"
+        self.assertNotIn("file://", transcript.read_text("utf-8"))
+        (self.f.material / "official" / "Unit 5").mkdir()
+        shutil.move(str(self.f.material / "official" / "Unit 4" / "s.mp4"), str(self.f.material / "official" / "Unit 5" / "s.mp4"))
+        run_json("wiki", "build", "--course", self.course)
+        self.assertIn("official/Unit 5/s.mp4", transcript.read_text("utf-8"))
+        self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
+
+
 class WindowsPaths(CourseTestCase):
     def test_the_install_command_is_valid_in_powershell_when_the_python_path_has_a_space(self):  # D9
         course = self.tmp / "Macro"
