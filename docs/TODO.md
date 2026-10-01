@@ -20,7 +20,6 @@ Ticket 18 landed the rules, the economics skills and the `us check` shape checks
 - **Economics skill still mentions 💡 and ⚠️** in its concept menu (simple explanation, trick, deep explanation). Out of scope for the generic tuning; update it to the label-free packs once the generic rules are settled. Same for the macro skill if it names labels.
 - **Course-skill wording of "closing lines" and links** (economics, macro: the macro skill's walkthrough row still says "In the lectures" and the two closing lines) may still say page numbers or per-paragraph links; align them with the folded sources block.
 - **Roadmap, Walkthrough, Practice and Recordings** were each approved by the owner on unit 7 (Recordings on a lecture of units 8-9, since unit 7 has only solution videos). A second unit has not been tried.
-- **Recording-summarizer agent** does not yet know the new Recordings rules (lecture recordings only; teacher's messages from the first and last minutes plus cue phrases). Update `agents/recording-summarizer.md` and have the roadmap topics, not invented ones, name the timeline parts.
 - **Verifier** now samples claims without labels; revisit if the owner wants a stricter source check on packs.
 
 ## After that
