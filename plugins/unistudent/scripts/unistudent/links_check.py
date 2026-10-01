@@ -45,11 +45,11 @@ def _anchor_ok(target: Path, anchor: str) -> bool:
 
 
 def _find_by_name(root: Path, name: str):
-    name = name if Path(name).suffix else name + ".md"
-    matches = sorted(root.rglob(Path(name).name), key=lambda p: len(p.parts))
-    for match in matches:
-        if match.as_posix().endswith(name):
-            return match
+    for candidate in (name, name + ".md"):  # a numbered page ("4.2 Walkthrough") looks like it has a suffix, so try both
+        matches = sorted(root.rglob(Path(candidate).name), key=lambda p: len(p.parts))
+        for match in matches:
+            if match.is_file() and match.as_posix().endswith(candidate):
+                return match
     return None
 
 

@@ -147,12 +147,15 @@ def check_page(page: Path, root: Path):
         end = text.index(GEN_END, start) + len(GEN_END)
         text = text[:start] + re.sub(r"[^\n]", "", text[start:end]) + text[end:]
     found = paragraphs(text)
-    problems = graph_problems(page, text)
+    pack = re.match(r"\d+\.\d", page.name)  # a Study pack page carries no grounding labels (only chat answers do)
+    problems = [p for p in graph_problems(page, text) if not pack or p["kind"] == "missing-image"]
     for p in found:
         where = {"page": str(page), "line": p["line"], "text": p["text"]}
+        if pack:
+            continue
         if not p["labels_at_start"]:
-            if _CLOSING_LINE.match(p["text"]) or re.match(r"\d+\.3(?!\d)", page.name):
-                continue  # a study pack's closing lines and its Practice page notes are not claims
+            if _CLOSING_LINE.match(p["text"]):
+                continue
             if any(f"{name}/" in p["body"] for name in ("inbox", Course(root).inbox.name)) and len(p["body"]) < 300:
                 continue  # the closing "add material to inbox/" suggestion is not a claim
             problems.append({"kind": "unlabeled", **where})
