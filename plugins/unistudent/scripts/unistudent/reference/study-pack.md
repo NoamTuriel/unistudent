@@ -7,73 +7,78 @@ The generic rules for building a study pack, used when no field skill, course sk
 1. **Roadmap:** see the whole unit and what to memorise versus only understand.
 2. **Walkthrough:** learn one whole topic at a time. When something is unclear, ask Claude or jump to the recording.
 3. **Practice:** solve that topic's questions.
-4. After the unit: the whole practice page in order.
-5. Before the exam: the roadmap topic by topic, then past-exam questions by topic to find weak spots.
+4. After the unit: the whole Practice page in order.
+5. Before the exam: the roadmap topic by topic, then the Short version to find weak spots.
 
 ## Topics: the backbone
 
-Split the unit into 4–6 topics in teaching order (usually the lecture order). Give each a tag `#unit-NN/tNN-short-name` (course language allowed after the number). This one topic list is shared by every page.
+Split the unit into 4–6 topics in teaching order (usually the lecture order). This one topic list is shared by every page. Topics carry no tags.
 
 ## Pages
 
 | Key | Page (Hebrew / English title) | What it gives the student | Default |
 |---|---|---|---|
-| roadmap | `N.1 מפת דרכים` / `N.1 Roadmap` | Overview, memorise vs understand, per topic: tools, solving order, question types, common mistakes, recording links; checklist | ✓ |
-| walkthrough | `N.2 הסבר החומר` / `N.2 Walkthrough` | The big idea, then every concept of every topic, in the concept structure below; per topic: recording segments and its practice questions | ✓ |
-| practice | `N.3 תרגול` / `N.3 Practice` | Every question from the course material for this unit, grouped by topic and stage, tagged, with the recording time when it is solved there | ✓ |
-| practice-short | `N.3b תרגול מקוצר` / `N.3b Short practice` | Every topic's questions, but only one per distinct way of solving it — for revising fast, not for full practice | |
+| roadmap | `N.1 מפת דרכים` / `N.1 Roadmap` | Overview, memorise vs understand, per topic: tools, solving order, question types, common mistakes; a pointer to each topic's "How to answer"; checklist | ✓ |
+| walkthrough | `N.2 הסבר החומר` / `N.2 Walkthrough` | The big idea, then every topic with its concepts (below), its "How to answer" block, and its two closing lines | ✓ |
+| practice | `N.3 תרגול` / `N.3 Practice` | A table of topics with question counts; per topic its questions linked, easy to hard; the Short version at the end | ✓ |
 | recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | Per recording: time · until · type · what happens · topic. Only when the unit's recordings have transcripts | ✓ when transcripts exist |
 
 Save to the unit's folder in the Study vault (`pack_folder` in the result of `us study changes --unit N`): its name, the page titles and the content all follow the course language. The vault holds only study packs and the generated recordings roadmap.
 
-## Accepted reasoning (when the material has verbal answered questions)
+Every part earns its place: a page says only what a student reads, and a part with nothing to say is not written (no "none", no filler, no decoration).
 
-A verbal answered question is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. When the unit has any, the roadmap gets an **Accepted reasoning** section, one block per topic that has verbal answered questions. Done when every verbal answered question of the unit has been read and each block lists:
+## Closing lines (walkthrough)
 
-- **Say it:** the steps a solution spells out, in the solution's own words, quoted (✅, linked to the solution).
-- **Take as given:** what solutions use without explaining.
+Each topic ends with two lines, instead of a link on every paragraph:
+
+- **In the lectures:** the recording and the time it is taught, linked once (`#t=<seconds>`, the time in the text). A topic no recording covered has no such line. A recording without a transcript is shown by its file name alone, with no time.
+- **From:** the source files the topic rests on, each a link ("slides, page 3"). A file with no link is named by its file name.
+
+Chat answers keep a link on every claim.
+
+## How to answer (inside each topic of the walkthrough)
+
+A verbal answered question is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. A topic that has verbal answered questions gets a short **How to answer** block, after its concepts. Done when every verbal answered question of the topic has been read and the block gives:
+
+- **Model answer:** one short justification as a chain, in the solutions' own wording (✅).
+- **Say it:** the steps a solution spells out, quoted.
 - **Prove it:** what solutions always establish first, which the student must not take as obviously true.
-- **Model answer:** one short justification in the solutions' wording, linked.
 
-A pattern seen across several solutions is 💡, stated with the solutions it comes from. A topic with no verbal answered question gets no block, and nothing is invented for it.
+A pattern seen across several solutions is 💡, stated with the solutions it comes from. A topic with no verbal answered question gets no block, and nothing is invented for it. The roadmap only points to each topic's block.
 
 ## Announcements and exam hints (roadmap)
 
 The unit page in the Wiki collects what the lecturer said in this unit's recordings: `Announcements` (dates, assignments, who to work with, exam information) and `This will be on the exam`. The roadmap page always has a section for them, every line with its recording and time link (✅, citing the recording summary). Leave it out only when the unit page lists none. These are first-class: never summarise them away.
 
-## Concept structure (walkthrough)
+## Concepts (walkthrough)
 
-`### <concept> — <English name>`, then in this order:
+`### <concept> — <English name>`. Draw only the parts the concept has, from this menu, in this order:
 
-1. **In plain words:** one sentence.
-2. **Explanation:** why it is so, with a concrete example (usually 💡: your words, resting on the Wiki).
-3. **Formula:** on its own line, each symbol explained; "none: a qualitative concept" when there is none.
-4. **Memory tip:** one line (💡).
+- **In plain words:** one sentence.
+- **Explanation:** why it is so, with a concrete example (usually 💡: your words, resting on the Wiki).
+- **Formula:** on its own line, each symbol explained.
+- **Memory tip:** one line (💡), only when a real one exists.
 
-## Practice stages
+## Practice page
 
-Stage 0: examples from the slides. Stage 1: questions with answers. Stage 2: the assignment, under exam conditions. Stage 3: past-exam questions for this unit (pure), then questions that combine units (challenge). Each question: topic tag, source link, and the recording time when it is solved there (❌ when an example in the material is never solved in a recording).
+1. A table of the unit's topics with how many questions each has.
+2. Under each topic, every suited question from the course material as a link to its question file, easy to hard, with one line saying what it exercises. Nothing else per question: no stage, no tag, no recording time.
+3. Ends with the **Short version**, introduced by one line saying what it is: the must-do questions, one per distinct way of solving, past-exam questions first.
 
-## Short practice (practice-short)
+No graphs on the Practice page.
 
-For a student short on time: every topic still appears, but with the fewest questions that cover
-everything worth practicing — not the fewest questions overall.
+### Short version
 
-- Two questions are **the same** when solving them takes the same method and the same steps, even with
-  different numbers or a different scenario. They are **different** when the method or steps differ, even
-  if one is much easier than the other. When unsure whether two questions are the same, read both
-  solutions before deciding: surface wording never decides it alone.
-- Group each topic's questions (across every stage: slide examples, Q&A, assignment, past exams) by that
-  test. From each group of "the same" questions, keep only the **hardest** one (the most steps, the most
-  combined concepts, or an explicit challenge / combined-unit question) and drop the rest.
-- Every group of "different" questions keeps its one question, regardless of difficulty — a question that
-  is easy but solved a different way is never redundant.
-- Every topic has at least one question here. Keep each kept question's topic tag, source link and
-  recording time exactly as on the full Practice page, so it's still checkable and still links back.
+For a student short on time: every topic still appears, but with the fewest questions that cover everything worth practicing.
+
+- Two questions are **the same** when solving them takes the same method and the same steps, even with different numbers or a different scenario. They are **different** when the method or steps differ, even if one is much easier than the other. When unsure, read both solutions before deciding: surface wording never decides it alone.
+- Group each topic's questions by that test. From each group of "the same" questions keep only the **hardest** one (the most steps, the most combined concepts, or an explicit challenge or combined-unit question).
+- Every group of "different" questions keeps its one question, regardless of difficulty.
+- Every topic has at least one question. Past-exam questions come first.
 
 ## Graphs
 
-Where the course material explains a concept with a graph (X and Y axes with lines or curves), or a question or its solution explicitly needs one, show it on the walkthrough and practice pages (and on a kept short-practice question, the same as on the full practice page). Never on the roadmap, the recordings index or the navigation line, and never a graph that decorates a page the course didn't illustrate. A student preference such as "no graphs" or "only the key ones" overrides this.
+Where the course material explains a concept with a graph (X and Y axes with lines or curves), or a question or its solution explicitly needs one, show it in that topic on the walkthrough page. Never on the roadmap, the Practice page, the recordings index or the navigation line, and never a graph that decorates a page the course didn't illustrate. A student preference such as "no graphs" or "only the key ones" overrides this.
 
 1. **Find it:** the Wiki text only hints at a slide's graph (axis labels, words like "curve" or "shifts"), so open that slide page and read it visually, including image-only pages.
 2. **Write a Graph spec** into `<pack folder>/graphs/<name>.json`. Keep it short: the axes' labels and every curve with the course's own names. Label each axis with the name in the course language plus the course's symbol in brackets, e.g. `כמות הכסף (M)`, and name a curve by its name plus its symbol when the course gives one. A curve is two points, a vertical or horizontal value, a formula in `x`, or a sketch of a few rough points on a 0–10 grid (for conceptual "what would happen if" graphs; the tool draws it as a smooth curve with no numbers). A shifted curve names the curve it moves from (`shift_of`). Points of interest give two curve names (the tool finds the crossing) or coordinates.
@@ -85,7 +90,7 @@ Flow and cause-and-effect pictures are plain Mermaid blocks, no tool.
 
 ## Links
 
-- Citations point at the student's own file in the Material folder, never at the Wiki (the student does not read it): a full disk link, a `file:` URL with the path percent-encoded (`file:///…/<material folder>/official/<unit folder>/slides.pdf`). Write the page or minute in the link text ("slides, page 3", "lecture 3, 00:12:47"). Read the Wiki page's `source:` line to find the file. A file that failed, was skipped or is not analyzed yet (`coverage.md`) is named as such, not cited as read.
+- In a Study pack, citations are the closing lines of each topic, not a link on every paragraph. A citation points at the student's own file in the Material folder, never at the Wiki (the student does not read it): a full disk link, a `file:` URL with the path percent-encoded (`file:///…/<material folder>/official/<unit folder>/slides.pdf`). Write the page or minute in the link text ("slides, page 3", "lecture 3, 00:12:47"). Read the Wiki page's `source:` line to find the file. A file that failed, was skipped or is not analyzed yet (`coverage.md`) is named as such, not cited as read.
 - Recordings: link the video file the same way; for a time add `#t=<seconds>` and write the time in the text. The transcript is in the Wiki, so it is not linked.
 - `us check` fails a vault page that links into the hidden folder or at a missing file; the Wiki build repairs links after the course folder or a file moves.
 - Wikilinks are only for moving between pages of the vault, never for a citation (a citation is the `file:` link above).

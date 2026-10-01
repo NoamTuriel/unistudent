@@ -116,3 +116,32 @@ def check_vault_page(page: Path, hidden: Path):
         if path.resolve().is_relative_to(hidden.resolve()):
             problems.append({"kind": "link-into-hidden", "page": str(page), "link": target})
     return problems
+
+
+PRACTICE_PAGE = re.compile(r"^\d+\.3(?!\d)")
+WALKTHROUGH_PAGE = re.compile(r"^\d+\.2(?!\d)")
+CLOSING_FROM = re.compile(r"(?im)^\s*(?:[-*>]\s*)?(?:\*\*)?(?:from|מתוך)(?:\*\*)?\s*:")
+STAGE = re.compile(r"(?im)^\s*(?:#+\s*|[-*>]\s*)?(?:\*\*)?(?:stage|שלב)\s+\d")
+TOPIC_TAG = re.compile(r"(?<![\w&])#(?:unit-\d+/|י\d+/)")
+IMAGE = re.compile(r"!\[[^\]]*\]\(|!\[\[")
+
+
+def check_pack_page(page: Path):
+    """Study pack shape (ticket 18): a walkthrough topic closes with a "From:" line; the Practice page has no stages, tags or graphs; no `N.3b` page."""
+    text = CODE_BLOCK.sub("", page.read_text("utf-8"))
+    problems = []
+
+    def problem(kind, text_=""):
+        problems.append({"kind": kind, "page": str(page), "text": text_})
+
+    if re.match(r"^\d+\.3b", page.name):
+        problem("short-practice-page", "the Short version closes the Practice page; there is no separate page")
+    elif PRACTICE_PAGE.match(page.name):
+        for kind, pattern in (("practice-stage", STAGE), ("practice-tag", TOPIC_TAG), ("practice-graph", IMAGE)):
+            if (hit := pattern.search(text)):
+                problem(kind, hit.group(0).strip())
+    elif WALKTHROUGH_PAGE.match(page.name):
+        for section in re.split(r"(?m)^## ", text)[1:]:
+            if re.search(r"(?m)^### ", section) and not CLOSING_FROM.search(section):
+                problem("topic-missing-from-line", section.splitlines()[0][:80])
+    return problems
