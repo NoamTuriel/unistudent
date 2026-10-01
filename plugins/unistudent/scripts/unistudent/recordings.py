@@ -82,7 +82,7 @@ def install_run(name):
 
 def install_hint(name):
     return (f"Speech-to-text isn't installed. Run: {install_run(name)} "
-            "(or reinstall UniStudent with its 'stt' extra: uv tool install --force \"unistudent[stt] @ <repo>\").")
+            "For advanced users: or reinstall UniStudent with its 'stt' extra (uv tool install --force \"unistudent[stt] @ <repo>\").")
 
 
 def start_background(course, rels):

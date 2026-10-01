@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "plugins" / "unistudent" / "scripts" / "unistudent" / "skills"
 SETUP = CORE / "course-setup" / "SKILL.md"
 ALL_SKILLS = sorted(ROOT.glob("plugins/*/skills/*/SKILL.md")) + sorted(CORE.glob("*/SKILL.md"))
-STAGES = ["university", "course", "language", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
+STAGES = ["university", "course", "language", "path", "format", "fetch", "sort", "recordings", "analyze", "capabilities"]
 
 
 def subparsers(parser):
@@ -56,7 +56,8 @@ class SetupFlow(CourseTestCase):
             run_json("assign", f["path"] if isinstance(f, dict) else f, "general", *course)
         self.assertIn("backend_installed", run_json("recordings", "estimate", *course))
         run_json("context", "--recording-level", "1", "--exam-date", "2030-01-01", *course)
-        run_json("setup-progress", "advance", *name, "--stage", "fetch-and-organize")
+        for stage in ("fetch", "sort", "recordings"):
+            run_json("setup-progress", "advance", *name, "--stage", stage)
         run_json("setup-progress", "advance", *name, "--stage", "analyze")
         self.assertEqual(run_json("setup-progress", "status", *name)["next_stage"], "capabilities")
         self.assertIn("complete", run_json("setup-progress", "advance", *name, "--stage", "capabilities")["summary"])

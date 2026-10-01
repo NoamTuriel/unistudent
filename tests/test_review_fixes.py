@@ -1,6 +1,7 @@
 """Regression tests for the review findings (data safety first), all through the `us.py` command line."""
 import json
 import os
+import re
 import shutil
 import unittest
 from pathlib import Path
@@ -325,6 +326,88 @@ class RoadmapsAndAnnouncements(CourseTestCase):
     def test_the_study_pack_writer_is_told_to_surface_them(self):  # T3
         for name in ("study-pack-writer", "study-pack"):
             self.assertIn("Announcements", run_json("doc", name)["text"])
+
+
+ROOT = Path(__file__).resolve().parents[1]
+CORE = ROOT / "plugins" / "unistudent" / "scripts" / "unistudent"
+SETUP_TEXT = (CORE / "skills" / "course-setup" / "SKILL.md").read_text("utf-8")
+
+
+def step(number):
+    return next(part for part in SETUP_TEXT.split("\n## ") if part.startswith(f"{number}."))
+
+
+class SetupSkill(CourseTestCase):
+    def test_the_overview_counts_the_numbered_steps_and_the_stages_match_the_cli(self):  # S4
+        from unistudent.course import SETUP_STAGES
+        numbered = re.findall(r"(?m)^## (\d+)\.", SETUP_TEXT)
+        self.assertIn(f"Step 5 of {len(numbered) - 1}", SETUP_TEXT)  # step 0 is bookkeeping
+        self.assertNotIn("fetch-and-organize", SETUP_TEXT)
+        for stage in ("fetch", "sort", "recordings"):
+            self.assertIn(f"--stage {stage}", SETUP_TEXT)
+            self.assertIn(stage, SETUP_STAGES)
+        self.assertEqual([m for m in re.findall(r"--stage ([a-z-]+)", SETUP_TEXT) if m not in SETUP_STAGES], [])
+
+    def test_a_progress_file_from_the_old_single_step_resumes_at_analyze(self):  # S4
+        write(self.home / "setup-progress" / "Macro.json", json.dumps({"stage": "fetch-and-organize", "answers": {}}))
+        self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"], "analyze")
+
+    def test_the_university_is_recorded_before_the_install_stop_and_a_restart_is_explained(self):  # S2
+        one = step(1)
+        self.assertLess(one.index("--stage university"), one.index("us plugins recommend"))
+        self.assertRegex(one, r"(?i)close and reopen|reload|restart")
+        self.assertIn("run setup again", one)
+
+    def test_fetching_with_a_generated_fallback_can_fail_without_being_an_error(self):  # S5
+        five = step(5)
+        self.assertIn("can't log in", five)
+        self.assertIn("not an error", five)
+        self.assertIn("only record how the university organizes", five)
+
+    def test_every_skill_that_touches_a_course_knows_the_old_layout(self):  # S3
+        for skill in (CORE / "skills").glob("*/SKILL.md"):
+            text = skill.read_text("utf-8")
+            self.assertIn("legacy: true", text, skill)
+            self.assertIn("us migrate --apply", text, skill)
+            self.assertNotIn("then moves it", text, skill)
+        self.assertNotIn("shows what it will move, then moves it", (CORE / "cli.py").read_text("utf-8"))
+
+    def test_an_empty_inbox_says_where_it_is_and_what_to_do(self):  # S6
+        text = (CORE / "skills" / "course-add" / "SKILL.md").read_text("utf-8")
+        self.assertRegex(text, r"Empty → tell the student where the inbox is.*run `/unistudent:course-add` again")
+
+    def test_the_inbox_is_in_the_overview(self):  # S6
+        self.assertIn("inbox", SETUP_TEXT.split("## 0.")[0])
+
+    def test_the_install_command_is_for_advanced_users(self):  # S6
+        for path in (CORE / "skills" / "course-setup" / "SKILL.md", CORE / "recordings.py", ROOT / "README.md"):
+            for line in path.read_text("utf-8").splitlines():
+                if "uv tool install" in line:
+                    self.assertIn("advanced", line, f"{path.name}: {line[:80]}")
+
+    def test_the_readmes_explain_wiki_and_vault(self):  # S6
+        for name in ("README.en.md", "README.he.md"):
+            text = (CORE / "templates" / name).read_text("utf-8")
+            self.assertIn("vault", text)
+            self.assertIn("Wiki", text)
+        self.assertNotIn("skill", (CORE / "templates" / "README.he.md").read_text("utf-8"))
+        self.assertIn("a vault is just a folder", (ROOT / "README.md").read_text("utf-8"))
+
+    def test_no_plugin_found_still_tells_a_non_claude_student_what_to_do(self):  # S6
+        out = run_json("plugins", "recommend", "--university", "Nowhere U", "--course-name", "Basket weaving")
+        self.assertEqual(out["plugins"], [])
+        self.assertIn("npx skills", out["summary"])
+
+    def test_coverage_is_shown_after_sorting_and_pending_is_explained(self):  # S7
+        eight = step(8)
+        self.assertIn("pending", eight)
+        self.assertLess(SETUP_TEXT.index("## 6."), SETUP_TEXT.index("us wiki coverage"))
+
+    def test_the_layout_docs_say_what_is_true(self):  # H1-H3
+        self.assertNotIn("links.py", (ROOT / "CLAUDE.md").read_text("utf-8"))
+        self.assertNotIn("keeps working", (ROOT / "README.md").read_text("utf-8"))
+        for spec in ("v1", "v2"):
+            self.assertIn("superseded by ADR 0007", (ROOT / "docs" / "spec" / f"{spec}.md").read_text("utf-8")[:400])
 
 
 class WindowsPaths(CourseTestCase):
