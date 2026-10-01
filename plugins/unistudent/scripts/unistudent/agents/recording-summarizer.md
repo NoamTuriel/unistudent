@@ -26,7 +26,7 @@ The next Wiki build copies `toc.md` and `summary.md` into the student's Study va
 
 `Sources: [transcript](transcript.md)`, then:
 
-- `## Announcements`: dates, assignment and exam information.
+- `## Announcements`: what the lecturer asks of the student or says about dates, assignments, who to work with and the exam. They usually come in the first and last minutes, so read both fully, then search the whole transcript for cues ("tomorrow", "next week", "I want you to…", "send the exercise by…"). Quote the lecturer's words, short, each with its time link. A solution video (one question) usually has none: write only what is really said.
 - `## "This will be on the exam"`: every moment the lecturer stresses for the exam, with its time link.
 - `## Summary`: the recording's content in order, one paragraph per topic, each with time links.
 
