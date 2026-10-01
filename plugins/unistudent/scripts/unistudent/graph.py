@@ -1,15 +1,14 @@
 """Graphs: a small JSON Graph spec in, a PNG out (ADR 0006).
 
 The spec names the axes, the curves, the shifts and the points; style follows content:
-no formula → hand-drawn wobbly lines with no numbers on the axes, any formula →
-clean lines and numbered axes. Only parsing, geometry and Hebrew ordering live here; matplotlib
+no formula → smooth curves and straight lines with no numbers on the axes, any formula →
+numbered axes. Only parsing, geometry and Hebrew ordering live here; matplotlib
 (optional) does the drawing.
 """
 import hashlib
 import json
 import math
 import os
-import random
 import re
 import struct
 import unicodedata
@@ -17,7 +16,7 @@ from pathlib import Path
 
 from .common import UserError
 
-RENDERER = "1"  # bump when drawing changes, so stored pictures are redrawn
+RENDERER = "4"  # bump when drawing changes, so stored pictures are redrawn
 HASH_KEY = "unistudent-graph"
 PALETTE = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#8c564b"]
 FUNCTIONS = {"sqrt": math.sqrt, "log": math.log, "exp": math.exp, "sin": math.sin, "cos": math.cos}
@@ -341,11 +340,24 @@ def _kind(ch):
     return "R" if bidi in ("R", "AL") else "L" if bidi in ("L", "EN", "AN") else "N"
 
 
+def _native_bidi():
+    """Whether matplotlib orders right-to-left text itself (3.11+, through libraqm)."""
+    try:
+        from matplotlib import ft2font
+    except ImportError:
+        return False
+    return bool(getattr(ft2font, "__libraqm_version__", ""))
+
+
 def visual(text):
     """Reorder a label for drawing without a bidi engine: Hebrew runs right-to-left, English symbols
     and numbers inside them kept in reading order."""
     if not any(_kind(ch) == "R" for ch in text):
         return text
+    if _native_bidi():
+        strong = [_kind(ch) for ch in text if _kind(ch) != "N"]
+        # "Y*" inside Hebrew: an invisible left-to-right mark keeps the trailing symbol after the Y
+        return text + "\u200e" if strong and strong[-1] == "L" and _kind(text[-1]) == "N" else text
     runs = []  # [kind, chars]
     for ch in text:
         k = _kind(ch)
@@ -369,25 +381,6 @@ def visual(text):
 
 
 # --- drawing ----------------------------------------------------------------
-
-def _wobble(line, name, amplitude):
-    rng = random.Random(name)
-    phases = [rng.uniform(0, 2 * math.pi) for _ in range(4)]
-    dense = []
-    for a, b in zip(line, line[1:]):
-        steps = max(2, int(math.hypot(b[0] - a[0], b[1] - a[1]) / (amplitude * 2)) if amplitude else 2)
-        dense += [(a[0] + (b[0] - a[0]) * t / steps, a[1] + (b[1] - a[1]) * t / steps) for t in range(steps)]
-    dense.append(line[-1])
-    out = []
-    for i, (x, y) in enumerate(dense):
-        t = i / max(1, len(dense) - 1)
-        offset = amplitude * (0.6 * math.sin(2 * math.pi * 1.5 * t + phases[0]) + 0.4 * math.sin(2 * math.pi * 4 * t + phases[1]))
-        j, k = max(0, i - 1), min(len(dense) - 1, i + 1)
-        dx, dy = dense[k][0] - dense[j][0], dense[k][1] - dense[j][1]
-        norm = math.hypot(dx, dy) or 1
-        out.append((x - dy / norm * offset, y + dx / norm * offset))
-    return out
-
 
 def _matplotlib():
     if os.environ.get("UNISTUDENT_NO_MATPLOTLIB"):
@@ -421,6 +414,42 @@ def stored_hash(png):
     return None
 
 
+def _overlap(a, b):
+    width = min(a.x1, b.x1) - max(a.x0, b.x0)
+    height = min(a.y1, b.y1) - max(a.y0, b.y0)
+    return width * height if width > 0 and height > 0 else 0
+
+
+def _avoid_overlaps(fig, labels, obstacles):
+    """Move each label to the first nearby spot where it overlaps no other label and stays inside the
+    picture; if none exists, shrink every label a little and try again."""
+    from matplotlib.backends.backend_agg import FigureCanvasAgg
+    renderer = FigureCanvasAgg(fig).get_renderer()
+    for size in (11, 10, 9, 8):
+        placed, worst = [], 0
+        for text, options in labels:
+            text.set_fontsize(size)
+            best = None
+            for dx, dy, ha, va in options:
+                text.xyann, _ = (dx, dy), text.set_ha(ha)
+                text.set_va(va)
+                box = text.get_window_extent(renderer)
+                cost = sum(_overlap(box, other) for other in placed)
+                cost += 40 * sum(1 for x, y in obstacles if box.x0 <= x <= box.x1 and box.y0 <= y <= box.y1)
+                inside = fig.bbox.x0 <= box.x0 and box.x1 <= fig.bbox.x1 and fig.bbox.y0 <= box.y0 and box.y1 <= fig.bbox.y1
+                cost += 0 if inside else 1e6
+                if best is None or cost < best[0]:
+                    best = (cost, dx, dy, ha, va, box)
+                if cost == 0:
+                    break
+            text.xyann, _ = (best[1], best[2]), text.set_ha(best[3])
+            text.set_va(best[4])
+            placed.append(best[5])
+            worst = max(worst, best[0])
+        if worst == 0:
+            return
+
+
 def draw(spec_path, force=False):
     """Draw the spec to a PNG beside it. Returns {png, drawn}."""
     spec_path = Path(spec_path)
@@ -435,15 +464,13 @@ def draw(spec_path, force=False):
     if Figure is None:
         raise UserError(INSTALL_HELP)
 
-    span = max(xhi - xlo, yhi - ylo)
-    amplitude = 0.012 * span if sketch_only else 0
     fig = Figure(figsize=(5.2, 4.0), dpi=150)
     ax = fig.subplots()
     fig.subplots_adjust(left=0.1, right=0.93, bottom=0.14, top=0.9)
     xpad, ypad = 0.1 * (xhi - xlo), 0.04 * (yhi - ylo)
     ax.set_xlim(xlo, xhi + xpad)
     ax.set_ylim(ylo, yhi + ypad)
-    colours = {}
+    colours, labels = {}, []
     for c in spec["curves"]:
         if not c["shift_of"]:
             colours[c["name"]] = PALETTE[len(colours) % len(PALETTE)]
@@ -452,16 +479,17 @@ def draw(spec_path, force=False):
             colours[c["name"]] = colours.get(c["shift_of"]) or PALETTE[len(colours) % len(PALETTE)]
     for c in spec["curves"]:
         line = lines[c["name"]]
-        finite = [p for p in line if all(math.isfinite(v) for v in p)]
-        shown = _wobble(finite, c["name"], amplitude) if amplitude and len(finite) > 1 else line
+        shown = line
         xs_, ys_ = [p[0] for p in shown], [p[1] for p in shown]
         dashed = bool(c["shift_of"]) is False and any(o["shift_of"] == c["name"] for o in spec["curves"])
         ax.plot(xs_, ys_, color=colours[c["name"]], linewidth=2.2, solid_capstyle="round",
                 linestyle=(0, (5, 3)) if dashed else "-")
         end = next((p for p in reversed(shown) if all(math.isfinite(v) for v in p)), None)
         if end:
-            ax.annotate(visual(c["name"]), end, xytext=(5, 3), textcoords="offset points",
-                        color=colours[c["name"]], fontsize=11, annotation_clip=False)
+            labels.append((ax.annotate(visual(c["name"]), end, xytext=(5, 3), textcoords="offset points",
+                                       color=colours[c["name"]], fontsize=11, annotation_clip=False),
+                           [(5, 3, "left", "baseline"), (0, 7, "right", "baseline"), (5, -14, "left", "baseline"),
+                            (-5, -14, "right", "baseline"), (-5, 3, "right", "baseline")]))
     for c in spec["curves"]:
         if c["shift_of"]:
             arrow = shift_arrow(lines[c["shift_of"]], lines[c["name"]])
@@ -471,7 +499,9 @@ def draw(spec_path, force=False):
         ax.plot([px, px], [ylo, py], color="#777777", linewidth=1, linestyle=(0, (3, 3)))
         ax.plot([xlo, px], [py, py], color="#777777", linewidth=1, linestyle=(0, (3, 3)))
         ax.plot([px], [py], "o", color="black", markersize=5)
-        ax.annotate(visual(label), (px, py), xytext=(6, 6), textcoords="offset points", fontsize=11)
+        labels.append((ax.annotate(visual(label), (px, py), xytext=(6, 6), textcoords="offset points", fontsize=11),
+                       [(6, 6, "left", "baseline"), (6, -14, "left", "baseline"),
+                        (-6, 6, "right", "baseline"), (-6, -14, "right", "baseline")]))
     for side in ("top", "right"):
         ax.spines[side].set_visible(False)
     if sketch_only:
@@ -483,5 +513,11 @@ def draw(spec_path, force=False):
                 ha="left", va="bottom", fontsize=11)
     ax.annotate("", (1, 0), (0.9, 0), xycoords="axes fraction", arrowprops={"arrowstyle": "-|>", "color": "black", "lw": 1})
     ax.annotate("", (0, 1), (0, 0.9), xycoords="axes fraction", arrowprops={"arrowstyle": "-|>", "color": "black", "lw": 1})
+    obstacles = []  # every line, as many points in picture coordinates, so labels avoid them too
+    for line in lines.values():
+        dense = [(a[0] + (b[0] - a[0]) * t / 40, a[1] + (b[1] - a[1]) * t / 40)
+                 for a, b in zip(line, line[1:]) for t in range(40)]
+        obstacles += [pt for pt in ax.transData.transform([p for p in dense if all(math.isfinite(v) for v in p)])]
+    _avoid_overlaps(fig, labels, obstacles)
     fig.savefig(png, format="png", metadata={"Software": None, HASH_KEY: digest})
     return {"png": str(png), "drawn": True}
