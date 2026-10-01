@@ -28,7 +28,7 @@ Save to the unit's folder in the Study vault (`pack_folder` in the result of `us
 
 ## Accepted reasoning (when the material has verbal answered questions)
 
-A verbal answered question (פתרון מילולי) is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. When the unit has any, the roadmap gets an **Accepted reasoning** section, one block per topic that has verbal answered questions. Done when every verbal answered question of the unit has been read and each block lists:
+A verbal answered question is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. When the unit has any, the roadmap gets an **Accepted reasoning** section, one block per topic that has verbal answered questions. Done when every verbal answered question of the unit has been read and each block lists:
 
 - **Say it:** the steps a solution spells out, in the solution's own words, quoted (✅, linked to the solution).
 - **Take as given:** what solutions use without explaining.
