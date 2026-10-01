@@ -221,12 +221,12 @@ def _slug(text: str) -> str:
 
 
 # The university-to-plugin and subject-to-plugin mapping, in one place (ticket 12). A university plugin is matched
-# on the whole normalized name; a subject plugin on a keyword inside the field or course name. One entry per plugin.
+# by its own test on the normalized name ("Open University UK" must not match the Israeli one); a subject plugin on a keyword inside the field or course name. One entry per plugin.
 PLUGIN_RECOMMENDATIONS = [
     {"name": "openu", "kind": "university",
      "gives": "downloads new material from your Open University of Israel course site",
-     "names": {"openu", "openuniversity", "openuniversityofisrael", "theopenuniversityofisrael",
-               "האוניברסיטההפתוחה", "האוניברסיטההפתוחהבישראל", "אוניברסיטההפתוחה"}},
+     "match": lambda uni: (uni == "oui" or "פתוחה" in uni or "openu" in uni.replace("openuniversity", "")
+                           or ("openuniversity" in uni and ("israel" in uni or "ישראל" in uni)))},
     {"name": "economics", "kind": "subject",
      "gives": "study-pack rules for economics courses, plus a skill for intro macroeconomics",
      "keywords": {"economics", "economy", "כלכלה", "כלכלי"}},
@@ -242,7 +242,7 @@ def recommend_plugins(university: str = "", field: str = "", course_name: str = 
     """The plugins that fit this university and course, university plugins first. Never installs anything."""
     uni, subjects = _plain(university), [_plain(field), _plain(course_name)]  # matched apart: a keyword can't span the join
     return [p for p in PLUGIN_RECOMMENDATIONS
-            if (p["kind"] == "university" and uni in p["names"])
+            if (p["kind"] == "university" and p["match"](uni))
             or (p["kind"] == "subject" and any(_plain(k) in t for k in p["keywords"] for t in subjects))]
 
 

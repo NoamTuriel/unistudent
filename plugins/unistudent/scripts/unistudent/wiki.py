@@ -199,7 +199,7 @@ def build(course, force=False):
             index.append(f"- {Path(rel).name} ({course.unit_label(info['unit'])}): {status}")
     index += ["", "## What was and wasn't analyzed", "", f"- {_link('Coverage of every file', 'coverage.md')}"]
     (wiki / "index.md").write_text("\n".join(index) + "\n", "utf-8")
-    covered = coverage(course)
+    covered = coverage(course, write=True)
 
     return {
         "converted": converted,
@@ -215,19 +215,20 @@ def build(course, force=False):
     }
 
 
-def coverage(course):
+def coverage(course, write=False):
     """What the Wiki did and did not read, per Raw file: analyzed, failed (with the reason), skipped (with who
-    chose it) or pending. Also written to wiki/coverage.md, so a later session knows what is NOT in the Wiki."""
+    chose it) or pending. With write=True (the build) also saved as wiki/coverage.md, so a later session knows
+    what is NOT in the Wiki. Showing it changes nothing on disk."""
     state = course.read_state("wiki.json", {})
     level = course.settings().get("recording_level")
     recordings = recording_pages(course)
-    rows = []
-    for rel in sorted(course.manifest()["files"]):
+    files, rows = course.manifest()["files"], []
+    for rel in sorted(files):
         what = kind(rel)
         info = state.get(rel)
         if what == "document":
-            if info is None:
-                status, why = "pending", "not analyzed yet: run the Wiki build"
+            if info is None or info.get("fingerprint") != files[rel].get("fingerprint"):
+                status, why = "pending", "new or changed since the last build: run the Wiki build"
             elif info.get("method") == "none":
                 status, why = "failed", " ".join(info.get("warnings") or ["could not be read"])
             elif info.get("empty_pages"):
@@ -260,8 +261,9 @@ def coverage(course):
                 label = _link(r["path"], r["page"]) if r["page"] else r["path"]
                 lines.append(f"- {label}" + (f": {r['why']}" if r["why"] else ""))
             lines.append("")
-    course.wiki.mkdir(parents=True, exist_ok=True)
-    (course.wiki / "coverage.md").write_text("\n".join(lines).rstrip() + "\n", "utf-8")
+    if write:
+        course.wiki.mkdir(parents=True, exist_ok=True)
+        (course.wiki / "coverage.md").write_text("\n".join(lines).rstrip() + "\n", "utf-8")
     summary = ", ".join(f"{n} {name}" for name, n in counts.items() if n) or "no files yet"
     return {"files": rows, "counts": counts, "summary": f"Coverage: {summary}."}
 

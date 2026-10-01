@@ -29,7 +29,7 @@ class PluginRecommendations(CourseTestCase):
         self.assertIn("generic", result["summary"].lower())
 
     def test_spelling_case_punctuation_and_hebrew_still_match(self):
-        for university in ("open-university", "OPEN UNIVERSITY OF ISRAEL", "האוניברסיטה הפתוחה"):
+        for university in ("open-university-of-israel", "OPEN UNIVERSITY OF ISRAEL", "האוניברסיטה הפתוחה"):
             self.assertEqual(names(run_json("plugins", "recommend", "--university", university)), ["openu"], university)
         self.assertEqual(names(run_json("plugins", "recommend", "--course-name", "מבוא למקרו כלכלה")), ["economics"])
 
@@ -43,6 +43,11 @@ class PluginRecommendations(CourseTestCase):
     def test_unrelated_words_and_the_field_course_join_do_not_match(self):
         self.assertEqual(run_json("plugins", "recommend", "--course-name", "מיקרוביולוגיה")["plugins"], [])
         self.assertEqual(run_json("plugins", "recommend", "--field", "econ", "--course-name", "omics")["plugins"], [])
+
+    def test_spelling_variants_of_the_israeli_open_university_match(self):
+        for university in ("OUI", "OpenU Israel", "openu.ac.il", "Open University of Israel (OUI)", "האוניברסיטה הפתוחה של ישראל"):
+            self.assertEqual(names(run_json("plugins", "recommend", "--university", university)), ["openu"], university)
+        self.assertEqual(names(run_json("plugins", "recommend", "--university", "The Open University")), [])
 
     def test_other_apps_get_a_harness_neutral_line(self):
         result = run_json("plugins", "recommend", "--university", "OpenU")
