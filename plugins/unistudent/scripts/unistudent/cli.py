@@ -48,7 +48,7 @@ def write_context_files(course: Course):
                      other_courses="\n".join(other_lines),
                      exam_section="\n".join(exam))
     # The full context lives in .unistudent/context.md. AGENTS.md (read by Codex, Cursor, Gemini
-    # and others) carries it in full; CLAUDE.md imports it. A student's own file is kept and gets
+    # and others) carries it in full; CLAUDE.md and GEMINI.md import it. A student's own file is kept and gets
     # one pointer line instead.
     ours = course.state / "context.md"
     ours.parent.mkdir(parents=True, exist_ok=True)
@@ -56,6 +56,7 @@ def write_context_files(course: Course):
     _write_or_point(course.root / "AGENTS.md", context,
                     "Read `.unistudent/context.md` first: it holds this course's rules (UniStudent).")
     _write_or_point(course.root / "CLAUDE.md", "@.unistudent/context.md\n", "@.unistudent/context.md")
+    _write_or_point(course.root / "GEMINI.md", "@.unistudent/context.md\n", "@.unistudent/context.md")  # Gemini CLI
     readme = course.root / "README.md"
     if not readme.exists():
         lang = "he" if settings.get("language") == "he" else "en"

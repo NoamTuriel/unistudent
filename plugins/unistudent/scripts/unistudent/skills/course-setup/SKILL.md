@@ -100,7 +100,15 @@ If they want transcripts (3) and `backend_installed` is false, they need a speec
 
 Record it: `us setup-progress advance --course-name "<course>" --stage fetch-and-organize --answer recording_level=<0|1|3>`.
 
-Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), the recording level is recorded, and if they chose transcripts the speech-to-text tool is installed (or they chose download only).
+If they chose transcripts (3), also ask about **frame analysis** (a separate yes/no, never bundled with transcription). Explain it plainly first:
+- **What it gives:** a transcript only has the words. Lecturers also show diagrams, graphs, formulas and slides on screen, and say "as you can see here". Frame analysis looks at the video, so those pictures and formulas end up in the recording's summary, linked to the minute they appeared, instead of being lost.
+- **What it needs:** a video-analysis tool next to UniStudent (the README suggests `mcp-video-analyzer`) and `ffmpeg`. It isn't part of the plugin. Check whether you can see such a tool; if not, say so and offer to explain how to add it.
+- **How heavy it is:** the slowest and most expensive part: one extra AI call for roughly every minute of video (`frame_analysis_segments` in the estimate gives the real number for their recordings), on top of transcription. Say the number and that it's optional: transcripts alone are already useful.
+- **Recommend it** for courses whose lecturer teaches from drawn graphs or slides (economics, maths, science); fine to skip for talking-only lectures.
+
+Tool available and they say yes → `us context --frame-analysis 1`. Say no, or no tool yet → `us context --frame-analysis 0`, and tell them they can turn it on later in `/unistudent:course-recordings` once the tool is installed (never turn it on without the tool).
+
+Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), the recording level is recorded, if they chose transcripts the speech-to-text tool is installed (or they chose download only), and frame analysis was asked once and recorded (on or off).
 
 ## 6. Analyze (build the Wiki)
 
@@ -116,12 +124,12 @@ Done when: `us wiki check` reports 0 problems, the student has seen the coverage
 
 Explain in the student's language, in a few short lines, following the course folder's `README.md`, using the real folder names from `us courses current`: the three folders and the grounding labels (✅ 💡 ⚠️ ❌).
 
-Then, in plain words (no unexplained "MCP", "context file" or "grounding" without a one-clause gloss), cover both of these every time, not only if asked:
+Then, in plain words (no unexplained "MCP", "context file" or "grounding" without a one-clause gloss), cover each of these every time, not only if asked:
 
 - **The three folders:** the inbox (drop new files here; it is emptied once they're added), the Material folder (the real files of the course, in `official` and `added` folders, then by unit; they may move, rename or delete files there, and moving a file between official and added changes how far it's trusted), and the study folder (their **Study vault**: open that folder as a vault in Obsidian, or in their other app; it holds only what was made for them to study from: study packs and a recordings roadmap per unit). Everything else is in a hidden `.unistudent` folder they never need to open.
 - **Deleting in the Material folder deletes the only copy:** there is no second copy. The computer's Trash can bring a file back, so use it carefully. (Files imported from their own folder were copied: those originals are still where they were.)
 - **Adding more material later:** drop new files in the inbox, then run `/unistudent:course-add` (or just mention it — Claude will notice next time).
-- **Reconnecting a new AI session:** open the AI app (any of them — Claude Code, Cowork, Cursor, etc.) inside this course folder and it picks the course up automatically. If it doesn't, or the session isn't rooted in the folder, paste this one line: `Read AGENTS.md in <course folder path> before answering.`
+- **Picking the course up in a new AI session:** say the one sentence that is true for their app, and only that one. Claude Code, Cursor, Codex, Gemini CLI, VS Code: "Open the app inside this course folder and it knows your course." Claude Desktop chat (it reads no folder; the tool is `course_context`, the same as the `us course-context` command): "Create a Project once, and paste this as its instructions: *Start each chat by calling the unistudent course_context tool.* After that every chat starts on your course (this needs the unistudent connector turned on in Desktop; if you have several courses, it asks which one, or use the active one you last switched to)." Cowork: "Choose this course folder when you start a task" (check it works with them before promising; if it doesn't, give the fallback). Say plainly that an app opened *outside* the course folder won't know the course. The last-resort fallback for any app: paste `Read AGENTS.md in <course folder path> before answering.`
 
 Then suggest one concrete next step, chosen from what's actually true for this course (not a generic list) — e.g. "Unit 1 has material ready; want a study pack for it?" or "There are 3 recordings — want a roadmap of what's covered in each?" — and only after that, offer the rest of the commands from the course folder's `README.md` table (and the university plugin's sync skill, if there is one).
 
