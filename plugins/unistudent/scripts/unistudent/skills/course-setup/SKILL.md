@@ -40,9 +40,9 @@ Ask where to keep the course folder. Suggest `<their documents folder>/Universit
 
 If the folder is inside iCloud, Google Drive, Dropbox or OneDrive, tell them in one sentence: recordings will be kept in a local folder that doesn't sync, because synced folders break links and push big files to the cloud.
 
-Then ask whether they use Obsidian or plain Markdown, and record that stage too (`--stage format`) — see step 0.
+Then ask which app they'll read their notes and study packs in, and record that stage too (`--stage format --answer format=<obsidian|markdown> --answer app=<their choice>`) — see step 0. Offer: Obsidian, Word (docx), OneNote, Google Docs, or plain Markdown / something else. Recommend Obsidian, and say why in a sentence: it's the best fit, because it opens the Wiki and study packs as they are, with working links between pages and callouts. Obsidian → format `obsidian`. Any other choice → format `markdown` (standard links, PNG graphs): the study packs stay Markdown files, and they copy a finished pack into Word, OneNote or Google Docs, where the PNG graphs paste or insert as pictures. Say that plainly, so they know what to expect, and that they can switch to Obsidian later.
 
-Done when: you have a folder path and a format, each recorded as its own stage.
+Done when: you have a folder path, a format and the app they'll use, each recorded as its own stage.
 
 ## 4. Fetch and organize material
 
