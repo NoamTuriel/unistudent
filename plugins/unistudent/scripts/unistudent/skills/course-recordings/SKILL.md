@@ -7,12 +7,12 @@ disable-model-invocation: true
 Heavy work starts only after the student says yes to real numbers.
 
 <!-- conventions: keep identical in every UniStudent skill -->
-Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat. **Old layout**: `us courses current` shows `legacy: true` for a course folder made before version 0.4; then stop, offer `us migrate` (it only lists what it would move) and, on a yes, run `us migrate --apply`, then carry on.
 <!-- /conventions -->
 
 ## 1. What and how much
 
-Run `us courses current`, then `us recordings estimate --json` (add `--unit N` if the student named a unit; suggest the unit they're studying now).
+Run `us courses current` (`legacy: true` → the Old layout convention), then `us recordings estimate --json` (add `--unit N` if the student named a unit; suggest the unit they're studying now).
 
 Done when: you have the numbers for the chosen recordings, and the speech-to-text engine is installed.
 

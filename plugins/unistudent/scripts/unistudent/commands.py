@@ -170,8 +170,9 @@ def register(add, with_course):
                  for p in recommend_plugins(args.university or "", args.field or "", " ".join(args.course_name or []))]
         other = ("In another app (Cursor, Codex, Gemini CLI...), add the skills with "
                  "`npx skills@latest add NoamTuriel/unistudent`.")
-        summary = ("\n".join(f"{p['name']}: {p['gives']}. To add it: {p['install']}" for p in found) + "\n" + other
-                   if found else "No plugin for this university or course yet: carry on with the generic rules.")
+        summary = ("\n".join(f"{p['name']}: {p['gives']}. To add it: {p['install']}" for p in found) if found
+                   else "No plugin for this university or course yet: carry on with the generic rules (they work for any "
+                        "course). If you are not using Claude, the same skills are available too.") + "\n" + other
         return {"plugins": found, "other_apps": other, "summary": summary}
 
     p = add("plugins", cmd_plugins, "recommend the plugins to install for a university and course (never installs)")

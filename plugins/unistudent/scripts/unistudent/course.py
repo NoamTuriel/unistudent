@@ -383,7 +383,8 @@ def list_generated() -> list:
     return out
 
 
-SETUP_STAGES = ["university", "course", "language", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
+SETUP_STAGES = ["university", "course", "language", "path", "format", "fetch", "sort", "recordings", "analyze", "capabilities"]
+RENAMED_STAGES = {"fetch-and-organize": "recordings"}  # recorded by versions that had one step for fetch, sort and recordings
 
 
 def _setup_progress_dir() -> Path:
@@ -428,5 +429,5 @@ def list_setup_progress() -> list:
 def next_setup_stage(stage):
     if stage is None:
         return SETUP_STAGES[0]
-    i = SETUP_STAGES.index(stage)
+    i = SETUP_STAGES.index(RENAMED_STAGES.get(stage, stage))
     return SETUP_STAGES[i + 1] if i + 1 < len(SETUP_STAGES) else None
