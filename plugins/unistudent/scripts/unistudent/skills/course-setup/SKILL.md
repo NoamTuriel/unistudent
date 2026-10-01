@@ -19,11 +19,19 @@ Before the first question of a new setup, tell the student the big picture in th
 - **It takes time, and it's worth it.** Fetching and analyzing are the slow parts, longer for a big course or for recordings. It's done once per course; after that every answer is fast, grounded in your material, and easy to check.
 - **Every step comes with its reason.** You may stop at any point and run setup again: it picks up where it stopped.
 
+**Keep the student oriented all the way through.** Setup is long and heavy, so:
+
+- **Before each step**, say in one line where you are ("Step 4 of 6: fetching your material"), what's about to happen, and whether it will take a while.
+- **During a long job** (fetching, building the Wiki, transcribing), say it has started and what you're waiting for. When it finishes, say what happened in one or two lines, and what comes next.
+- **After each step**, record it (`us setup-progress advance`, see step 0) and say so once: "Saved: if you close this, run setup again and I'll continue from here."
+- **If they come back later or you're resuming**, start with a recap: what's done, what's left, what's next. Don't re-ask anything already recorded.
+- **Keep the conversation light.** Do the heavy work in a subagent where you can run subagents (fetching, the Wiki build, recordings): give it the step's instructions, and have it return a short result (what worked, what failed, what was skipped), not logs. Every question to the student stays in this conversation. Installs are one command: run it quietly and read only the last lines of its output. Where you can't run subagents, do the work yourself and keep what you show short.
+
 Done when: the student has seen the overview (or the one-line recap), and none of it needed an unexplained term.
 
 ## 0. Resume, if setup was started before
 
-Run `us setup-progress status --course-name "<course, if you already know it>"` once you know the course name (step 2), or `us setup-progress list --json` before that if you don't. If there's progress for this course, say so ("Picking up where we left off, after <stage>") and skip straight to the stage after the last one recorded, using the answers already stored instead of asking again. After finishing each numbered stage below, record it: `us setup-progress advance --course-name "<course>" --stage <stage> [--answer key=value ...]` (stage names: `university`, `course`, `path`, `format`, `fetch-and-organize`, `analyze`, `capabilities`). Recording the last stage (`capabilities`) clears the progress automatically.
+Run `us setup-progress status --course-name "<course, if you already know it>"` once you know the course name (step 2), or `us setup-progress list --json` before that if you don't. If there's progress for this course, say so ("Picking up where we left off, after <stage>") and skip straight to the stage after the last one recorded, using the answers already stored instead of asking again. After finishing each numbered stage below, record it: `us setup-progress advance --course-name "<course>" --stage <stage> [--answer key=value ...]` (stage names: `university`, `course`, `path`, `format`, `fetch-and-organize`, `analyze`, `capabilities`). Progress is kept per course name, so record `university` together with `course` once the course name is known (step 2); the later stages each have their own record line below. Recording the last stage (`capabilities`) clears the progress automatically.
 
 ## 1. University
 
@@ -43,7 +51,9 @@ Ask which course. Say why in a sentence: each course gets its own folder and Wik
 
 Once you have the course name, run `us plugins recommend --university "<name>" --course-name "<course>" --field "<field, if you know it>" --json` and give the student one combined list of every recommended plugin they don't already have, each with what it gives them and its `install` command, plus the `other_apps` line if they aren't using Claude. Repeat any from step 1 they haven't installed yet. Always recommend installing them now, before going on (then setup resumes here); only if they can't or won't, carry on with the generic rules and say what they'll be missing.
 
-Done when: you have the course name and the course skill (or none), and the student has been told which plugins fit their university and course (or that none do).
+Record both stages now: `us setup-progress advance --course-name "<course>" --stage university --answer university=<name>`, then `--stage course --answer course_name=<course> [--answer course_skill=<skill>]`.
+
+Done when: you have the course name and the course skill (or none), the student has been told which plugins fit their university and course (or that none do), and `university` and `course` are recorded.
 
 ## 3. Storage and format
 
@@ -82,6 +92,8 @@ Then, if the course has recordings, run `us recordings estimate --json` and ask 
 
 If they want transcripts (3) and `backend_installed` is false, they need a speech-to-text tool, and it isn't part of the plugin. Say so plainly and **recommend installing it now**: it's a separate download that runs on their own computer (large: about a gigabyte or more, with the language model fetched the first time it runs), and nothing is sent anywhere. Then **ask whether to install it for them**. Yes → run `install_run` from the estimate (ask your shell tool; if you can't run commands, show it for them to run), then run `us recordings estimate --json` again and confirm `backend_installed` is true. If `ffmpeg` is missing too (check with `which ffmpeg`, or `where ffmpeg` on Windows), offer to install it the same way: macOS `brew install ffmpeg`, Windows `winget install ffmpeg`, Linux your package manager. No → record level 1 (download only), and tell them they can add it any time and run `/unistudent:course-recordings`.
 
+Record it: `us setup-progress advance --course-name "<course>" --stage fetch-and-organize --answer recording_level=<0|1|3>`.
+
 Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), the recording level is recorded, and if they chose transcripts the speech-to-text tool is installed (or they chose download only).
 
 ## 5. Analyze (build the Wiki)
@@ -90,7 +102,9 @@ Tell the student in plain words what's about to happen and why: the AI reads all
 
 Read `<this skill's base directory>/../course-wiki/SKILL.md` and follow it for the whole course. Then run `us context --exam-date <date>` if the student knows the exam date (ask once; skipping is fine).
 
-Done when: `us wiki check` reports 0 problems.
+Then show the student what was and wasn't analyzed: run `us wiki coverage --json` and tell them the counts (analyzed, failed, skipped, still pending) in plain words, and name each failed or skipped file with its reason and what to do about it (for example "this PDF has no text layer: I can read it visually if you want", "these recordings were skipped at your choice: run `/unistudent:course-recordings` any time"). Ask what to do about any gap worth fixing. The same list is saved in the course folder's `wiki/coverage.md`, so any later session knows what is not in the Wiki. Record it: `us setup-progress advance --course-name "<course>" --stage analyze`.
+
+Done when: `us wiki check` reports 0 problems, the student has seen the coverage summary, and `analyze` is recorded.
 
 ## 6. Capabilities: explain, then show, what this can do
 
@@ -105,4 +119,6 @@ Then suggest one concrete next step, chosen from what's actually true for this c
 
 In Cowork, suggest one project per course with this folder connected. In Claude Code, suggest starting Claude inside the folder.
 
-Done when: the student has seen the explanation, both plain-language points above, a concrete suggestion, and the other commands.
+Recording this last stage (`us setup-progress advance --course-name "<course>" --stage capabilities`) finishes setup and clears the saved progress.
+
+Done when: the student has seen the explanation, both plain-language points above, a concrete suggestion, and the other commands, and `capabilities` is recorded.
