@@ -14,7 +14,7 @@ _Avoid_: vault, workspace, project folder
 The course folder's dot-folder (`.unistudent`) holding everything the student never uses: Settings, Manifest, the Wiki, jobs, saved state.
 
 **Study vault**:
-The one visible folder holding only what UniStudent made for the student to study from (study packs, recording roadmaps), opened as an Obsidian vault or in any other app. Its name says what it is for, in the student's language.
+The one visible folder holding only what UniStudent made for the student to study from (study packs, recording roadmaps), opened as an Obsidian vault or in any other app. It is Markdown for a human and never links into the Hidden folder; citations in it are disk links to the student's own files in the Material folder. Its name says what it is for, in the student's language.
 _Avoid_: study folder, summaries folder, output folder
 
 **Settings**:

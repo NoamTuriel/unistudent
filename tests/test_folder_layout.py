@@ -192,7 +192,7 @@ class RecordingRoadmap(CourseTestCase):
         roadmap = (f.study / "Unit 4" / "Recordings roadmap.md").read_text("utf-8")
         self.assertIn("Homework due Sunday.", roadmap)
         self.assertIn("00:12:47", roadmap)
-        self.assertIn("2-course-material/official/Unit 4/session 5.mp4", roadmap)
+        self.assertIn("2-course-material/official/Unit%204/session%205.mp4", roadmap)
         self.assertEqual(run_json("check", f.study / "Unit 4", "--labels", "--course", course)["problems"], [])
         self.assertEqual(sorted(p.name for p in f.study.iterdir()), ["Unit 4"])
 
@@ -254,7 +254,8 @@ class OldLayout(CourseTestCase):
         self.assertEqual((f.material / "added" / "Unsorted" / "notes.txt").read_text("utf-8"), "my own notes")
         self.assertTrue((f.wiki / "index.md").exists())
         pack = (f.study / "Unit 4" / "4.1 Roadmap.md").read_text("utf-8")
-        self.assertIn("../../.unistudent/wiki/sources/unit-04/slides.md", pack)
+        self.assertIn("2-course-material/official/Unit%204/slides.txt", pack)
+        self.assertNotIn(".unistudent", pack)
         self.assertIn("source: official/Unit 4/slides.txt", (f.wiki / "sources" / "unit-04" / "slides.md").read_text("utf-8"))
         # the student's own original was copied, not moved
         self.assertTrue((self.tmp / "own" / "Unit 4" / "slides.txt").exists())
