@@ -73,7 +73,8 @@ class MigrationSafety(CourseTestCase):
         f = folders(course)
         page = (f.study / "Unit 4" / "sub" / "p.md").read_text("utf-8")
         self.assertIn("(<../../../2-course-material/official/Unit 4/a b.txt>)", page)
-        self.assertIn("(../../../.unistudent/wiki/sources/unit-04/a%20b.md)", page)
+        self.assertIn("y wiki z", page)  # the Wiki page is not the student's: the link goes, the word stays
+        self.assertNotIn(".unistudent", page)
         self.assertIn("(../../../2-course-material/official/Unit%204/a%20b.txt#top)", page)
         transcript = (f.wiki / "recordings" / "a b" / "transcript.md").read_text("utf-8")
         self.assertIn((f.material / "official" / "Unit 4" / "a b.txt").resolve().as_uri(), transcript)
@@ -297,7 +298,8 @@ class RoadmapsAndAnnouncements(CourseTestCase):
     def test_the_roadmap_keeps_clickable_times_and_a_labelled_generated_block(self):  # T3
         run_json("wiki", "build", "--course", self.course)
         text = self.roadmap.read_text("utf-8")
-        self.assertIn("[00:01:00](<../../2-course-material/official/Unit 4/session 5.mp4#t=60>)", text)
+        self.assertIn("[00:01:00](file://", text)
+        self.assertIn("session%205.mp4#t=60)", text)
         self.assertIn("✅", text.split("<!-- unistudent:generated:start -->")[1].split("<!-- unistudent:generated:end -->")[0])
         self.assertEqual(run_json("check", self.roadmap, "--labels", "--course", self.course)["problems"], [])
 

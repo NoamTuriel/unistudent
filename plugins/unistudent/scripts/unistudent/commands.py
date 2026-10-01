@@ -50,13 +50,15 @@ def register(add, with_course):
 
     def cmd_check(args):
         from . import labels
-        from .links_check import check_links
+        from .links_check import check_links, check_vault_page
         course = resolve_course(args)
         report = {"paragraphs": [], "problems": []}
         for name in args.files:
             page = Path(name).resolve()
             pages = sorted(page.rglob("*.md")) if page.is_dir() else [page]
             for one in pages:
+                if one.resolve().is_relative_to(course.study.resolve()):
+                    report["problems"] += check_vault_page(one, course.state)
                 if args.labels:
                     part = labels.check_page(one, course.root)
                     report["paragraphs"] += part["paragraphs"]

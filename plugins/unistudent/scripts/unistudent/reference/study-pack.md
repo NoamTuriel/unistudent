@@ -74,8 +74,9 @@ Flow and cause-and-effect pictures are plain Mermaid blocks, no tool.
 
 ## Links
 
-- To material: Wiki source pages with page anchors. The Wiki is hidden at `.unistudent/wiki/` in the course folder, so from a page in `<vault>/<unit folder>/` the link is `../../.unistudent/wiki/sources/unit-04/slides.md#page-3`.
-- To recordings: the transcript anchor (`../../.unistudent/wiki/recordings/<rec>/transcript.md#001230`) plus a link to the video file in the Material folder (`../../<material folder>/official/<unit folder>/<file>`). The video link opens the file; Obsidian's Media Extended plugin can jump to the time.
+- Citations point at the student's own file in the Material folder, never at the Wiki (the student does not read it): a full disk link, a `file:` URL with the path percent-encoded (`file:///…/<material folder>/official/<unit folder>/slides.pdf`). Write the page or minute in the link text ("slides, page 3", "lecture 3, 00:12:47"). Read the Wiki page's `source:` line to find the file. A file that failed, was skipped or is not analyzed yet (`coverage.md`) is named as such, not cited as read.
+- Recordings: link the video file the same way; for a time add `#t=<seconds>` and write the time in the text. The transcript is in the Wiki, so it is not linked.
+- `us check` fails a vault page that links into the hidden folder or at a missing file; the Wiki build repairs links after the course folder or a file moves.
 - Obsidian format: wikilinks and callouts (`> [!tip]`) are fine. Plain Markdown: standard links and blockquotes only.
 - A navigation line at the top of every page linking the unit's other pages.
 
