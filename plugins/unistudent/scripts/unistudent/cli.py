@@ -127,7 +127,7 @@ def cmd_setup(args):
         "unsorted": material.unsorted(course),
         "summary": f"Course folder ready at {course.root} ({len(added)} new files, "
                    f"{len(material.unsorted(course))} unsorted). Drop new material in {names['inbox']}; "
-                   f"study from {names['study']}.",
+                   f"{names['study']} appears with your first study pack.",
     }
 
 
