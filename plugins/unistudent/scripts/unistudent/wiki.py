@@ -8,12 +8,13 @@ never touched by a rebuild.
 import os
 import re
 from pathlib import Path
-from urllib.parse import unquote
+from urllib.parse import unquote, urlparse
+from urllib.request import url2pathname
 
 from . import material
 from .common import problems_summary
 from .convert import convert, kind
-from .course import safe_name, unit_dir
+from .course import LABELS, safe_name, unit_dir
 from .links_check import MD_LINK, STUB_MARK, check_links, has_sources
 
 GEN_START = "<!-- unistudent:generated:start -->"
@@ -258,6 +259,7 @@ def build(course, force=False):
                 transcript.write_text(patched, "utf-8")
     covered = coverage(course, write=True)
     roadmaps = write_roadmaps(course, recordings)
+    relink_vault(course)
 
     return {
         "converted": converted,
@@ -311,23 +313,78 @@ def write_roadmaps(course, recordings):
         page = course.pack_folder(unit) / f"{course.label('roadmap')}.md"
         lines = [f"# {course.label('roadmap')}: {course.unit_label(unit)}", ""]
         for rel, info in recs:
-            video = _video_path(course, rel, page.parent)
-            lines += [f"## {Path(rel).name}", "", f"[recording]({_target(video)})", ""]
+            video = material.path_of(course, rel).as_uri()
+            lines += [f"## {Path(rel).name}", "", f"[recording]({video})", ""]
             for name in ("toc.md", "summary.md"):
                 if (course.wiki / info["folder"] / name).exists():
                     lines += [_for_the_vault(course.wiki / info["folder"] / name, video), ""]
         lines[2:2] = ["✅ Made from the transcripts and summaries of these recordings; the times open the video. "
-                      + "Sources: " + ", ".join(video_link(course, r, page.parent) for r, _ in recs), ""]
+                      + "Sources: " + ", ".join(_link(Path(r).name, material.path_of(course, r).as_uri()) for r, _ in recs), ""]
         _write_generated(page, "\n".join(lines))
         written.append(page.relative_to(course.root).as_posix())
     _remove_stale_roadmaps(course, written)
     return written
 
 
+def relink_vault(course):
+    """Keep the citations in the Study vault pointing at the student's own files: a link that went stale because the
+    course folder or the file moved is found again in the Material folder, and an old link into the hidden Wiki
+    becomes a link to the file the Wiki page was made from (the page or time stays in the visible text)."""
+    if course.legacy or not course.study.is_dir():
+        return
+    state = course.read_state("wiki.json", {})
+    page_source = {info["page"]: rel for rel, info in state.items() if info.get("page")}
+    recording_source = {folder: rel for rel, folder in material.wiki_folders(course.manifest()["files"]).items()}
+    on_disk = {}
+    for found in course.material.rglob("*") if course.material.is_dir() else []:
+        on_disk.setdefault(found.name, []).append(found)
+
+    def resolve(page, path):
+        return (page.parent / unquote(path)).resolve()
+
+    for page in sorted(course.study.rglob("*.md")):
+        text = page.read_text("utf-8")
+
+        def fix(match):
+            label, raw = match.group(1), match.group(2).strip("<>")
+            parsed = urlparse(raw)
+            if parsed.scheme not in ("", "file"):
+                return match.group(0)
+            local = Path(url2pathname(parsed.path)) if parsed.scheme else resolve(page, raw.partition("#")[0])
+            anchor = raw.partition("#")[2]
+            if local.is_relative_to(course.wiki):  # an old link into the Wiki
+                inner = local.relative_to(course.wiki).as_posix()
+                rel = page_source.get(inner)
+                where = re.fullmatch(r"page-(\d+)", anchor)
+                if rel:
+                    return f"[{label}{', page ' + where[1] if where else ''}]({material.path_of(course, rel).as_uri()})"
+                folder = inner.rsplit("/", 1)[0]
+                if folder in recording_source:
+                    stamp = re.fullmatch(r"(\d\d)(\d\d)(\d\d)", anchor)
+                    secs = int(stamp[1]) * 3600 + int(stamp[2]) * 60 + int(stamp[3]) if stamp else None
+                    video = material.path_of(course, recording_source[folder]).as_uri()
+                    return f"[{label}]({video}{'#t=' + str(secs) if secs is not None else ''})"
+                return label  # nothing of the student's to point at
+            if parsed.scheme != "file" or local.exists():
+                return match.group(0)
+            parts = local.parts  # a moved course folder: the same place under the Material folder now
+            names = {course.material.name, *(t["material"] for t in LABELS.values())}
+            for i, part in enumerate(parts):
+                if part in names and (course.material / Path(*parts[i + 1:])).exists():
+                    return _link(label, (course.material / Path(*parts[i + 1:])).as_uri() + (("#" + anchor) if anchor else ""))
+            same = on_disk.get(local.name, [])  # a moved file: the one file of that name
+            if len(same) == 1:
+                return _link(label, same[0].as_uri() + (("#" + anchor) if anchor else ""))
+            return match.group(0)
+
+        fixed = MD_LINK.sub(fix, text)
+        if fixed != text:
+            page.write_text(fixed, "utf-8")
+
+
 def _remove_stale_roadmaps(course, written):
     """A roadmap whose recordings are gone, or lost their summaries, is removed (what the student added around the
     generated block stays)."""
-    from .course import LABELS
     names = {table["roadmap"] + ".md" for table in LABELS.values()}
     keep = {course.root / w for w in written}
     for page in sorted(course.study.rglob("*.md")) if course.study.is_dir() else []:
