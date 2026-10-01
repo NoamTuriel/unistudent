@@ -54,6 +54,12 @@ class Coverage(CourseTestCase):
         self.assertEqual(files["Unit 1/lecture 1.mp4"]["status"], "skipped")
         self.assertIn("you chose", files["Unit 1/lecture 1.mp4"]["why"])
 
+    def test_showing_coverage_writes_nothing_and_a_changed_file_is_pending_again(self):
+        self.build_with_one_unreadable_file()
+        (self.course / "wiki" / "coverage.md").unlink()
+        self.coverage()
+        self.assertFalse((self.course / "wiki" / "coverage.md").exists())
+
     def test_the_wiki_gets_a_coverage_page_that_passes_the_check_and_warns_the_ai(self):
         self.build_with_one_unreadable_file()
         page = (self.course / "wiki" / "coverage.md").read_text("utf-8")

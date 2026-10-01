@@ -98,8 +98,10 @@ class SetupSkillStatic(unittest.TestCase):
                 node, label = parser, f"{skill.parent.name}: us {' '.join(words)}"
                 for word in words:
                     subs = subparsers(node)
-                    if subs is None:
-                        break  # remaining words are a positional choice value
+                    if subs is None:  # remaining words are a positional choice value: the command must accept it
+                        choices = {c for a in node._actions for c in (a.choices or [])}
+                        self.assertIn(word, choices, label)
+                        continue
                     self.assertIn(word, subs, label)
                     node = subs[word]
                 known = {o for a in node._actions for o in a.option_strings}

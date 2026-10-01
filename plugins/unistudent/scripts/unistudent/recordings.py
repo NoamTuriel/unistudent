@@ -55,9 +55,12 @@ def install_run(name):
     import importlib.util
     import sys
     package = PACKAGES.get(name, name)
-    if importlib.util.find_spec("pip") is None and shutil.which("uv"):
-        return f'uv pip install --python "{sys.executable}" {package}'
-    return f'"{sys.executable}" -m pip install {package}'
+    python = f'"{sys.executable}"' if " " in sys.executable else sys.executable  # quoted only if it must be (PowerShell)
+    if importlib.util.find_spec("pip") is not None:
+        return f"{python} -m pip install {package}"
+    if shutil.which("uv"):
+        return f"uv pip install --python {python} {package}"
+    return "(install uv first: https://docs.astral.sh/uv/)"
 
 
 def install_hint(name):
