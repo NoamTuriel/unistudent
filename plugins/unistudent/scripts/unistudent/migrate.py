@@ -236,6 +236,8 @@ def apply(course, found):
     settings = course.settings()
     settings.update(layout=LAYOUT, folders=names)
     course.save_settings(settings)
+    from .wiki import relink_vault
+    relink_vault(course)  # study packs cite the student's own files now, not Wiki pages
     left = []
     for old in ("raw", "materials", "study", "inbox"):
         if (root / old).is_dir():

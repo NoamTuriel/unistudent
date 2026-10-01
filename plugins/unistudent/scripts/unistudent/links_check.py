@@ -102,3 +102,17 @@ def has_sources(page: Path) -> bool:
         if re.search(r"(^|/)(sources|recordings)/", path) and (page.parent / path).exists():
             return True
     return False
+
+
+def check_vault_page(page: Path, hidden: Path):
+    """A page in the Study vault never links into the hidden folder (the Wiki is for the AI, not the student)."""
+    problems = []
+    for _, raw in MD_LINK.findall(CODE_BLOCK.sub("", page.read_text("utf-8"))):
+        target = raw.strip("<>")
+        parsed = urlparse(target)
+        if parsed.scheme not in ("", "file"):
+            continue
+        path = Path(url2pathname(parsed.path)) if parsed.scheme else (page.parent / unquote(target.partition("#")[0]))
+        if path.resolve().is_relative_to(hidden.resolve()):
+            problems.append({"kind": "link-into-hidden", "page": str(page), "link": target})
+    return problems
