@@ -2,7 +2,7 @@
 from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
-from .course import (SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
+from .course import (Course, Registry, find_course, SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
                      list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, recommend_plugins,
                      safe_name, unit_dir,
                      write_generated_reference, write_setup_progress)
@@ -177,6 +177,29 @@ def register(add, with_course):
     p.add_argument("--university")
     p.add_argument("--field", help="broad academic field, e.g. economics")
     p.add_argument("--course-name", nargs="+")
+
+    def cmd_course_context(args):
+        """The course rules for the AI: from --course, else the folder it runs in, else the active course."""
+        course = find_course(args.course)  # --course may be any folder inside the course
+        if course is None or not course.exists():
+            entries = [{"name": c["name"], "path": c["path"]} for c in Registry().courses() if c["exists"]]
+            if not entries:
+                raise UserError("No course found. Run /unistudent:course-setup first.")
+            if len(entries) == 1:  # one course left (the active entry may be stale): just use it
+                course = Course(entries[0]["path"])
+        if course is None or not course.exists():
+            return {"course": None, "courses": entries,
+                    "summary": "Several courses and none is active: ask the student which course they mean, then call "
+                               "this again with that course's path. Courses: "
+                               + "; ".join(f"{c['name']} ({c['path']})" for c in entries)}
+        if not (course.state / "context.md").exists():
+            from .cli import write_context_files
+            write_context_files(course)  # an older course folder: make the context it never got
+        context = (course.state / "context.md").read_text("utf-8")
+        return {"course": course.settings()["course_name"], "path": str(course.root), "summary": context}
+
+    p = with_course(add("course-context", cmd_course_context,
+                        "the rules and facts for the student's course: call this first in every new chat"))
 
     def cmd_generated(args):
         entries = list_generated()
