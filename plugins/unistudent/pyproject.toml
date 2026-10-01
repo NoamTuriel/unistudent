@@ -17,7 +17,9 @@ docs = ["pypdf>=4", "python-docx>=1", "python-pptx>=0.6", "markitdown[pdf,docx,p
 # Speech-to-text for recordings (pick what fits the machine).
 stt = ["faster-whisper>=1; platform_machine != 'arm64' or sys_platform != 'darwin'",
        "mlx-whisper>=0.4; platform_machine == 'arm64' and sys_platform == 'darwin'"]
-all = ["unistudent[docs,stt]"]
+# Drawing graphs in study packs (`us graph`).
+graphs = ["matplotlib>=3.5"]
+all = ["unistudent[docs,stt,graphs]"]
 
 [project.scripts]
 unistudent = "unistudent.cli:main"

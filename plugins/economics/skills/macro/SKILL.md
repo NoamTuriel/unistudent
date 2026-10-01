@@ -28,6 +28,10 @@ Topic tags `#יX/נN_short_name` (e.g. `#י5/נ4_שינוי_כמות_הכסף`);
 
 One symbols table per unit (in X.1 only). The exam structure and the sources list live only in the course's home page; a unit page may link to them, never copy them. If a unit has its own recurring question pattern (e.g. "almost every question is 1–2 changes and what happens to the money supply"), it goes in the X.1 overview.
 
+## Graphs
+
+Macro graphs are conceptual: sketch curves, no numbers. Reproduce only the graphs the unit's slides show, on the X.2 walkthrough and X.3 practice pages, taking axis and curve names exactly as the slide writes them (for example the money market's demand and supply curves against the interest rate).
+
 ## Exam patterns
 
 Most questions give one or two changes and ask what happens to the unit's variables. The roadmap names, per unit, the one tool that recurs in every question (e.g. a fixed sequence of steps) and drills its solving order.

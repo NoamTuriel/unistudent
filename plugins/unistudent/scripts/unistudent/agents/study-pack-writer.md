@@ -13,6 +13,7 @@ Input: the course folder, the unit, the chosen pages, the resolved rules (generi
 3. **Write each chosen page** into `study/Unit N/`. Content comes from the Wiki only. Label every paragraph as the course context (`.unistudent/context.md`) says. Link paths are relative to the page.
 4. **Practice page:** every question in the unit's question-bank entries appears once, under its topic.
 5. **Short practice page (if chosen):** build it as the resolved rules' short-practice section says.
-6. **Check:** run `us check --labels "study/Unit N"` (`us`: the UniStudent MCP tool `check`, or the `unistudent` command) and fix everything it reports.
+6. **Graphs:** wherever the rules call for one, write the Graph spec, draw it, compare the PNG with the slide page once and embed it, all as the resolved rules' graphs section says.
+7. **Check:** run `us check --labels "study/Unit N"` (`us`: the UniStudent MCP tool `check`, or the `unistudent` command) and fix everything it reports.
 
-Done when: every chosen page exists, every question-bank entry for the unit is on the practice page (and, if chosen, the short practice page has at least one question per topic), and the check reports 0 problems. Return the page list and one line per page on what it covers.
+Done when: every chosen page exists, every graph the rules call for is drawn, captioned and embedded (or described, when drawing is unavailable), every question-bank entry for the unit is on the practice page (and, if chosen, the short practice page has at least one question per topic), and the check reports 0 problems. Return the page list and one line per page on what it covers.
