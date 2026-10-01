@@ -27,6 +27,15 @@ class Recordings(CourseTestCase):
         self.assertEqual(est["files"], ["Unit 4/session 5.mp4"])
         self.assertEqual(run_json("recordings", "estimate", "--course", self.course, "--unit", "5")["recordings"], 0)
 
+    def test_a_missing_engine_comes_with_the_command_that_installs_it(self):
+        with mock_env(UNISTUDENT_STT_BACKEND="faster"):
+            est = run_json("recordings", "estimate", "--course", self.course)
+        if est["backend_installed"]:
+            self.skipTest("faster-whisper is installed here")
+        self.assertIn("install", est["install_run"])
+        self.assertIn("faster-whisper", est["install_run"])
+        self.assertIn(est["install_run"], est["install_command"])
+
     def test_transcript_has_timestamped_paragraphs_and_passes_the_wiki_check(self):
         run_json("recordings", "transcribe", "--course", self.course, "Unit 4/session 5.mp4")
         transcript = (self.course / "wiki" / "recordings" / "session 5" / "transcript.md").read_text("utf-8")
