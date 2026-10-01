@@ -28,7 +28,7 @@ class CourseContext(CourseTestCase):
         with cwd(course):
             result = run_json("course-context")
         self.assertEqual(result["course"], "Macro")
-        self.assertIn("Grounding labels", result["context"])
+        self.assertIn("Grounding labels", result["summary"])
 
     def test_from_a_folder_below_the_course_it_still_finds_the_course(self):
         course = self.make("Macro")
@@ -53,6 +53,19 @@ class CourseContext(CourseTestCase):
         self.assertIsNone(result["course"])
         self.assertEqual(sorted(c["name"] for c in result["courses"]), ["Macro", "Micro"])
         self.assertIn("ask", result["summary"].lower())
+
+    def test_a_stale_active_entry_with_one_live_course_uses_that_course(self):
+        self.make("Macro")
+        gone = self.make("Gone")
+        (gone / ".unistudent" / "settings.json").unlink()
+        with cwd(self.tmp):
+            self.assertEqual(run_json("course-context")["course"], "Macro")
+
+    def test_an_older_course_without_a_context_file_gets_one(self):
+        course = self.make("Macro")
+        (course / ".unistudent" / "context.md").unlink()
+        with cwd(course):
+            self.assertIn("Grounding labels", run_json("course-context")["summary"])
 
     def test_an_explicit_course_wins(self):
         macro = self.make("Macro")
