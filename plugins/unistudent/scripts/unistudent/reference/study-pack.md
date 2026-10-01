@@ -52,7 +52,7 @@ The unit page in the Wiki collects what the lecturer said in this unit's recordi
 
 ## Concepts (walkthrough)
 
-`### <concept> — <English name>`. Draw only the parts the concept has, from this menu, in this order:
+`### <concept> — <English name>` (only concepts use `###`; the big idea and the closing sections do not). Draw only the parts the concept has, from this menu, in this order:
 
 - **In plain words:** one sentence.
 - **Explanation:** why it is so, with a concrete example (usually 💡: your words, resting on the Wiki).

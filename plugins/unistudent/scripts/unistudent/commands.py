@@ -265,6 +265,7 @@ def register(add, with_course):
                 current[info["folder"] + "/summary.md"] = "processed"
         packs = course.read_state("studypacks.json", {})
         pack = str(course.pack_folder(args.unit))
+        course.study.mkdir(exist_ok=True)  # the first Study pack request makes the Study vault (ADR 0008)
         if args.action == "mark-built":
             packs[folder] = {"built": datetime.now().isoformat(timespec="seconds"), "sources": current}
             course.write_state("studypacks.json", packs)

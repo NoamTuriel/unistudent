@@ -121,7 +121,7 @@ UniStudent uses existing tools instead of reinventing them:
 
 ## A course folder
 
-You see three folders, numbered in the order you use them, named in the language you pick in setup (shown here in English; Hebrew has its own names, other languages fall back to English):
+You see two folders at setup, and a third once you ask for a study pack. They are numbered in the order you use them, named in the language you pick in setup (shown here in English; Hebrew has its own names, other languages fall back to English):
 
 ```
 <course>/
@@ -130,11 +130,11 @@ You see three folders, numbered in the order you use them, named in the language
   course-preferences.md
   1-inbox/                       drop new material here; it is moved out once it's added
   2-course-material/             the real files: official/ and added/, then by unit
-  3-<course>-study-from-here/    your Study vault: study packs and a recordings roadmap per unit
+  3-<course>-study-from-here/    your Study vault: appears with your first study pack; study packs and a recordings roadmap per unit
   .unistudent/                   hidden: settings, manifest, the Wiki the AI reads, jobs, saved state
 ```
 
-Open the third folder as your vault (a vault is just a folder that a notes app such as Obsidian opens as its library). In the second you may move, rename or delete files: where a file sits is what counts (moving one between `official/` and `added/` changes how far it is trusted), and the next Wiki build follows. Deleting there deletes the only copy (your system Trash can recover it). A folder of your own is copied in once and your originals are left alone. A course folder made before version 0.4 (with `raw/`, `materials/`, `wiki/`, `study/`) must be moved once with version 0.4.2 (`us migrate --apply`); later versions no longer read the old layout.
+Open the third folder (when it appears) as your vault (a vault is just a folder that a notes app such as Obsidian opens as its library). In the second you may move, rename or delete files: where a file sits is what counts (moving one between `official/` and `added/` changes how far it is trusted), and the next Wiki build follows. Deleting there deletes the only copy (your system Trash can recover it). A folder of your own is copied in once and your originals are left alone. A course folder made before version 0.4 (with `raw/`, `materials/`, `wiki/`, `study/`) must be moved once with version 0.4.2 (`us migrate --apply`); later versions no longer read the old layout.
 
 Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected) and it picks the course up automatically through `AGENTS.md`/`CLAUDE.md`. Claude Code, Cursor, Codex and Gemini CLI read the folder's instruction files on their own (VS Code Copilot does too once its `AGENTS.md` setting is on). Claude Desktop chat reads no folder: create a Project once with the instruction "Start each chat by calling the unistudent `course_context` tool" and every chat should start on your active course, the one you last set up or switched to (it asks which course if there are several and none is active). As a last resort in any app: "Read AGENTS.md in `<course folder path>` before answering".
 

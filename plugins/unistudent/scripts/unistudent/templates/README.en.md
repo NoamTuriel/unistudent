@@ -6,7 +6,7 @@ Two words used below: the **Wiki** is a hidden set of pages the AI reads to answ
 
 ## What's here
 
-You see three folders, numbered in the order you use them. Everything else is hidden in `.unistudent/` (the Wiki, settings and saved state), so it can't be broken by accident.
+You see two folders now, numbered in the order you use them; the third (the study folder below) appears when you first ask for a study pack. Everything else is hidden in `.unistudent/` (the Wiki, settings and saved state), so it can't be broken by accident.
 
 | Folder | What it is | Who writes in it |
 |---|---|---|

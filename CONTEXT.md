@@ -7,7 +7,7 @@ A family of Claude plugins that turns a university course's material into a per-
 ### Courses and storage
 
 **Course folder**:
-The single self-contained folder holding everything for one course a student takes. It shows the student three folders (Inbox, Material folder, Study vault) and hides the rest in the Hidden folder.
+The single self-contained folder holding everything for one course a student takes. It shows the student two folders at setup (Inbox, Material folder) and a third, the Study vault, once the first Study pack is made, and hides the rest in the Hidden folder.
 _Avoid_: vault, workspace, project folder
 
 **Hidden folder**:
