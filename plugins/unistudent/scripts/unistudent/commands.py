@@ -2,8 +2,9 @@
 from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
-from .course import (SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
-                     list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, safe_name, unit_dir,
+from .course import (Course, Registry, find_course, SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
+                     list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, recommend_plugins,
+                     safe_name, unit_dir,
                      write_generated_reference, write_setup_progress)
 
 
@@ -14,10 +15,12 @@ def register(add, with_course):
         course = resolve_course(args)
         if args.action == "check":
             return wiki.check(course)
+        if args.action == "coverage":
+            return wiki.coverage(course)
         return wiki.build(course, force=args.force)
 
-    p = with_course(add("wiki", cmd_wiki, "build or check the Wiki"))
-    p.add_argument("action", choices=["build", "check"])
+    p = with_course(add("wiki", cmd_wiki, "build or check the Wiki, or show which files it did and did not read"))
+    p.add_argument("action", choices=["build", "check", "coverage"])
     p.add_argument("--force", action="store_true", help="convert every file again")
 
     def cmd_add(args):
@@ -157,6 +160,55 @@ def register(add, with_course):
     p.add_argument("--course-name", required=True)
     p.add_argument("--emphasis", nargs="+", help="what to emphasize in this course's study packs")
     p.add_argument("--summarize", nargs="+", help="how this course wants material summarized")
+
+    def cmd_plugins(args):
+        if not (args.university or args.field or args.course_name):
+            raise UserError("Give at least one of --university, --field or --course-name.")
+        found = [{"name": p["name"], "kind": p["kind"], "gives": p["gives"],
+                  "install": f"/plugin install {p['name']}@unistudent"}
+                 for p in recommend_plugins(args.university or "", args.field or "", " ".join(args.course_name or []))]
+        other = ("In another app (Cursor, Codex, Gemini CLI...), add the skills with "
+                 "`npx skills@latest add NoamTuriel/unistudent`.")
+        summary = ("\n".join(f"{p['name']}: {p['gives']}. To add it: {p['install']}" for p in found) + "\n" + other
+                   if found else "No plugin for this university or course yet: carry on with the generic rules.")
+        return {"plugins": found, "other_apps": other, "summary": summary}
+
+    p = add("plugins", cmd_plugins, "recommend the plugins to install for a university and course (never installs)")
+    p.add_argument("action", choices=["recommend"])
+    p.add_argument("--university")
+    p.add_argument("--field", help="broad academic field, e.g. economics")
+    p.add_argument("--course-name", nargs="+")
+
+    def cmd_course_context(args):
+        """The course rules for the AI: from --course, else the folder it runs in, else the active course."""
+        course = find_course(args.course)  # --course may be any folder inside the course
+        if course is None or not course.exists():
+            entries = [{"name": c["name"], "path": c["path"]} for c in Registry().courses() if c["exists"]]
+            if not entries:
+                raise UserError("No course found. Run /unistudent:course-setup first.")
+            if len(entries) == 1:  # one course left (the active entry may be stale): just use it
+                course = Course(entries[0]["path"])
+        if course is None or not course.exists():
+            return {"course": None, "courses": entries,
+                    "summary": "Several courses and none is active: ask the student which course they mean, then call "
+                               "this again with that course's path. Courses: "
+                               + "; ".join(f"{c['name']} ({c['path']})" for c in entries)}
+        if not (course.state / "context.md").exists():
+            from .cli import write_context_files
+            write_context_files(course)  # an older course folder: make the context it never got
+        context = (course.state / "context.md").read_text("utf-8")
+        return {"course": course.settings()["course_name"], "path": str(course.root), "summary": context}
+
+    p = with_course(add("course-context", cmd_course_context,
+                        "the rules and facts for the student's course: call this first in every new chat"))
+
+    def cmd_generated(args):
+        entries = list_generated()
+        return {"generated": entries,
+                "summary": "\n".join(f"{e['preview']} ({e['path']})" for e in entries) or "Nothing generated yet."}
+
+    p = add("generated", cmd_generated, "list the generated university and course fallbacks saved for reuse")
+    p.add_argument("action", nargs="?", choices=["list"], default="list")
 
     def cmd_setup_progress(args):
         if args.action == "list":
