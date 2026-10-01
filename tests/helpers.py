@@ -7,6 +7,7 @@ import os
 import shutil
 import sys
 import tempfile
+import types
 import unittest
 from pathlib import Path
 
@@ -46,6 +47,14 @@ def run_json(*argv):
     code, out = run(*argv, "--json")
     assert code == 0, out
     return json.loads(out)
+
+
+def folders(course):
+    """The visible folders and the Wiki of a set-up course folder, as the setup stored them (any language)."""
+    course = Path(course)
+    names = json.loads((course / ".unistudent" / "settings.json").read_text("utf-8"))["folders"]
+    return types.SimpleNamespace(inbox=course / names["inbox"], material=course / names["material"],
+                                 study=course / names["study"], wiki=course / ".unistudent" / "wiki")
 
 
 def write(path, content=b"x"):

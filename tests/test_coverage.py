@@ -2,7 +2,7 @@
 import unittest
 from unittest import mock
 
-from helpers import CourseTestCase, run, run_json, write
+from helpers import CourseTestCase, folders, run, run_json, write
 from unistudent.convert import Conversion
 
 
@@ -36,36 +36,36 @@ class Coverage(CourseTestCase):
     def test_every_file_is_analyzed_failed_skipped_or_pending(self):
         self.build_with_one_unreadable_file()
         files, result = self.coverage()
-        self.assertEqual(files["Unit 1/notes.txt"]["status"], "analyzed")
-        self.assertEqual(files["Unit 1/broken.txt"]["status"], "failed")
-        self.assertIn("could not be opened", files["Unit 1/broken.txt"]["why"])
-        self.assertEqual(files["Unit 1/diagram.png"]["status"], "skipped")
-        self.assertEqual(files["Unit 1/data.xyz"]["status"], "skipped")
-        self.assertEqual(files["Unit 1/lecture 1.mp4"]["status"], "pending")
+        self.assertEqual(files["official/Unit 1/notes.txt"]["status"], "analyzed")
+        self.assertEqual(files["official/Unit 1/broken.txt"]["status"], "failed")
+        self.assertIn("could not be opened", files["official/Unit 1/broken.txt"]["why"])
+        self.assertEqual(files["official/Unit 1/diagram.png"]["status"], "skipped")
+        self.assertEqual(files["official/Unit 1/data.xyz"]["status"], "skipped")
+        self.assertEqual(files["official/Unit 1/lecture 1.mp4"]["status"], "pending")
         self.assertEqual(sum(result["counts"].values()), len(files))
 
     def test_before_a_build_documents_are_pending(self):
         files, _ = self.coverage()
-        self.assertEqual(files["Unit 1/notes.txt"]["status"], "pending")
+        self.assertEqual(files["official/Unit 1/notes.txt"]["status"], "pending")
 
     def test_a_recording_the_student_chose_not_to_process_is_skipped_with_that_reason(self):
         run_json("context", "--course", self.course, "--recording-level", "1")
         files, _ = self.coverage()
-        self.assertEqual(files["Unit 1/lecture 1.mp4"]["status"], "skipped")
-        self.assertIn("you chose", files["Unit 1/lecture 1.mp4"]["why"])
+        self.assertEqual(files["official/Unit 1/lecture 1.mp4"]["status"], "skipped")
+        self.assertIn("you chose", files["official/Unit 1/lecture 1.mp4"]["why"])
 
     def test_showing_coverage_writes_nothing_and_a_changed_file_is_pending_again(self):
         self.build_with_one_unreadable_file()
-        (self.course / "wiki" / "coverage.md").unlink()
+        (folders(self.course).wiki / "coverage.md").unlink()
         self.coverage()
-        self.assertFalse((self.course / "wiki" / "coverage.md").exists())
+        self.assertFalse((folders(self.course).wiki / "coverage.md").exists())
 
     def test_the_wiki_gets_a_coverage_page_that_passes_the_check_and_warns_the_ai(self):
         self.build_with_one_unreadable_file()
-        page = (self.course / "wiki" / "coverage.md").read_text("utf-8")
+        page = (folders(self.course).wiki / "coverage.md").read_text("utf-8")
         self.assertIn("## Failed (1)", page)
         self.assertIn("NOT in the Wiki", page)
-        self.assertIn("coverage.md", (self.course / "wiki" / "index.md").read_text("utf-8"))
+        self.assertIn("coverage.md", (folders(self.course).wiki / "index.md").read_text("utf-8"))
         self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
 
     def test_the_build_summary_carries_the_coverage_counts(self):

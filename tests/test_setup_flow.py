@@ -8,14 +8,14 @@ import re
 import unittest
 from pathlib import Path
 
-from helpers import CourseTestCase, run, run_json, write
+from helpers import CourseTestCase, folders, run, run_json, write
 from unistudent import cli
 
 ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "plugins" / "unistudent" / "scripts" / "unistudent" / "skills"
 SETUP = CORE / "course-setup" / "SKILL.md"
 ALL_SKILLS = sorted(ROOT.glob("plugins/*/skills/*/SKILL.md")) + sorted(CORE.glob("*/SKILL.md"))
-STAGES = ["university", "course", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
+STAGES = ["university", "course", "language", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
 
 
 def subparsers(parser):
@@ -46,6 +46,7 @@ class SetupFlow(CourseTestCase):
         run_json("setup-progress", "advance", *name, "--stage", "university", "--answer", "university=Test U")
         self.assertEqual(run_json("plugins", "recommend", "--university", "Test U", "--course-name", "Macro")["plugins"], [])
         run_json("setup-progress", "advance", *name, "--stage", "course")
+        run_json("setup-progress", "advance", *name, "--stage", "language", "--answer", "language=en")
         run_json("setup-progress", "advance", *name, "--stage", "path", "--answer", f"path={folder}")
         run_json("setup-progress", "advance", *name, "--stage", "format", "--answer", "format=markdown")
         run_json("setup", folder, "--name", "Macro", "--format", "markdown", "--language", "en",
@@ -60,7 +61,7 @@ class SetupFlow(CourseTestCase):
         self.assertEqual(run_json("setup-progress", "status", *name)["next_stage"], "capabilities")
         self.assertIn("complete", run_json("setup-progress", "advance", *name, "--stage", "capabilities")["summary"])
         self.assertIsNone(run_json("setup-progress", "status", *name)["stage"])
-        self.assertTrue((folder / "inbox").is_dir())
+        self.assertTrue(folders(folder).inbox.is_dir())
         self.assertTrue((folder / "README.md").is_file())
         self.assertEqual(run("wiki", "check", *course)[0], 0)
 

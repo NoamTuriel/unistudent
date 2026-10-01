@@ -2,7 +2,7 @@
 import shutil
 import unittest
 
-from helpers import CourseTestCase, can_read_pdfs, make_pdf, run, run_json, write
+from helpers import CourseTestCase, can_read_pdfs, folders, make_pdf, run, run_json, write
 
 
 def make_docx(path, paragraphs):
@@ -25,7 +25,7 @@ class WikiBuild(CourseTestCase):
         self.own = own
         self.course = self.tmp / "Macro"
         run("setup", self.course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
-        self.wiki = self.course / "wiki"
+        self.wiki = folders(self.course).wiki
 
     def build(self, *extra):
         return run_json("wiki", "build", "--course", self.course, *extra)
@@ -35,7 +35,7 @@ class WikiBuild(CourseTestCase):
             self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         self.build()
         page = (self.wiki / "sources" / "unit-04" / "slides.md").read_text("utf-8")
-        self.assertIn("source: Unit 4 - money/slides.pdf", page)
+        self.assertIn("source: official/Unit 4/slides.pdf", page)
         self.assertIn("tier: official", page)
         self.assertIn("## Page 1", page)
         self.assertIn("Money multiplier is 1 over r", page)
@@ -64,7 +64,7 @@ class WikiBuild(CourseTestCase):
         self.assertIn("../sources/unit-04/slides.md", unit4)
         for stub in ("glossary.md", "question-bank.md", "course.md"):
             self.assertTrue((self.wiki / stub).exists(), stub)
-        self.assertIn("recordings/session 1.mp4", result["recordings"])
+        self.assertIn("official/Unsorted/session 1.mp4", result["recordings"])
         self.assertFalse(list(self.wiki.rglob("session 1*.md")))
 
     def test_a_fresh_wiki_passes_the_check(self):

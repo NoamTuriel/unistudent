@@ -1,23 +1,19 @@
-"""Bringing files into Raw and keeping the readable by-unit layout (materials/) in step.
+"""The Material folder: the real files of the course, sorted by trust level and unit (ADR 0007).
 
-Raw holds the only real copy of each file. Files from the student's own folder stay
-where they are and Raw links to them; downloaded and inbox files live in Raw itself.
-materials/ is rebuilt from the Manifest and is made of links only (ADR 0003).
+Layout: <Material folder>/<official|added>/<unit folder>/<file>. Where a file sits is the truth: `scan` reads the
+folder, follows moved or renamed files by fingerprint, drops deleted ones and takes new ones as added. Files from the
+site and the Inbox are moved in; a student's own folder is copied once and the originals are left alone.
 """
 import hashlib
 import os
 import shutil
 from pathlib import Path
 
-from . import links
 from .convert import kind
-from .course import parse_unit
+from .course import parse_tier_folder, parse_unit, parse_unit_folder
 from .sorting import detect_unit
 
 SKIP_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
-INDEX_NAME = "INDEX.md"
-
-
 FULL_HASH_LIMIT = 200 << 20
 
 
@@ -47,159 +43,197 @@ def iter_files(folder: Path):
             yield Path(dirpath) / name
 
 
-def _entry_unit(course, rel, file_path):
-    answers = course.settings().get("unit_answers", {})
-    if rel in answers:
-        return answers[rel], "student answer"
-    return detect_unit(rel, file_path)
+def _entry(path, origin, tier, unit, reason, **extra):
+    return {"origin": origin, "tier": tier, "size": path.stat().st_size, "mtime": path.stat().st_mtime_ns,
+            "fingerprint": fingerprint(path),
+            "unit": unit, "sort_reason": reason, **extra}
 
 
-def _free_rel(files, rel, source_path, prefix):
-    existing = files.get(rel)
-    if existing is None or existing.get("source_path") == str(source_path):
-        return rel
-    return f"{prefix}/{rel}"
+def _free_name(folder: Path, name: str, taken=()):
+    stem, suffix = os.path.splitext(name)
+    candidate, n = name, 2
+    while (folder / candidate).exists() or candidate in taken:
+        candidate, n = f"{stem} ({n}){suffix}", n + 1
+    return candidate
 
 
-def import_folder(course, folder, tier="added"):
-    """Register every file of `folder` without copying. Returns the list of new Raw paths."""
-    folder = Path(folder).resolve()
-    manifest = course.manifest()
-    files = manifest["files"]
-    added = []
-    for path in iter_files(folder):
-        rel = _free_rel(files, path.relative_to(folder).as_posix(), path, folder.name)
-        fp = fingerprint(path)
-        entry = files.get(rel)
-        if entry is None:
-            added.append(rel)
-        elif entry.get("fingerprint") != fp:
-            added.append(rel)  # changed on disk: re-registered below
-        unit, reason = _entry_unit(course, rel, path)
-        files[rel] = {
-            "origin": "student-folder",
-            "tier": tier,
-            "source_path": str(path),
-            "size": path.stat().st_size,
-            "fingerprint": fp,
-            "unit": unit,
-            "sort_reason": reason,
-        }
-        links.make_link(path, course.raw / rel)
-    course.save_manifest(manifest)
-    rebuild_materials(course)
-    return added
+def _slot(course, tier, unit):
+    return f"{course.label(tier)}/{course.unit_folder(unit)}"
 
 
-def add_file(course, path, tier="added", origin="inbox", rel=None, replace=False, note=None):
-    """Put one file into Raw as a real file (inbox and downloads). Returns its Raw path.
-    With replace=True a file at the same Raw path is updated instead of kept beside."""
-    path = Path(path)
-    manifest = course.manifest()
-    files = manifest["files"]
-    rel = rel or f"{origin}/{path.name}"
-    base, n = rel, 2
-    while not replace and rel in files and files[rel].get("fingerprint") != fingerprint(path):
-        stem, suffix = os.path.splitext(base)
-        rel, n = f"{stem} ({n}){suffix}", n + 1
-    target = course.raw / rel
-    target.parent.mkdir(parents=True, exist_ok=True)
+def require_new_layout(course):
+    from .common import UserError
+    if course.legacy:
+        raise UserError("This course folder still has the old layout (raw, materials, wiki, study). "
+                        "Run `us migrate` first: it lists what it will move, then moves it.")
+
+
+def _put(course, path, rel, copy):
+    """Place `path` at `rel` in the Material folder: a copy (own folder) or a move (Inbox, site). Recordings of a
+    course folder that syncs are kept in a local, non-synced folder instead; returns where the file now is."""
     recordings_dir = course.settings().get("recordings_dir")
-    if recordings_dir and kind(path) == "recording":
-        # Synced course folder: the one real copy lives in a local, non-synced folder.
-        stored = Path(recordings_dir) / rel
-        stored.parent.mkdir(parents=True, exist_ok=True)
-        if stored.resolve() != path.resolve():
-            shutil.move(str(path), str(stored))
-        links.make_link(stored, target)
-    elif target.resolve() != path.resolve():
-        if target.is_symlink():
-            target.unlink()
-        shutil.move(str(path), str(target))
-    real = target.resolve() if target.exists() else Path(recordings_dir) / rel
-    unit, reason = _entry_unit(course, rel, real)
-    files[rel] = {
-        "origin": origin,
-        "tier": tier,
-        "source_path": str(real),
-        "size": real.stat().st_size,
-        "fingerprint": fingerprint(real),
-        "unit": unit,
-        "sort_reason": reason,
-    }
+    keep = Path(recordings_dir) / rel if recordings_dir and kind(path) == "recording" else course.material / rel
+    keep.parent.mkdir(parents=True, exist_ok=True)
+    if keep.exists() and keep.samefile(path):
+        return keep
+    (shutil.copy2 if copy else shutil.move)(str(path), str(keep))
+    return keep
+
+
+def add_file(course, path, tier="added", origin="inbox", hint=None, replace_rel=None, note=None, copy=False,
+             site_unit=None, extra=None, name=None):
+    """Put one file into the Material folder, sorted by tier and unit. `hint` is where it sat in its own folder
+    (unit evidence). `replace_rel` updates that file in place (a newer version from the site) wherever the student
+    has put it. Returns the file's path relative to the Material folder."""
+    require_new_layout(course)
+    path = Path(path)
+    name = name or path.name
+    manifest = course.manifest()
+    files = manifest["files"]
+    if replace_rel in files:
+        rel = replace_rel
+        old = files.pop(rel)
+        tier, unit, reason = old["tier"], old.get("unit"), old.get("sort_reason")
+        stored_old = Path(old.get("stored_at") or course.material / rel)
+        if stored_old.exists() and not stored_old.samefile(path):
+            stored_old.unlink()
+    else:
+        unit, reason = (site_unit, "site listing") if site_unit is not None else detect_unit(hint or name, path)
+        slot = _slot(course, tier, unit)
+        target = course.material / slot / name
+        if target.exists() and fingerprint(target) == fingerprint(path):
+            if not copy:
+                path.unlink()
+            return f"{slot}/{name}"  # the same file again: nothing new to keep
+        rel = f"{slot}/{_free_name(target.parent, name)}"
+    stored = _put(course, path, rel, copy)
+    entry = _entry(stored, origin, tier, unit, reason, **(extra or {}))
+    if stored != course.material / rel:
+        entry["stored_at"] = str(stored)
     if note:
-        files[rel]["origin_note"] = note
+        entry["origin_note"] = note
+    files[rel] = entry
     course.save_manifest(manifest)
     return rel
 
 
+def import_folder(course, folder, tier="added"):
+    """Copy every file of the student's own `folder` into the Material folder, once; the originals stay.
+    Returns the new or changed files' paths."""
+    require_new_layout(course)
+    folder = Path(folder).resolve()
+    scan(course)  # the student may have moved or renamed what was copied before: know where it is now
+    added = []
+    for path in iter_files(folder):
+        files = course.manifest()["files"]
+        origin_path = str(path)
+        before = next((r for r, e in files.items() if e.get("imported_from") == origin_path), None)
+        if before and files[before].get("fingerprint") == fingerprint(path):
+            continue  # copied once already: never again
+        rel = add_file(course, path, tier=tier, origin="student-folder", hint=path.relative_to(folder).as_posix(),
+                       replace_rel=before, copy=True, extra={"imported_from": origin_path})
+        added.append(rel)
+    return added
+
+
 def assign(course, rel, unit):
-    """Record the student's answer for one unsorted file (kept across re-imports)."""
+    """Answer for one unsorted file: move it into its unit's folder. Returns its new path."""
     manifest = course.manifest()
-    if rel not in manifest["files"]:
+    files = manifest["files"]
+    if rel not in files:
         raise KeyError(rel)
+    entry = files.pop(rel)
     value = parse_unit(unit)
-    settings = course.settings()
-    settings.setdefault("unit_answers", {})[rel] = value
-    course.save_settings(settings)
-    manifest["files"][rel]["unit"] = value
-    manifest["files"][rel]["sort_reason"] = "student answer"
+    new_rel = f"{_slot(course, entry['tier'], value)}/{Path(rel).name}"
+    if entry.get("stored_at") is None and new_rel != rel:
+        target = course.material / new_rel
+        new_rel = f"{_slot(course, entry['tier'], value)}/{_free_name(target.parent, target.name)}"
+        (course.material / new_rel).parent.mkdir(parents=True, exist_ok=True)
+        shutil.move(str(course.material / rel), str(course.material / new_rel))
+    entry.update(unit=value, sort_reason="student answer")
+    files[new_rel] = entry
     course.save_manifest(manifest)
-    rebuild_materials(course)
+    return new_rel
 
 
 def unsorted(course):
     return sorted(rel for rel, e in course.manifest()["files"].items() if e.get("unit") is None)
 
 
-def raw_path(course, rel):
-    """Where the file can be opened: Raw if a link/file exists there, else its original path."""
-    raw = course.raw / rel
-    if raw.exists():
-        return raw
-    return Path(course.manifest()["files"][rel]["source_path"])
+def path_of(course, rel):
+    """Where the file can be opened."""
+    entry = course.manifest()["files"].get(rel, {})
+    if course.legacy:
+        raw = course.raw / rel
+        return raw if raw.exists() else Path(entry.get("source_path") or raw)
+    return Path(entry.get("stored_at") or course.material / rel)
 
 
-def rebuild_materials(course):
-    """Recreate materials/ from the Manifest. Only removes what it made itself."""
-    made = course.read_state("materials.json", [])
-    for rel in made:
-        path = course.materials / rel
-        if path.is_symlink() or path.exists():
-            links.remove_link(path)
-    for dirpath, dirnames, _ in os.walk(course.materials, topdown=False):
-        for d in dirnames:
-            try:
-                (Path(dirpath) / d).rmdir()
-            except OSError:
-                pass
+def _is_sidecar(path: Path) -> bool:
+    """A transcript .vtt written next to its recording: ours, not course material."""
+    return path.suffix.lower() == ".vtt" and any(
+        sibling.stem == path.stem and kind(sibling) == "recording" for sibling in path.parent.iterdir())
 
-    by_folder = {}
-    for rel, entry in sorted(course.manifest()["files"].items()):
-        by_folder.setdefault(course.unit_folder(entry.get("unit")), []).append(rel)
 
-    made = []
-    for folder, rels in by_folder.items():
-        unlinked = []
-        used = set()
-        for rel in rels:
-            name = Path(rel).name
-            stem, suffix = os.path.splitext(name)
-            n = 2
-            while name in used:
-                name, n = f"{stem} ({n}){suffix}", n + 1
-            used.add(name)
-            link_rel = f"{folder}/{name}"
-            if links.make_link(raw_path(course, rel), course.materials / link_rel):
-                made.append(link_rel)
+def _location(rel):
+    """(tier, unit, in_slot): what a file's place in the Material folder says. `in_slot` is False when the file
+    isn't under <trust level>/<unit folder>/."""
+    parts = Path(rel).parts
+    tier = parse_tier_folder(parts[0]) if len(parts) > 1 else None
+    known, unit = parse_unit_folder(parts[1]) if tier and len(parts) > 2 else (False, None)
+    return tier, unit, known
+
+
+def scan(course):
+    """Make the Manifest match the Material folder (where a file sits is the truth). Follows moves and renames by
+    fingerprint, drops deleted files and takes new ones as added, sorting them into a unit when the evidence is clear
+    (and into that unit's folder, so the folder tells the truth). Returns {moved, dropped, new}."""
+    result = {"moved": [], "dropped": [], "new": []}
+    if course.legacy:
+        return result
+    manifest = course.manifest()
+    files = manifest["files"]
+    found = {p.relative_to(course.material).as_posix(): p for p in iter_files(course.material) if not _is_sidecar(p)}
+    gone = {rel: e for rel, e in files.items()
+            if rel not in found and not (e.get("stored_at") and Path(e["stored_at"]).exists())}
+    kept = {rel: e for rel, e in files.items() if rel not in gone}
+    misplaced = []
+    for rel, path in sorted(found.items()):
+        stat = path.stat()
+        entry = kept.get(rel)
+        fresh = entry is None
+        if not fresh and entry.get("mtime") == stat.st_mtime_ns and entry.get("size") == stat.st_size:
+            fp = entry["fingerprint"]
+        else:
+            fp = fingerprint(path)
+        if fresh:
+            twin = next((r for r, e in gone.items() if e.get("fingerprint") == fp), None)
+            if twin:
+                entry = gone.pop(twin)
+                result["moved"].append((twin, rel))
             else:
-                unlinked.append((name, rel))
-        if unlinked:
-            index = course.materials / folder / INDEX_NAME
-            index.parent.mkdir(parents=True, exist_ok=True)
-            lines = [f"# {folder}", ""]
-            for name, rel in unlinked:
-                lines.append(f"- [{name}]({raw_path(course, rel).as_uri()})")
-            index.write_text("\n".join(lines) + "\n", "utf-8")
-            made.append(f"{folder}/{INDEX_NAME}")
-    course.write_state("materials.json", made)
+                entry = {"origin": "material-folder"}
+                result["new"].append(rel)
+        tier, unit, known = _location(rel)
+        entry["tier"] = tier or entry.get("tier", "added")
+        if known:
+            if entry.get("unit") != unit:
+                entry.update(unit=unit, sort_reason="folder")
+        elif rel in result["new"]:
+            entry["unit"], entry["sort_reason"] = detect_unit(rel, path)
+            misplaced.append(rel)
+        entry.update(fingerprint=fp, size=stat.st_size, mtime=stat.st_mtime_ns)
+        kept[rel] = entry
+    for rel in misplaced:
+        entry = kept.pop(rel)
+        slot = _slot(course, entry["tier"], entry["unit"])
+        (course.material / slot).mkdir(parents=True, exist_ok=True)
+        name = _free_name(course.material / slot, Path(rel).name)
+        shutil.move(str(course.material / rel), str(course.material / slot / name))
+        kept[f"{slot}/{name}"] = entry
+        result["new"] = [f"{slot}/{name}" if r == rel else r for r in result["new"]]
+        result["moved"] = [(a, f"{slot}/{name}" if b == rel else b) for a, b in result["moved"]]
+    result["dropped"] = sorted(gone)
+    manifest["files"] = kept
+    course.save_manifest(manifest)
+    return result

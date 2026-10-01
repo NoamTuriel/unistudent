@@ -1,7 +1,7 @@
 """Student preferences (course folder, seam 1) and study-pack change detection (Wiki, seam 2)."""
 import unittest
 
-from helpers import CourseTestCase, make_pdf, run, run_json
+from helpers import CourseTestCase, folders, make_pdf, run, run_json
 
 
 class Preferences(CourseTestCase):
@@ -36,7 +36,7 @@ class StudyPackChanges(CourseTestCase):
         run_json("study", "mark-built", "--course", course, "--unit", "4")
         self.assertEqual(run_json("study", "changes", "--course", course, "--unit", "4")["new"], [])
 
-        make_pdf(course / "inbox" / "Unit 4 extra questions.pdf", ["more questions"])
+        make_pdf(folders(course).inbox / "Unit 4 extra questions.pdf", ["more questions"])
         run_json("add", "--course", course)
         changes = run_json("study", "changes", "--course", course, "--unit", "4")
         self.assertEqual(changes["new"], ["sources/unit-04/Unit 4 extra questions.md"])
