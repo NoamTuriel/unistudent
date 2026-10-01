@@ -26,16 +26,16 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 
 Save to the unit's folder in the Study vault (`pack_folder` in the result of `us study changes --unit N`): its name, the page titles and the content all follow the course language. The vault holds only study packs and the generated recordings roadmap.
 
-## Accepted reasoning (when the material has verbal solutions)
+## Accepted reasoning (when the material has verbal answered questions)
 
-A verbal solution justifies an answer in words (Q&A files, assignment solutions and past-exam solutions often do). The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. When the unit has any, the roadmap gets an **Accepted reasoning** section, one block per topic that has verbal solutions. Done when every verbal solution of the unit has been read and each block lists:
+A verbal answered question (פתרון מילולי) is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. When the unit has any, the roadmap gets an **Accepted reasoning** section, one block per topic that has verbal answered questions. Done when every verbal answered question of the unit has been read and each block lists:
 
 - **Say it:** the steps a solution spells out, in the solution's own words, quoted (✅, linked to the solution).
 - **Take as given:** what solutions use without explaining.
 - **Prove it:** what solutions always establish first, which the student must not take as obviously true.
 - **Model answer:** one short justification in the solutions' wording, linked.
 
-A pattern seen across several solutions is 💡, stated with the solutions it comes from. A topic with no verbal solution gets no block, and nothing is invented for it.
+A pattern seen across several solutions is 💡, stated with the solutions it comes from. A topic with no verbal answered question gets no block, and nothing is invented for it.
 
 ## Announcements and exam hints (roadmap)
 
