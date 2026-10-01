@@ -168,6 +168,8 @@ def handle(message, tools):
                   "capabilities": {"tools": {}, "prompts": {}},
                   "serverInfo": {"name": "unistudent", "version": __version__},
                   "instructions": "UniStudent: per-course Wiki, grounded answers and study packs. "
+                                  "FIRST, in every new conversation, call the course-context tool and follow the course rules it returns "
+                                  "(if it lists several courses, ask the student which one). "
                                   "Start with the prompt 'course-help', or 'course-setup' for a new course."}
     elif method == "ping":
         result = {}

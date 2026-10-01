@@ -134,7 +134,7 @@ UniStudent uses existing tools instead of reinventing them:
   .unistudent/            settings, manifest, full context
 ```
 
-Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected) and it picks the course up automatically through `AGENTS.md`/`CLAUDE.md`. If a session isn't rooted in the folder (or doesn't auto-read it), tell it once: "Read AGENTS.md in `<course folder path>` before answering" — that works in any AI app, not just Claude's.
+Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected) and it picks the course up automatically through `AGENTS.md`/`CLAUDE.md`. Claude Code, Cursor, Codex, Gemini CLI and VS Code read the folder's instruction files on their own. Claude Desktop chat reads no folder: create a Project once with the instruction "Start each chat by calling the unistudent `course-context` tool" and every chat starts on your active course (it asks which course if there are several and none is active). As a last resort in any app: "Read AGENTS.md in `<course folder path>` before answering".
 
 Course material is the university's: keep it in your own folders and never share it. The repo contains code only.
 
