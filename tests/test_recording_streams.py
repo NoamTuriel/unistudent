@@ -37,7 +37,7 @@ class RecordingStreams(CourseTestCase):
         self.assertEqual(fetched["downloaded"], ["Session 5.mp4"])
         self.assertTrue((self.staged / "Session 5.mp4").exists())
         result = run_json("ingest", "--course", self.course, self.listing, self.staged)
-        self.assertEqual(sorted(result["new"]), ["site/Unit 4 recordings/Session 5.mp4", "site/Unit 4/notes.txt"])
+        self.assertEqual(sorted(result["new"]), ["official/Unit 4/Session 5.mp4", "official/Unit 4/notes.txt"])
         self.assertEqual(result["recordings_available"], [])
 
     def test_audio_only_keeps_just_the_sound(self):

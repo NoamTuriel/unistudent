@@ -2,7 +2,7 @@
 import os
 import unittest
 
-from helpers import CourseTestCase, make_pdf, run, run_json, write
+from helpers import CourseTestCase, folders, make_pdf, run, run_json, write
 
 
 class Inbox(CourseTestCase):
@@ -11,34 +11,35 @@ class Inbox(CourseTestCase):
         self.course = self.tmp / "Macro"
         run("setup", self.course, "--name", "Macro", "--language", "en")
 
-    def test_inbox_files_move_into_raw_once_with_origin_and_tier(self):
-        make_pdf(self.course / "inbox" / "Unit 3 friend summary.pdf", ["Unit 3 summary"])
-        write(self.course / "inbox" / "photo of notes.jpg", b"\xff\xd8jpeg")
+    def test_inbox_files_move_into_the_material_folder_once_with_origin_and_tier(self):
+        f = folders(self.course)
+        make_pdf(f.inbox / "Unit 3 friend summary.pdf", ["Unit 3 summary"])
+        write(f.inbox / "photo of notes.jpg", b"\xff\xd8jpeg")
         result = run_json("add", "--course", self.course)
 
-        self.assertEqual(sorted(result["added"]), ["inbox/Unit 3 friend summary.pdf", "inbox/photo of notes.jpg"])
-        self.assertEqual(list((self.course / "inbox").iterdir()), [])
+        self.assertEqual(sorted(result["added"]),
+                         ["added/Unit 3/Unit 3 friend summary.pdf", "added/Unsorted/photo of notes.jpg"])
+        self.assertEqual(list(f.inbox.iterdir()), [])
         files = run_json("manifest", "--course", self.course)["files"]
-        entry = files["inbox/Unit 3 friend summary.pdf"]
+        entry = files["added/Unit 3/Unit 3 friend summary.pdf"]
         self.assertEqual((entry["origin"], entry["tier"], entry["unit"]), ("inbox", "added", 3))
-        self.assertTrue((self.course / "raw" / "inbox" / "Unit 3 friend summary.pdf").is_file())
-        self.assertTrue((self.course / "materials" / "Unit 3" / "Unit 3 friend summary.pdf").exists())
-        self.assertEqual(result["unsorted"], ["inbox/photo of notes.jpg"])
+        self.assertTrue((f.material / "added" / "Unit 3" / "Unit 3 friend summary.pdf").is_file())
+        self.assertEqual(result["unsorted"], ["added/Unsorted/photo of notes.jpg"])
         # The Wiki is updated in the same step.
-        self.assertTrue((self.course / "wiki" / "sources" / "unit-03" / "Unit 3 friend summary.md").exists())
+        self.assertTrue((f.wiki / "sources" / "unit-03" / "Unit 3 friend summary.md").exists())
 
     def test_files_can_be_marked_official(self):
-        make_pdf(self.course / "inbox" / "lecturer notes unit 2.pdf", ["Unit 2"])
+        make_pdf(folders(self.course).inbox / "lecturer notes unit 2.pdf", ["Unit 2"])
         run_json("add", "--course", self.course, "--official", "lecturer notes unit 2.pdf")
-        entry = run_json("manifest", "--course", self.course)["files"]["inbox/lecturer notes unit 2.pdf"]
+        entry = run_json("manifest", "--course", self.course)["files"]["official/Unit 2/lecturer notes unit 2.pdf"]
         self.assertEqual(entry["tier"], "official")
 
     def test_same_name_twice_keeps_both(self):
-        make_pdf(self.course / "inbox" / "summary.pdf", ["first"])
+        make_pdf(folders(self.course).inbox / "summary.pdf", ["first"])
         run_json("add", "--course", self.course)
-        make_pdf(self.course / "inbox" / "summary.pdf", ["second version"])
+        make_pdf(folders(self.course).inbox / "summary.pdf", ["second version"])
         result = run_json("add", "--course", self.course)
-        self.assertEqual(result["added"], ["inbox/summary (2).pdf"])
+        self.assertEqual(result["added"], ["added/Unsorted/summary (2).pdf"])
         self.assertEqual(len(run_json("manifest", "--course", self.course)["files"]), 2)
 
     def test_empty_inbox_says_so(self):
@@ -62,7 +63,7 @@ class SeveralCourses(CourseTestCase):
 
         # Inside a course folder, the folder wins over the Registry.
         cwd = os.getcwd()
-        os.chdir(stats / "wiki")
+        os.chdir(stats / ".unistudent")
         try:
             self.assertEqual(run_json("courses", "current")["name"], "Statistics")
         finally:
@@ -88,10 +89,10 @@ class SeveralCourses(CourseTestCase):
         stats = self.tmp / "Statistics"
         run("setup", macro, "--name", "Macro", "--language", "en")
         run("setup", stats, "--name", "Statistics", "--language", "en")
-        make_pdf(macro / "inbox" / "Unit 1 macro.pdf", ["Macro unit 1"])
+        make_pdf(folders(macro).inbox / "Unit 1 macro.pdf", ["Macro unit 1"])
         run_json("add", "--course", macro)
         self.assertEqual(run_json("manifest", "--course", stats)["files"], {})
-        self.assertFalse(list((stats / "wiki").rglob("Unit 1 macro.md")))
+        self.assertFalse(list(folders(stats).wiki.rglob("Unit 1 macro.md")))
 
     def test_unknown_course_is_an_error(self):
         run("setup", self.tmp / "Macro", "--name", "Macro")

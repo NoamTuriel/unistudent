@@ -8,7 +8,7 @@ import re
 import unittest
 from pathlib import Path
 
-from helpers import CourseTestCase, run, run_json, write
+from helpers import CourseTestCase, folders, run, run_json, write
 from unistudent import cli
 
 ROOT = Path(__file__).resolve().parents[1]
@@ -60,7 +60,7 @@ class SetupFlow(CourseTestCase):
         self.assertEqual(run_json("setup-progress", "status", *name)["next_stage"], "capabilities")
         self.assertIn("complete", run_json("setup-progress", "advance", *name, "--stage", "capabilities")["summary"])
         self.assertIsNone(run_json("setup-progress", "status", *name)["stage"])
-        self.assertTrue((folder / "inbox").is_dir())
+        self.assertTrue(folders(folder).inbox.is_dir())
         self.assertTrue((folder / "README.md").is_file())
         self.assertEqual(run("wiki", "check", *course)[0], 0)
 

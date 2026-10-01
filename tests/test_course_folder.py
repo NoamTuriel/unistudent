@@ -1,10 +1,8 @@
-"""Seam 1 (core side): a student's own folder → course folder with Raw, Manifest and readable layout."""
+"""Seam 1 (core side): a student's own folder → course folder with the Material folder and Manifest."""
 import json
-import os
 import unittest
-from pathlib import Path
 
-from helpers import CourseTestCase, run, run_json, write
+from helpers import CourseTestCase, folders, run, run_json, write
 
 
 class CourseFromOwnFolder(CourseTestCase):
@@ -28,11 +26,11 @@ class CourseFromOwnFolder(CourseTestCase):
         self.assertEqual([c["path"] for c in registry["courses"]], [str(course.resolve())])
         self.assertTrue((course / "CLAUDE.md").exists())
         self.assertTrue((course / "README.md").exists())
-        self.assertTrue((course / "inbox").is_dir())
+        self.assertTrue(folders(course).inbox.is_dir())
 
     def test_a_course_folder_with_retired_settings_still_loads(self):
         course = self.tmp / "Macro"
-        run("setup", course, "--name", "Macro")
+        run("setup", course, "--name", "Macro", "--language", "en")
         path = course / ".unistudent" / "settings.json"
         settings = json.loads(path.read_text("utf-8"))
         settings.update({"origin_mode": "site", "lecturer": "x", "recording_segments": [], "sort_patterns": []})
@@ -40,80 +38,64 @@ class CourseFromOwnFolder(CourseTestCase):
 
         run_json("import", self.make_own_folder(), "--course", course)
         units = {rel: e["unit"] for rel, e in run_json("manifest", "--course", course)["files"].items()}
-        self.assertEqual(units["יחידה 1 - מבוא/שאלות עם תשובות.pdf"], 1)
-        self.assertEqual(units["שקפים/שיעור 2 - יחידה 2.pdf"], 2)
+        self.assertEqual(units["added/Unit 1/שאלות עם תשובות.pdf"], 1)
+        self.assertEqual(units["added/Unit 2/שיעור 2 - יחידה 2.pdf"], 2)
 
-    def test_every_imported_file_is_in_manifest_once_and_never_copied(self):
+    def test_every_imported_file_is_in_the_manifest_once_and_copied_not_moved(self):
         own = self.make_own_folder()
         course = self.tmp / "Macro"
-        run("setup", course, "--name", "Macro", "--import", own, "--tier", "official")
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
 
-        manifest = run_json("manifest", "--course", course)
-        entries = manifest["files"]
+        entries = run_json("manifest", "--course", course)["files"]
         self.assertEqual(len(entries), 4)
+        material = folders(course).material
         for rel, entry in entries.items():
             self.assertEqual(entry["origin"], "student-folder")
             self.assertEqual(entry["tier"], "official")
-            original = Path(entry["source_path"])
-            self.assertTrue(original.exists())
-            # Raw points at the original: same file on disk, no second copy.
-            self.assertTrue(os.path.samefile(course / "raw" / rel, original))
-            self.assertTrue((course / "raw" / rel).is_symlink())
+            self.assertTrue((material / rel).is_file())
+            self.assertFalse((material / rel).is_symlink())
+        self.assertEqual(len(list((own).rglob("*.*"))), 4)  # the originals are all still there
 
     def test_files_with_clear_unit_evidence_are_sorted_and_the_rest_are_unsorted(self):
         own = self.make_own_folder()
         course = self.tmp / "Macro"
-        run("setup", course, "--name", "Macro", "--import", own, "--tier", "official")
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
 
-        unit1 = course / "materials" / "Unit 1" / "שאלות עם תשובות.pdf"
-        unit2 = course / "materials" / "Unit 2" / "שיעור 2 - יחידה 2.pdf"
-        self.assertTrue(os.path.samefile(unit1, own / "יחידה 1 - מבוא" / "שאלות עם תשובות.pdf"))
-        self.assertTrue(os.path.samefile(unit2, own / "שקפים" / "שיעור 2 - יחידה 2.pdf"))
+        material = folders(course).material / "official"
+        self.assertTrue((material / "Unit 1" / "שאלות עם תשובות.pdf").is_file())
+        self.assertTrue((material / "Unit 2" / "שיעור 2 - יחידה 2.pdf").is_file())
 
         unsorted = run_json("unsorted", "--course", course)["files"]
-        self.assertEqual(sorted(unsorted), sorted(["מבחנים לדוגמא/מבחן 2024.pdf", "הקלטות/01 - מפגש מספר 1.mp4"]))
+        self.assertEqual(sorted(unsorted), sorted(["official/Unsorted/מבחן 2024.pdf", "official/Unsorted/01 - מפגש מספר 1.mp4"]))
 
     def test_answers_to_the_unsorted_question_are_applied_and_remembered(self):
         own = self.make_own_folder()
         course = self.tmp / "Macro"
-        run("setup", course, "--name", "Macro", "--import", own, "--tier", "official")
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
 
-        code, out = run("assign", "--course", course, "מבחנים לדוגמא/מבחן 2024.pdf", "general")
+        code, out = run("assign", "--course", course, "official/Unsorted/מבחן 2024.pdf", "general")
         self.assertEqual(code, 0, out)
-        code, out = run("assign", "--course", course, "הקלטות/01 - מפגש מספר 1.mp4", "1")
+        code, out = run("assign", "--course", course, "official/Unsorted/01 - מפגש מספר 1.mp4", "1")
         self.assertEqual(code, 0, out)
 
         self.assertEqual(run_json("unsorted", "--course", course)["files"], [])
-        self.assertTrue((course / "materials" / "General" / "מבחן 2024.pdf").exists())
-        self.assertTrue((course / "materials" / "Unit 1" / "01 - מפגש מספר 1.mp4").exists())
+        material = folders(course).material / "official"
+        self.assertTrue((material / "General" / "מבחן 2024.pdf").exists())
+        self.assertTrue((material / "Unit 1" / "01 - מפגש מספר 1.mp4").exists())
 
-        # Re-importing never asks again.
-        run("import", "--course", course, own, "--tier", "official")
-        self.assertEqual(run_json("unsorted", "--course", course)["files"], [])
+        # Re-importing never asks again, and never copies a file twice.
+        again = run_json("import", "--course", course, own, "--tier", "official")
+        self.assertEqual((again["imported"], again["unsorted"]), ([], []))
 
     def test_setup_is_idempotent(self):
         own = self.make_own_folder()
         course = self.tmp / "Macro"
-        run("setup", course, "--name", "Macro", "--import", own, "--tier", "official")
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
         first = run_json("manifest", "--course", course)
-        code, out = run("setup", course, "--name", "Macro", "--import", own, "--tier", "official")
+        code, out = run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
         self.assertEqual(code, 0, out)
         self.assertEqual(run_json("manifest", "--course", course), first)
         self.assertEqual(len(run_json("courses", "list")["courses"]), 1)
-
-    def test_index_page_fallback_when_links_cannot_be_made(self):
-        own = self.make_own_folder()
-        course = self.tmp / "Macro"
-        os.environ["UNISTUDENT_LINK_MODE"] = "index"
-        try:
-            run("setup", course, "--name", "Macro", "--import", own, "--tier", "official")
-        finally:
-            del os.environ["UNISTUDENT_LINK_MODE"]
-        index = (course / "materials" / "Unit 1" / "INDEX.md").read_text("utf-8")
-        self.assertIn("שאלות עם תשובות.pdf", index)
-        self.assertFalse((course / "materials" / "Unit 1" / "שאלות עם תשובות.pdf").exists())
-        # Manifest still knows every file.
-        self.assertEqual(len(run_json("manifest", "--course", course)["files"]), 4)
 
 
 if __name__ == "__main__":

@@ -1,4 +1,4 @@
-"""Seam 1 (sync): a university plugin's listing + downloaded files → Raw, Manifest, units, "what's new".
+"""Seam 1 (sync): a university plugin's listing + downloaded files → Material folder, Manifest, units, "what's new".
 
 The university plugin (e.g. openu) owns reaching the site. It hands the core a listing
 (what's on the course site) and a folder of downloaded files; the core does the rest.
@@ -6,7 +6,7 @@ The university plugin (e.g. openu) owns reaching the site. It hands the core a l
 import json
 import unittest
 
-from helpers import CourseTestCase, can_read_pdfs, make_pdf, run, run_json, write
+from helpers import CourseTestCase, can_read_pdfs, folders, make_pdf, run, run_json, write
 
 
 def listing(*items):
@@ -24,7 +24,7 @@ class SiteIngest(CourseTestCase):
         path = write(self.tmp / "listing.json", json.dumps(data))
         return run_json("ingest", "--course", self.course, path, self.staged)
 
-    def test_downloaded_files_land_in_raw_with_site_origin_and_units(self):
+    def test_downloaded_files_land_in_the_official_folder_with_site_origin_and_units(self):
         make_pdf(self.staged / "slides-u4.pdf", ["Unit 4 slides"])
         make_pdf(self.staged / "exam-2024.pdf", ["Exam"])
         result = self.ingest(listing(
@@ -33,13 +33,13 @@ class SiteIngest(CourseTestCase):
             {"url": "https://example.edu/f/2", "file": "exam-2024.pdf", "name": "Exam 2024.pdf",
              "section": "Past exams", "unit_hint": "general"},
         ))
-        self.assertEqual(sorted(result["new"]), ["site/Past exams/Exam 2024.pdf", "site/Unit 4 - money supply/Unit slides.pdf"])
+        self.assertEqual(sorted(result["new"]), ["official/General/Exam 2024.pdf", "official/Unit 4/Unit slides.pdf"])
         files = run_json("manifest", "--course", self.course)["files"]
-        slides = files["site/Unit 4 - money supply/Unit slides.pdf"]
+        slides = files["official/Unit 4/Unit slides.pdf"]
         self.assertEqual((slides["origin"], slides["tier"], slides["unit"]), ("course-site", "official", 4))
         self.assertEqual(slides["site_url"], "https://example.edu/f/1")
-        self.assertEqual(files["site/Past exams/Exam 2024.pdf"]["unit"], "general")
-        self.assertTrue((self.course / "raw" / "site" / "Unit 4 - money supply" / "Unit slides.pdf").is_file())
+        self.assertEqual(files["official/General/Exam 2024.pdf"]["unit"], "general")
+        self.assertTrue((folders(self.course).material / "official" / "Unit 4" / "Unit slides.pdf").is_file())
         self.assertFalse((self.staged / "slides-u4.pdf").exists())  # moved, not copied
 
     def test_status_tells_the_fetcher_what_is_already_downloaded(self):
@@ -60,9 +60,9 @@ class SiteIngest(CourseTestCase):
             {"url": "https://example.edu/f/1", "file": "a.pdf", "name": "a.pdf", "section": "Unit 1"},
             {"url": "https://example.edu/f/2", "file": "b.pdf", "name": "b.pdf", "section": "Unit 2"},
         ))
-        self.assertEqual(result["new"], ["site/Unit 2/b.pdf"])
-        self.assertEqual(result["changed"], ["site/Unit 1/a.pdf"])
-        self.assertIn("Unit 1 v2", (self.course / "wiki" / "sources" / "unit-01" / "a.md").read_text("utf-8"))
+        self.assertEqual(result["new"], ["official/Unit 2/b.pdf"])
+        self.assertEqual(result["changed"], ["official/Unit 1/a.pdf"])
+        self.assertIn("Unit 1 v2", (folders(self.course).wiki / "sources" / "unit-01" / "a.md").read_text("utf-8"))
 
     def test_items_listed_but_not_downloaded_are_reported_missing(self):
         result = self.ingest(listing({"url": "https://example.edu/f/9", "file": "gone.pdf", "name": "gone.pdf",

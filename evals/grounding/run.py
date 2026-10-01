@@ -16,7 +16,7 @@ from pathlib import Path
 HERE = Path(__file__).resolve().parent
 US = HERE.parents[1] / "plugins" / "unistudent" / "scripts" / "us.py"
 PROMPT_SUFFIX = ("\n\nWrite your answer as Markdown. Cite Wiki pages with Markdown links relative to "
-                 "this folder (e.g. wiki/sources/...).")
+                 "this folder (e.g. .unistudent/wiki/sources/...).")
 
 
 def us(*args, env):

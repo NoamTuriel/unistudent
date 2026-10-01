@@ -9,6 +9,7 @@ import re
 from pathlib import Path
 from urllib.parse import unquote
 
+from .course import Course
 from .links_check import MD_LINK, WIKILINK, check_links
 
 CITED = ("✅", "💡")  # these must link the course material they rest on
@@ -137,14 +138,17 @@ def graph_problems(page: Path, text: str):
 
 def check_page(page: Path, root: Path):
     """Label and citation problems in one answer or study-pack page."""
+    from .wiki import GEN_START
     page = Path(page)
     text = page.read_text("utf-8")
+    if GEN_START in text:  # a page UniStudent generates (the recordings roadmap): the checks that apply are links
+        return {"paragraphs": [], "problems": check_links(page, root)}
     found = paragraphs(text)
     problems = graph_problems(page, text)
     for p in found:
         where = {"page": str(page), "line": p["line"], "text": p["text"]}
         if not p["labels_at_start"]:
-            if "inbox/" in p["body"] and len(p["body"]) < 300:
+            if any(f"{name}/" in p["body"] for name in ("inbox", Course(root).inbox.name)) and len(p["body"]) < 300:
                 continue  # the closing "add material to inbox/" suggestion is not a claim
             problems.append({"kind": "unlabeled", **where})
         elif len(p["labels_at_start"]) > 1:

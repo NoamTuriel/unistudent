@@ -11,15 +11,15 @@ from helpers import CourseTestCase, can_read_pdfs, make_pdf, run, run_json, writ
 GOOD = """## The money multiplier
 
 ✅ The money multiplier is 1/r, where r is the reserve ratio.
-Sources: [slides p.1](wiki/sources/unit-04/slides.md#page-1)
+Sources: [slides p.1](.unistudent/wiki/sources/unit-04/slides.md#page-1)
 
-- ✅ A higher reserve ratio lowers the multiplier. Sources: [slides p.2](wiki/sources/unit-04/slides.md#page-2)
+- ✅ A higher reserve ratio lowers the multiplier. Sources: [slides p.2](.unistudent/wiki/sources/unit-04/slides.md#page-2)
 
 | r | multiplier |
 |---|---|
 | 0.1 | 10 |
 
-🎬 [Recording](wiki/index.md)
+🎬 [Recording](.unistudent/wiki/index.md)
 """
 
 
@@ -48,33 +48,33 @@ class GroundingLabels(CourseTestCase):
 
     def test_every_paragraph_needs_exactly_one_label(self):
         self.assertEqual(self.kinds("The multiplier is 1/r.\n"), ["unlabeled"])
-        self.assertEqual(self.kinds("✅ ⚠️ The multiplier is 1/r. Sources: [s](wiki/index.md)\n"), ["several-labels"])
+        self.assertEqual(self.kinds("✅ ⚠️ The multiplier is 1/r. Sources: [s](.unistudent/wiki/index.md)\n"), ["several-labels"])
 
     def test_course_material_labels_need_a_citation_that_resolves(self):
         self.assertEqual(self.kinds("✅ The multiplier is 1/r.\n"), ["no-citation"])
-        self.assertEqual(self.kinds("✅ The multiplier is 1/r. Sources: [s](wiki/sources/unit-04/nope.md)\n"),
+        self.assertEqual(self.kinds("✅ The multiplier is 1/r. Sources: [s](.unistudent/wiki/sources/unit-04/nope.md)\n"),
                          ["broken-link"])
-        self.assertEqual(self.kinds("✅ The multiplier is 1/r. Sources: [s](wiki/sources/unit-04/slides.md#page-9)\n"),
+        self.assertEqual(self.kinds("✅ The multiplier is 1/r. Sources: [s](.unistudent/wiki/sources/unit-04/slides.md#page-9)\n"),
                          ["broken-anchor"])
 
     def test_a_sources_block_and_an_introduced_list_belong_to_the_paragraph_before(self):
         if not can_read_pdfs():
             self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         text = ("✅ The course solves this in five steps:\n1. Change in reserves.\n2. Excess reserves.\n\n"
-                "Sources: [slides](wiki/sources/unit-04/slides.md#page-1)\n")
+                "Sources: [slides](.unistudent/wiki/sources/unit-04/slides.md#page-1)\n")
         self.assertEqual(self.kinds(text), [])
 
     def test_a_list_right_after_a_labelled_paragraph_shares_its_label(self):
         if not can_read_pdfs():
             self.skipTest("no PDF tool installed (pdftotext or pypdf)")
-        text = ("✅ The course teaches five steps. Sources: [s](wiki/sources/unit-04/slides.md#page-1)\n\n"
+        text = ("✅ The course teaches five steps. Sources: [s](.unistudent/wiki/sources/unit-04/slides.md#page-1)\n\n"
                 "1. Change in reserves.\n2. Excess reserves.\n")
         self.assertEqual(self.kinds(text), [])
 
     def test_a_follow_on_paragraph_without_a_label_is_flagged(self):
         if not can_read_pdfs():
             self.skipTest("no PDF tool installed (pdftotext or pypdf)")
-        text = ("❌ In this course the multiplier is 1/r. Sources: [s](wiki/sources/unit-04/slides.md#page-1)\n\n"
+        text = ("❌ In this course the multiplier is 1/r. Sources: [s](.unistudent/wiki/sources/unit-04/slides.md#page-1)\n\n"
                 "Outside this course the textbook formula includes the currency ratio.\n")
         self.assertEqual(self.kinds(text), ["unlabeled"])
 
@@ -87,7 +87,7 @@ class GroundingLabels(CourseTestCase):
         if not can_read_pdfs():
             self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         text = ("💡 Think of a piggy bank that lends out most of each coin: every loan comes back as a new "
-                "deposit. Sources: [slides](wiki/sources/unit-04/slides.md#page-1)\n")
+                "deposit. Sources: [slides](.unistudent/wiki/sources/unit-04/slides.md#page-1)\n")
         report = self.check(text)
         self.assertEqual(report["problems"], [])
         self.assertEqual([p["label"] for p in report["paragraphs"]], ["💡"])
@@ -98,7 +98,7 @@ class GroundingLabels(CourseTestCase):
         if not can_read_pdfs():
             self.skipTest("no PDF tool installed (pdftotext or pypdf)")
         text = ("⚠️ The course material doesn't cover the IS-LM model; this is general knowledge.\n\n"
-                "❌ In this course the multiplier is 1/r. Sources: [s](wiki/sources/unit-04/slides.md#page-1) "
+                "❌ In this course the multiplier is 1/r. Sources: [s](.unistudent/wiki/sources/unit-04/slides.md#page-1) "
                 "Textbooks often add a currency-drain term.\n")
         self.assertEqual(self.kinds(text), [])
 

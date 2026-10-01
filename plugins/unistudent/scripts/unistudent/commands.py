@@ -26,21 +26,20 @@ def register(add, with_course):
     def cmd_add(args):
         from . import material
         course = resolve_course(args)
+        material.require_new_layout(course)
         official = set(args.official or [])
         notes = dict(pair.split("=", 1) for pair in (args.describe or []) if "=" in pair)
         added = []
         for path in list(material.iter_files(course.inbox)):
             rel_in_inbox = path.relative_to(course.inbox).as_posix()
             tier = "official" if (path.name in official or rel_in_inbox in official) else "added"
-            added.append(material.add_file(course, path, tier=tier, origin="inbox",
-                                           rel=f"inbox/{rel_in_inbox}",
+            added.append(material.add_file(course, path, tier=tier, origin="inbox", hint=rel_in_inbox,
                                            note=notes.get(path.name) or notes.get(rel_in_inbox)))
         for folder in sorted((p for p in course.inbox.rglob("*") if p.is_dir()), reverse=True):
             try:
                 folder.rmdir()
             except OSError:
                 pass
-        material.rebuild_materials(course)
         built = wiki.build(course) if added else None
         unsorted = [rel for rel in material.unsorted(course) if rel in added]
         return {"added": added, "unsorted": unsorted, "wiki": built,
@@ -237,17 +236,18 @@ def register(add, with_course):
             if unit_dir(info["unit"]) == folder and info["processed"]:
                 current[info["folder"] + "/summary.md"] = "processed"
         packs = course.read_state("studypacks.json", {})
+        pack = str(course.pack_folder(args.unit))
         if args.action == "mark-built":
             packs[folder] = {"built": datetime.now().isoformat(timespec="seconds"), "sources": current}
             course.write_state("studypacks.json", packs)
-            return {"summary": f"Recorded the sources of the {folder} study pack ({len(current)})."}
+            return {"pack_folder": pack, "summary": f"Recorded the sources of the {folder} study pack ({len(current)})."}
         base = packs.get(folder)
         if base is None:
-            return {"has_study_pack": False, "new": [], "changed": [], "removed": [],
+            return {"has_study_pack": False, "pack_folder": pack, "new": [], "changed": [], "removed": [],
                     "summary": f"No study pack recorded for {folder}."}
         old = base["sources"]
         result = {
-            "has_study_pack": True, "built": base["built"],
+            "has_study_pack": True, "pack_folder": pack, "built": base["built"],
             "new": sorted(p for p in current if p not in old),
             "changed": sorted(p for p in current if p in old and old[p] != current[p]),
             "removed": sorted(p for p in old if p not in current),
@@ -286,7 +286,7 @@ def register(add, with_course):
                                  + (f"; failed: {', '.join(result['failed'])}" if result["failed"] else "") + ".")
             return result
         if not args.paths:
-            raise UserError("Name at least one recording (its path in Raw).")
+            raise UserError("Name at least one recording (its path in the Material folder).")
         if args.action == "benchmark":
             factor = recordings.benchmark(course, args.paths[0])
             return {"realtime_factor": factor,
@@ -300,17 +300,19 @@ def register(add, with_course):
 
     p = with_course(add("recordings", cmd_recordings, "list, estimate, benchmark or transcribe recordings"))
     p.add_argument("action", choices=["list", "estimate", "benchmark", "transcribe", "fetch"])
-    p.add_argument("paths", nargs="*", help="recording paths in Raw (fetch: listing JSON and download folder)")
+    p.add_argument("paths", nargs="*", help="recording paths in the Material folder (fetch: listing JSON and download folder)")
     p.add_argument("--audio-only", action="store_true", help="fetch: keep only the sound (enough for transcripts)")
     p.add_argument("--background", action="store_true",
                    help="transcribe: run detached and return at once (long jobs outlive tool-call time limits)")
     p.add_argument("--unit", help="only this unit's recordings")
 
     def cmd_ingest(args):
-        """The fetcher interface: a university plugin's listing + downloaded files → Raw."""
+        """The fetcher interface: a university plugin's listing + downloaded files → the Material folder."""
         import json
         from . import material
         course = resolve_course(args)
+        material.require_new_layout(course)
+        material.scan(course)  # the student may have moved files since the last sync: find them first
         data = json.loads(Path(args.listing).read_text("utf-8"))
         staged = Path(args.folder)
         by_url = {e.get("site_url"): rel for rel, e in course.manifest()["files"].items() if e.get("site_url")}
@@ -323,30 +325,24 @@ def register(add, with_course):
                     continue  # downloaded in an earlier sync
                 (recordings if item.get("kind") == "recording" else missing).append(url)
                 continue
-            rel = f"site/{safe_name(item.get('section') or 'General')}/{safe_name(item.get('name') or source.name)}"
-            existing = course.manifest()["files"].get(rel)
-            if existing and existing.get("fingerprint") == material.fingerprint(source):
+            before = by_url.get(url)
+            if before and course.manifest()["files"][before].get("fingerprint") == material.fingerprint(source):
                 source.unlink()
                 continue
-            material.add_file(course, source, tier="official", origin="course-site", rel=rel, replace=True)
-            manifest = course.manifest()
-            entry = manifest["files"][rel]
-            entry["site_url"] = url
-            entry["site_modified"] = item.get("modified")
+            name = safe_name(item.get("name") or source.name)
             hint = item.get("unit_hint")
-            if hint is not None and rel not in course.settings().get("unit_answers", {}):
-                entry["unit"] = parse_unit(hint)
-                entry["sort_reason"] = "site listing"
-            course.save_manifest(manifest)
-            (changed if existing else new).append(rel)
-        material.rebuild_materials(course)
+            rel = material.add_file(course, source, tier="official", origin="course-site", name=name,
+                                    hint=f"{safe_name(item.get('section') or 'General')}/{name}", replace_rel=before,
+                                    site_unit=parse_unit(hint) if hint is not None else None,
+                                    extra={"site_url": url, "site_modified": item.get("modified")})
+            (changed if before else new).append(rel)
         built = wiki.build(course) if (new or changed) else None
         return {"new": new, "changed": changed, "missing": missing, "recordings_available": recordings,
                 "unsorted": [r for r in material.unsorted(course) if r in new or r in changed], "wiki": built,
                 "summary": f"{len(new)} new, {len(changed)} changed, {len(missing)} missing, "
                            f"{len(recordings)} recordings available on the site."}
 
-    p = with_course(add("ingest", cmd_ingest, "take a university plugin's listing and downloaded files into Raw"))
+    p = with_course(add("ingest", cmd_ingest, "take a university plugin's listing and downloaded files into the Material folder"))
     p.add_argument("listing", help="listing JSON written by the university plugin")
     p.add_argument("folder", help="folder with the downloaded files")
 
@@ -358,7 +354,7 @@ def register(add, with_course):
         return {"downloaded": urls, "modified": modified,
                 "summary": f"{len(urls)} files already downloaded from the course site."}
 
-    with_course(add("site-status", cmd_site_status, "which course-site files are already in Raw"))
+    with_course(add("site-status", cmd_site_status, "which course-site files are already in the Material folder"))
 
     def cmd_doc(args):
         package = Path(__file__).resolve().parent
@@ -373,7 +369,7 @@ def register(add, with_course):
     p = add("doc", cmd_doc, "read a UniStudent reference: worker instructions or study-pack rules")
     p.add_argument("name", nargs="?", help="e.g. study-pack, verifier, source-reader")
 
-    p = with_course(add("add", cmd_add, "move inbox files into Raw, sort them, update the Wiki"))
+    p = with_course(add("add", cmd_add, "move the inbox files into the Material folder, sort them, update the Wiki"))
     p.add_argument("--official", nargs="*", help="inbox file names that are the lecturer's material")
     p.add_argument("--describe", nargs="*", metavar="NAME=ORIGIN",
                    help="where a file comes from, e.g. \"summary.pdf=friend's summary\"")
