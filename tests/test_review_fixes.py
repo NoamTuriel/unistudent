@@ -79,6 +79,14 @@ class MigrationSafety(CourseTestCase):
         self.assertEqual(run_json("check", f.study, "--course", course)["problems"], [])
 
 
+    def test_the_old_readme_is_replaced_by_one_for_the_new_layout_and_kept_aside(self):  # H4
+        course = old_course(self.tmp / "Old", {})
+        write(course / "README.md", "My own notes about raw/ and wiki/ stay somewhere.")
+        run_json("migrate", "--course", course, "--apply")
+        self.assertIn("1-inbox", (course / "README.md").read_text("utf-8"))
+        self.assertIn("My own notes", (course / "README.old-layout.md").read_text("utf-8"))
+
+
 class LanguageChange(CourseTestCase):
     def test_a_language_change_onto_an_existing_folder_is_refused_and_changes_nothing(self):  # D2
         course = self.tmp / "Macro"
@@ -248,6 +256,75 @@ class WikiFollowsMoves(CourseTestCase):
         run_json("wiki", "build", "--course", self.course)
         self.assertIn("official/Unit 5/s.mp4", transcript.read_text("utf-8"))
         self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
+
+
+class TrustAndCoverage(CourseTestCase):
+    def test_the_grounding_rule_says_to_read_live_coverage_before_saying_something_is_missing(self):  # T1
+        course = self.tmp / "Macro"
+        run_json("setup", course, "--name", "Macro", "--language", "en")
+        context = run_json("course-context", "--course", course)["summary"]
+        self.assertIn(".unistudent/wiki/coverage.md", context)
+        self.assertIn("us wiki coverage", context)
+        self.assertIn("failed", context)
+        self.assertIn("skipped", context)
+
+    def test_a_short_text_file_is_not_flagged_as_needing_visual_reading(self):  # T2
+        course = self.tmp / "Macro"
+        run_json("setup", course, "--name", "Macro", "--language", "en")
+        write(folders(course).inbox / "Unit 1 hint.md", "Exam: chapter 3.")
+        built = run_json("add", "--course", course)["wiki"]
+        self.assertEqual(built["needs_visual"], [])
+        rows = {r["path"]: r for r in run_json("wiki", "coverage", "--course", course)["files"]}
+        self.assertEqual(rows["added/Unit 1/Unit 1 hint.md"]["why"], "")
+
+
+class RoadmapsAndAnnouncements(CourseTestCase):
+    def setUp(self):
+        super().setUp()
+        self.course = self.tmp / "Macro"
+        write(self.tmp / "own" / "Unit 4" / "session 5.mp4", b"\x00" * 64)
+        run_json("setup", self.course, "--name", "Macro", "--language", "en", "--import", self.tmp / "own", "--tier", "official")
+        self.f = folders(self.course)
+        with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
+        self.rec = self.f.wiki / "recordings" / "session 5"
+        write(self.rec / "toc.md", "Sources: [transcript](transcript.md)\n\n| 00:01:00 | exam question | [00:01:00](transcript.md#000100) |\n")
+        write(self.rec / "summary.md", "Sources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n\n"
+                                       '## "This will be on the exam"\n\n- The multiplier, at 00:12:47.\n\n## Topics\n\nMoney.\n')
+        self.roadmap = self.f.study / "Unit 4" / "Recordings roadmap.md"
+
+    def test_the_roadmap_keeps_clickable_times_and_a_labelled_generated_block(self):  # T3
+        run_json("wiki", "build", "--course", self.course)
+        text = self.roadmap.read_text("utf-8")
+        self.assertIn("[00:01:00](<../../2-course-material/official/Unit 4/session 5.mp4#t=60>)", text)
+        self.assertIn("✅", text.split("<!-- unistudent:generated:start -->")[1].split("<!-- unistudent:generated:end -->")[0])
+        self.assertEqual(run_json("check", self.roadmap, "--labels", "--course", self.course)["problems"], [])
+
+    def test_text_outside_the_generated_block_is_still_checked_for_labels(self):  # T3
+        run_json("wiki", "build", "--course", self.course)
+        self.roadmap.write_text(self.roadmap.read_text("utf-8") + "\nThe multiplier is always five in every economy.\n", "utf-8")
+        kinds = [p["kind"] for p in run_json("check", self.roadmap, "--labels", "--course", self.course)["problems"]]
+        self.assertEqual(kinds, ["unlabeled"])
+
+    def test_a_roadmap_goes_when_its_recording_loses_its_summary_or_is_deleted(self):  # T3
+        run_json("wiki", "build", "--course", self.course)
+        self.assertTrue(self.roadmap.exists())
+        (self.rec / "summary.md").unlink()
+        run_json("wiki", "build", "--course", self.course)
+        self.assertFalse(self.roadmap.exists())
+
+    def test_the_unit_page_collects_announcements_and_exam_hints(self):  # T3
+        run_json("wiki", "build", "--course", self.course)
+        unit = (self.f.wiki / "units" / "unit-04.md").read_text("utf-8")
+        self.assertIn("Announcements", unit)
+        self.assertIn("Homework due Sunday.", unit)
+        self.assertIn("The multiplier, at 00:12:47.", unit)
+        self.assertNotIn("Money.", unit)
+        self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
+
+    def test_the_study_pack_writer_is_told_to_surface_them(self):  # T3
+        for name in ("study-pack-writer", "study-pack"):
+            self.assertIn("Announcements", run_json("doc", name)["text"])
 
 
 class WindowsPaths(CourseTestCase):

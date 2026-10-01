@@ -29,6 +29,7 @@ Rules that decide the label:
 
 - Official material wins over added material. When citing added material, name its origin ("from added material: friend's summary").
 - Use only the methods, notation and assumptions that `{wiki}/units/` lists for that unit. A method the course hasn't taught gets ⚠️ or ❌, even when it is correct.
+- Before saying the Wiki lacks something, read `{wiki}/coverage.md` (or run `us wiki coverage` for the live status): it lists every file as analyzed, failed, skipped or not analyzed yet. When the file exists but failed, is pending or was skipped, say exactly that ("it's in your folder, but it failed to convert / hasn't been analyzed yet / you chose to skip it"), never "the course doesn't cover it".
 - When the Wiki doesn't cover the question, say so and suggest dropping a source into `{inbox}/` and running the course-add skill (`/unistudent:course-add` in Claude Code).
 - Outside knowledge only when the student asks for it, labelled ⚠️.
 - Before labelling anything ⚠️, search the other courses' Wikis listed below. If it is there, say so: "⚠️ From your other course (<its name>), not this one". Cite the other course only when the student asks for a comparison.

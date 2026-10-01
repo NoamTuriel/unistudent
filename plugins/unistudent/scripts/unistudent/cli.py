@@ -6,6 +6,7 @@ from the current folder, then from the Registry's active course.
 """
 import argparse
 import json
+import os
 import sys
 from pathlib import Path
 
@@ -152,8 +153,9 @@ def cmd_migrate(args):
         return result
     left = migrate.apply(course, found)
     readme = course.root / "README.md"
-    if readme.exists() and "`raw/`" in readme.read_text("utf-8"):  # the generated one: describes folders that are gone
-        readme.unlink()
+    if readme.exists():  # a course folder of layout 1 had the old README (it describes folders that are gone): keep it aside
+        aside = readme.with_name("README.old-layout.md")
+        readme.replace(aside if not aside.exists() else readme.with_name(f"README.old-layout-{os.getpid()}.md"))
     write_context_files(course)
     result.update(applied=True, left_behind=left)
     result["summary"] = (f"Moved {len(found['moves'])} items into the new layout ({course.folder_names()['study']} is "

@@ -20,6 +20,7 @@ RECORDINGS = {".mp4", ".mkv", ".mov", ".m4v", ".webm", ".avi", ".mp3", ".m4a", "
 IMAGES = {".png", ".jpg", ".jpeg", ".heic", ".webp", ".gif", ".tif", ".tiff"}
 OFFICE = {".docx", ".doc", ".odt", ".rtf", ".pptx", ".ppt", ".odp"}
 EMPTY_PAGE_CHARS = 20
+NOT_PAGED = {"text", "markitdown", "python-docx"}  # one block of text, no pages to read visually
 
 
 @dataclass
@@ -30,6 +31,8 @@ class Conversion:
 
     @property
     def empty_pages(self):
+        if self.method in NOT_PAGED:  # a short text file is not a page with a missing text layer
+            return []
         return [i + 1 for i, text in enumerate(self.pages) if len(text.strip()) < EMPTY_PAGE_CHARS]
 
 
