@@ -341,7 +341,7 @@ def list_generated() -> list:
     return out
 
 
-SETUP_STAGES = ["university", "course", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
+SETUP_STAGES = ["university", "course", "language", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
 
 
 def _setup_progress_dir() -> Path:

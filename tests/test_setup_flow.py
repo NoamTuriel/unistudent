@@ -15,7 +15,7 @@ ROOT = Path(__file__).resolve().parents[1]
 CORE = ROOT / "plugins" / "unistudent" / "scripts" / "unistudent" / "skills"
 SETUP = CORE / "course-setup" / "SKILL.md"
 ALL_SKILLS = sorted(ROOT.glob("plugins/*/skills/*/SKILL.md")) + sorted(CORE.glob("*/SKILL.md"))
-STAGES = ["university", "course", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
+STAGES = ["university", "course", "language", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
 
 
 def subparsers(parser):
@@ -46,6 +46,7 @@ class SetupFlow(CourseTestCase):
         run_json("setup-progress", "advance", *name, "--stage", "university", "--answer", "university=Test U")
         self.assertEqual(run_json("plugins", "recommend", "--university", "Test U", "--course-name", "Macro")["plugins"], [])
         run_json("setup-progress", "advance", *name, "--stage", "course")
+        run_json("setup-progress", "advance", *name, "--stage", "language", "--answer", "language=en")
         run_json("setup-progress", "advance", *name, "--stage", "path", "--answer", f"path={folder}")
         run_json("setup-progress", "advance", *name, "--stage", "format", "--answer", "format=markdown")
         run_json("setup", folder, "--name", "Macro", "--format", "markdown", "--language", "en",

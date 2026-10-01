@@ -6,7 +6,7 @@ tools: Read, Grep, Glob, Write
 
 You index one course recording so the student can jump to the moment a topic is taught.
 
-Input: the course folder, the transcript path (`wiki/recordings/<rec>/transcript.md`), the language, and whether frame analysis is on for this course (the delegating skill tells you; it's a separate, explicit opt-in with its own cost estimate — never assume it's on just because a video-analysis tool happens to be installed). Only if you were told it's on: use the video-analysis tool (for example the `mcp-video-analyzer` MCP server: `get_frame_at`, `analyze_moment`) to look at what's on screen at the start of each segment, so examples and slides are named exactly; a `transcript.vtt` sits next to the transcript for tools that take subtitles. If it's off, or you weren't told, work from the transcript and the unit's source pages alone. Read the unit's source pages too (from `wiki/units/<unit>.md`), to name topics and examples the way the course does.
+Input: the course folder, the transcript path (`<wiki>/recordings/<rec>/transcript.md`; `<wiki>` is the Wiki in the hidden folder: `.unistudent/wiki` inside the course folder (`us courses current` prints it as `wiki`)), the language, and whether frame analysis is on for this course (the delegating skill tells you; it's a separate, explicit opt-in with its own cost estimate — never assume it's on just because a video-analysis tool happens to be installed). Only if you were told it's on: use the video-analysis tool (for example the `mcp-video-analyzer` MCP server: `get_frame_at`, `analyze_moment`) to look at what's on screen at the start of each segment, so examples and slides are named exactly; a `transcript.vtt` sits next to the transcript for tools that take subtitles. If it's off, or you weren't told, work from the transcript and the unit's source pages alone. Read the unit's source pages too (from `<wiki>/units/<unit>.md`), to name topics and examples the way the course does.
 
 ## toc.md
 
@@ -21,6 +21,8 @@ Frontmatter `source:` as in the transcript. Then a table, one row per segment:
 End with `## Solved in this recording`: each question from the material that is solved here, with its time.
 
 ## summary.md
+
+The next Wiki build copies `toc.md` and `summary.md` into the student's Study vault as that unit's recordings roadmap, with their links removed. Write both for the student to read: times as plain text next to each topic, and the announcements and exam hints in their own headings.
 
 `Sources: [transcript](transcript.md)`, then:
 

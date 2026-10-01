@@ -193,8 +193,10 @@ def cmd_courses(args):
             others = ", ".join(c["name"] for c in courses if c["path"] != str(course.root))
             summary += (f" (last active; not inside a course folder). Other courses: {others}. "
                         "If the request is about one of them, use it (--course <path>); if unclear, ask.")
-        return {"course": str(course.root), "name": name, "found_by": found_by,
-                "courses": courses, "summary": summary}
+        return {"course": str(course.root), "name": name, "found_by": found_by, "legacy": course.legacy,
+                "inbox": str(course.inbox), "material": str(course.material), "study": str(course.study),
+                "wiki": str(course.wiki), "courses": courses,
+                "summary": summary + (" This course folder has the old layout: offer `us migrate`." if course.legacy else "")}
     courses = registry.courses()
     lines = [("* " if c["active"] else "  ") + f"{c['name']}  ({c['path']})" for c in courses]
     return {"courses": courses, "summary": "\n".join(lines) or "No courses yet."}

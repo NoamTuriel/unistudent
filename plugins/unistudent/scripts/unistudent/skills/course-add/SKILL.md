@@ -1,6 +1,6 @@
 ---
 name: course-add
-description: Add the files in the course's inbox/ to Raw, sort them into units, and update the Wiki.
+description: Move the files in the course's inbox into the Material folder, sort them into units, and update the Wiki.
 disable-model-invocation: true
 ---
 
@@ -9,12 +9,12 @@ Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool 
 <!-- /conventions -->
 
 1. Run `us courses current` and say which course you're working on. No course → stop and offer `/unistudent:course-setup`.
-2. List `inbox/`. Empty → say so and stop.
-3. Ask one question: which of these files are the lecturer's material (official), and where the others come from (e.g. "friend's summary", "my notes"). Default: added, origin unknown. Mention that official material wins when sources disagree.
+2. List the inbox folder (`inbox` in `us courses current`). Empty → say so and stop.
+3. Ask one question: which of these files are the lecturer's material (official), and where the others come from (e.g. "friend's summary", "my notes"). Default: added, origin unknown. Mention that official material wins when sources disagree, and that the files are moved out of the inbox into the Material folder (`official` or `added`, by unit).
 4. Run `us add --json [--official "<file name>" ...] [--describe "<file name>=<where it comes from>" ...]`.
 5. Resolve the `unsorted` files with one grouped question (unit number or "general"); record each with `us assign "<path>" <unit|general>`.
 6. The result's `wiki.images` and `wiki.needs_visual` list files with no text layer. **Delegate** them to the `source-reader` worker (one per file) so their content reaches the Wiki.
 7. If a unit that got new material has a study pack (`us study changes --unit N --json` shows `has_study_pack: true`), offer `/unistudent:study-pack N` to review proposed changes.
-8. Report in two lines: what was added and where it went.
+8. Report in two lines: what was added and where it went (the Material folder path).
 
 Done when: the inbox is empty, every added file has a unit or the student deferred it, and scanned files were read.

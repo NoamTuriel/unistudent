@@ -1,4 +1,4 @@
-"""Seam 1 (sync): recording streams in a listing → downloaded files → Raw."""
+"""Seam 1 (sync): recording streams in a listing → downloaded files → the Material folder."""
 import json
 import shutil
 import subprocess

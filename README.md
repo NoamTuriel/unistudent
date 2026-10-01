@@ -15,7 +15,7 @@ It builds a Wiki out of your course's own files, so the AI answers from what you
 
 ## How it works
 
-1. **Collect.** It pulls your course material into one course folder, sorted by unit. That can come from your university's site or from files you already have: slides, books, past exams, recordings.
+1. **Collect.** It pulls your course material into one course folder, sorted by trust level and unit. That can come from your university's site or from files you already have: slides, books, past exams, recordings.
 2. **Read.** It reads and transcribes all of it and writes the Wiki: a set of Markdown files that only the AI reads, made from your course and nothing else.
 
 ## What you can do with the Wiki
@@ -57,7 +57,7 @@ The skills are split across three plugins. `unistudent` is the core and works fo
 |---|---|---|
 | course-setup | `unistudent` | Set up a course (once per course) |
 | course-help | `unistudent` | How it works, and what's waiting |
-| course-add | `unistudent` | Add what you dropped into the course's `inbox/` |
+| course-add | `unistudent` | Move what you dropped into the course's inbox into the Material folder and add it to the Wiki |
 | course-wiki | `unistudent` | Build or refresh the Wiki |
 | study-pack | `unistudent` | Build a study pack for a unit, or review proposed updates |
 | course-recordings | `unistudent` | Transcribe and summarise recordings (heavy; always asks first) |
@@ -121,18 +121,20 @@ UniStudent uses existing tools instead of reinventing them:
 
 ## A course folder
 
+You see three folders, numbered in the order you use them, named in the language you pick in setup (shown here in English; Hebrew has its own names, other languages fall back to English):
+
 ```
 <course>/
-  AGENTS.md / CLAUDE.md   course context: grounding rules, exam facts, other courses
-  README.md               how it works, for the student
+  AGENTS.md / CLAUDE.md          course context: grounding rules, exam facts, other courses
+  README.md                      how it works, for the student
   course-preferences.md
-  inbox/                  drop new material here
-  materials/              everything by unit (links, never copies)
-  raw/                    every original file, once
-  wiki/                   what the AI reads: sources, units, glossary, question bank, recordings
-  study/                  your study packs
-  .unistudent/            settings, manifest, full context
+  1-inbox/                       drop new material here; it is moved out once it's added
+  2-course-material/             the real files: official/ and added/, then by unit
+  3-<course>-study-from-here/    your Study vault: study packs and a recordings roadmap per unit
+  .unistudent/                   hidden: settings, manifest, the Wiki the AI reads, jobs, saved state
 ```
+
+Open the third folder as your vault (in Obsidian or any other app). In the second you may move, rename or delete files: where a file sits is what counts (moving one between `official/` and `added/` changes how far it is trusted), and the next Wiki build follows. Deleting there deletes the only copy (your system Trash can recover it). A folder of your own is copied in once and your originals are left alone. A course folder made by an earlier version (with `raw/`, `materials/`, `wiki/`, `study/`) keeps working, and `us migrate` shows what it will move and then moves it.
 
 Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected) and it picks the course up automatically through `AGENTS.md`/`CLAUDE.md`. If a session isn't rooted in the folder (or doesn't auto-read it), tell it once: "Read AGENTS.md in `<course folder path>` before answering" — that works in any AI app, not just Claude's.
 
