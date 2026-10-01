@@ -31,6 +31,17 @@ class PackShape(CourseTestCase):
         closing = f"In the lectures: [lecture 3, 00:12:47]({self.slides.as_uri()}#t=767)\n\nFrom: [slides]({self.slides.as_uri()})\n"
         self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + closing), [])
 
+    def test_sources_folded_into_a_callout_pass_and_a_pack_needs_no_labels(self):
+        text = "## נושא\n\n### כסף — Money\n\nהכסף הוא מה שמקובל לשלם בו.\n\n> [!note]- מקורות\n> בהרצאות: [שיעור 3, 00:12:47](" + self.slides.as_uri() + "#t=767)\n>\n> מתוך: [השקפים](" + self.slides.as_uri() + ")\n"
+        write(self.pack / "4.2 Walkthrough.md", text)
+        self.assertEqual(run_json("check", self.pack / "4.2 Walkthrough.md", "--labels", "--course", self.course)["problems"], [])
+
+    def test_a_wikilink_to_a_numbered_page_resolves(self):
+        write(self.pack / "4.3 Practice.md", "- [x](" + self.slides.as_uri() + ")\n")
+        write(self.pack / "4.1 Roadmap.md", "## Start\n\n1. [[4.3 Practice]]\n2. [[4.9 Missing]]\n")
+        problems = run_json("check", self.pack / "4.1 Roadmap.md", "--course", self.course)["problems"]
+        self.assertEqual([p["link"] for p in problems if p["kind"] == "broken-link"], ["[[4.9 Missing]]"])
+
     def test_a_topic_without_a_from_line_fails(self):
         self.assertIn("topic-missing-from-line", self.kinds("4.2 Walkthrough.md", TOPIC))
 
@@ -62,7 +73,7 @@ class Labels(PackShape):
 class Rules(unittest.TestCase):
     def test_generic_rules_bend_to_the_subject_and_close_each_topic(self):
         text = GENERIC.read_text("utf-8")
-        for needle in ("In the lectures", "From:", "How to answer", "Short version", "a part with nothing to say is not written"):
+        for needle in ("In the recordings", "From:", "How to answer", "Short version", "a part with nothing to say is not written", "folded", "no grounding labels"):
             self.assertIn(needle, text)
         self.assertNotRegex(text, r"3b|practice-short|Practice stages")
 
