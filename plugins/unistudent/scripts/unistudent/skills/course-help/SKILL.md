@@ -16,7 +16,7 @@ Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool 
    - `us unsorted --json`: files that need a unit.
    - `us recordings list --json`: recordings not processed.
    - The inbox folder (`inbox` in `us courses current`): files not added yet.
-   - Units without a study pack: the Wiki's `units/` (in the folder `wiki` names) compared with the unit folders in the Study vault (`study`).
+   - Units without a study pack: the Wiki's `units/` (in the folder `wiki` names) compared with the unit folders in the Study vault (`study`; if it does not exist yet, no unit has a pack).
 5. Offer, one line each, the commands from the `README.md` command table that match what step 4 found, plus the university plugin's sync skill (e.g. `/openu:openu-sync`) when there is new material on the course site.
 
 Done when: the student has seen what's waiting and the commands that apply.
