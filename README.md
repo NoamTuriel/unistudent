@@ -117,7 +117,7 @@ UniStudent uses existing tools instead of reinventing them:
 - **[ivrit.ai](https://huggingface.co/ivrit-ai) Whisper models**: Hebrew speech-to-text, run locally through faster-whisper or mlx-whisper.
 - **[mcp-video-analyzer](https://github.com/guimatheus92/mcp-video-analyzer)**: add it next to UniStudent to let the AI look at the slides on screen while indexing a recording. Every transcript is also saved as WebVTT, which it (and video players) can use.
 - **A browser tool** (Claude in Chrome, or a browser MCP server) for downloading from your course site with your own login.
-- **[Obsidian](https://obsidian.md)**: study packs can use Obsidian links and callouts.
+- **[Obsidian](https://obsidian.md)**: the best way to read the Wiki and study packs (links between pages, callouts). Setup also offers Word, OneNote and Google Docs: the packs stay Markdown and you copy a finished pack into them.
 
 ## A course folder
 
