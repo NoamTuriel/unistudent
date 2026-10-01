@@ -94,7 +94,15 @@ If they want transcripts (3) and `backend_installed` is false, they need a speec
 
 Record it: `us setup-progress advance --course-name "<course>" --stage fetch-and-organize --answer recording_level=<0|1|3>`.
 
-Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), the recording level is recorded, and if they chose transcripts the speech-to-text tool is installed (or they chose download only).
+If they chose transcripts (3), also ask about **frame analysis** (a separate yes/no, never bundled with transcription). Explain it plainly first:
+- **What it gives:** a transcript only has the words. Lecturers also show diagrams, graphs, formulas and slides on screen, and say "as you can see here". Frame analysis looks at the video, so those pictures and formulas end up in the recording's summary, linked to the minute they appeared, instead of being lost.
+- **What it needs:** a video-analysis tool next to UniStudent (the README suggests `mcp-video-analyzer`) and `ffmpeg`. It isn't part of the plugin. Check whether you can see such a tool; if not, say so and offer to explain how to add it.
+- **How heavy it is:** the slowest and most expensive part: one extra AI call for roughly every minute of video (`frame_analysis_segments` in the estimate gives the real number for their recordings), on top of transcription. Say the number and that it's optional: transcripts alone are already useful.
+- **Recommend it** for courses whose lecturer teaches from drawn graphs or slides (economics, maths, science); fine to skip for talking-only lectures.
+
+Tool available and they say yes → `us context --frame-analysis 1`. Say no, or no tool yet → `us context --frame-analysis 0`, and tell them they can turn it on later in `/unistudent:course-recordings` once the tool is installed (never turn it on without the tool).
+
+Done when: `us unsorted` prints "Nothing unsorted." (or the student chose to leave the rest for later), the recording level is recorded, if they chose transcripts the speech-to-text tool is installed (or they chose download only), and frame analysis was asked once and recorded (on or off).
 
 ## 5. Analyze (build the Wiki)
 
