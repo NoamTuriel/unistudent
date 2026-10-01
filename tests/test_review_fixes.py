@@ -11,84 +11,6 @@ from helpers import CourseTestCase, folders, make_pdf, mock_env, run, run_json, 
 from unistudent import material
 
 
-def old_course(root, files):
-    """A course folder in the old layout. files: {rel in raw: (content, tier, unit)}; real files, no links."""
-    state = root / ".unistudent"
-    entries = {}
-    for rel, (content, tier, unit) in files.items():
-        path = write(root / "raw" / rel, content)
-        entries[rel] = {"origin": "inbox", "tier": tier, "unit": unit, "fingerprint": material.fingerprint(path),
-                        "size": path.stat().st_size}
-    write(state / "settings.json", json.dumps({"course_name": "Old", "language": "en"}))
-    write(state / "manifest.json", json.dumps({"files": entries}))
-    return root
-
-
-class MigrationSafety(CourseTestCase):
-    def test_two_old_files_whose_names_differ_only_by_case_both_survive(self):  # D1
-        course = old_course(self.tmp / "Old", {
-            "Unit 4/Notes.txt": ("first", "added", 4), "inbox/notes.txt": ("second", "added", 4)})
-        run_json("migrate", "--course", course, "--apply")
-        folder = folders(course).material / "added" / "Unit 4"
-        self.assertEqual(sorted(p.read_text("utf-8") for p in folder.iterdir()), ["first", "second"])
-        self.assertEqual(sorted(p.name.casefold() for p in folder.iterdir()), ["notes (2).txt", "notes.txt"])
-
-    def test_an_inbox_file_never_replaces_a_different_file_at_its_destination(self):  # D1
-        course = old_course(self.tmp / "Old", {})
-        write(course / "inbox" / "a.txt", "mine")
-        write(course / "1-inbox" / "a.txt", "already here")
-        code, out = run("migrate", "--course", course, "--apply")
-        self.assertEqual(code, 1)
-        self.assertEqual((course / "inbox" / "a.txt").read_text("utf-8"), "mine")
-        self.assertEqual((course / "1-inbox" / "a.txt").read_text("utf-8"), "already here")
-
-    def test_an_interrupted_migration_is_picked_up_where_it_stopped(self):  # D4
-        course = old_course(self.tmp / "Old", {"Unit 4/a.txt": ("alpha", "official", 4),
-                                               "Unit 4/b.txt": ("beta", "official", 4)})
-        dest = course / "2-course-material" / "official" / "Unit 4"
-        dest.mkdir(parents=True)
-        shutil.move(str(course / "raw" / "Unit 4" / "a.txt"), str(dest / "a.txt"))  # the first move happened, then it died
-        run_json("migrate", "--course", course, "--apply")
-        files = run_json("manifest", "--course", course)["files"]
-        self.assertEqual(sorted(files), ["official/Unit 4/a.txt", "official/Unit 4/b.txt"])
-        self.assertEqual((dest / "a.txt").read_text("utf-8"), "alpha")
-
-    def test_the_obsidian_settings_of_the_old_study_folder_come_along(self):  # D8
-        course = old_course(self.tmp / "Old", {})
-        write(course / "study" / ".obsidian" / "app.json", "{}")
-        result = run_json("migrate", "--course", course, "--apply")
-        self.assertTrue((folders(course).study / ".obsidian" / "app.json").is_file())
-        self.assertNotIn("study", result["left_behind"])
-
-
-    def test_study_and_transcript_links_follow_the_files_to_their_new_places(self):  # D7
-        course = old_course(self.tmp / "Old", {"Unit 4/a b.txt": ("alpha", "official", 4)})
-        write(course / "wiki" / "sources" / "unit-04" / "a b.md", "---\nsource: Unit 4/a b.txt\n---\n# a b\n")
-        write(course / "study" / "Unit 4" / "sub" / "p.md",
-              "x [raw](<../../../raw/Unit 4/a b.txt>) y [wiki](../../../wiki/sources/unit-04/a%20b.md) z "
-              "[again](../../../raw/Unit%204/a%20b.txt#top)\n")
-        video = (course.resolve() / "raw" / "Unit 4" / "a b.txt").as_uri()
-        write(course / "wiki" / "recordings" / "a b" / "transcript.md", f"Sources: [recording]({video})\n")
-        run_json("migrate", "--course", course, "--apply")
-        f = folders(course)
-        page = (f.study / "Unit 4" / "sub" / "p.md").read_text("utf-8")
-        self.assertIn("(<../../../2-course-material/official/Unit 4/a b.txt>)", page)
-        self.assertIn("y wiki z", page)  # the Wiki page is not the student's: the link goes, the word stays
-        self.assertNotIn(".unistudent", page)
-        self.assertIn("(../../../2-course-material/official/Unit%204/a%20b.txt#top)", page)
-        transcript = (f.wiki / "recordings" / "a b" / "transcript.md").read_text("utf-8")
-        self.assertIn((f.material / "official" / "Unit 4" / "a b.txt").resolve().as_uri(), transcript)
-        self.assertEqual(run_json("check", f.study, "--course", course)["problems"], [])
-
-
-    def test_the_old_readme_is_replaced_by_one_for_the_new_layout_and_kept_aside(self):  # H4
-        course = old_course(self.tmp / "Old", {})
-        write(course / "README.md", "My own notes about raw/ and wiki/ stay somewhere.")
-        run_json("migrate", "--course", course, "--apply")
-        self.assertIn("1-inbox", (course / "README.md").read_text("utf-8"))
-        self.assertIn("My own notes", (course / "README.old-layout.md").read_text("utf-8"))
-
-
 class LanguageChange(CourseTestCase):
     def test_a_language_change_onto_an_existing_folder_is_refused_and_changes_nothing(self):  # D2
         course = self.tmp / "Macro"
@@ -169,16 +91,6 @@ class ScanSafety(CourseTestCase):
         files = run_json("manifest", "--course", self.course)["files"]
         self.assertEqual(files["added/Unit 5/c.txt"]["origin_note"], "from B")
         self.assertEqual(files["added/Unit 6/d.txt"]["origin_note"], "from A")
-
-    def test_assign_on_an_old_layout_folder_says_to_migrate(self):  # D8, S3
-        old = old_course(self.tmp / "Old", {"Unit 4/a.txt": ("alpha", "official", None)})
-        for argv in (("assign", "Unit 4/a.txt", "4"), ("unsorted",), ("wiki", "build"), ("add",)):
-            code, out = run(*argv, "--course", old)
-            self.assertEqual(code, 1, argv)
-            self.assertIn("us migrate --apply", out, argv)
-            self.assertNotIn("Errno", out, argv)
-        code, out = run("setup", old)
-        self.assertIn("us migrate --apply", out)
 
 
 class ReplaceSafety(CourseTestCase):
@@ -366,13 +278,9 @@ class SetupSkill(CourseTestCase):
         self.assertIn("not an error", five)
         self.assertIn("only record how the university organizes", five)
 
-    def test_every_skill_that_touches_a_course_knows_the_old_layout(self):  # S3
+    def test_no_skill_or_command_offers_the_removed_migrate(self):
         for skill in (CORE / "skills").glob("*/SKILL.md"):
-            text = skill.read_text("utf-8")
-            self.assertIn("legacy: true", text, skill)
-            self.assertIn("us migrate --apply", text, skill)
-            self.assertNotIn("then moves it", text, skill)
-        self.assertNotIn("shows what it will move, then moves it", (CORE / "cli.py").read_text("utf-8"))
+            self.assertNotIn("us migrate", skill.read_text("utf-8"), skill)
 
     def test_an_empty_inbox_says_where_it_is_and_what_to_do(self):  # S6
         text = (CORE / "skills" / "course-add" / "SKILL.md").read_text("utf-8")

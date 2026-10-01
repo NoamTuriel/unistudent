@@ -138,31 +138,6 @@ def cmd_import(args):
             "summary": f"{len(added)} new or changed files copied in; {len(material.unsorted(course))} unsorted."}
 
 
-def cmd_migrate(args):
-    from . import migrate
-    course = resolve_course(args)
-    if not course.legacy:
-        return {"applied": False, "moves": [], "conflicts": [], "summary": "Already in the new layout: nothing to move."}
-    found = migrate.plan(course)
-    result = {"applied": False, "moves": found["moves"], "conflicts": found["conflicts"], "missing": found["missing"]}
-    listing = "\n".join(f"- {m['how']}: {m['from']} -> {m['to']}" for m in found["moves"])
-    if not args.apply:
-        warn = f"\nThese would overwrite a different file: {', '.join(found['conflicts'])}" if found["conflicts"] else ""
-        result["summary"] = (f"{len(found['moves'])} moves, none done yet:\n{listing}{warn}\n"
-                             "Run again with --apply to do them. Files from your own folder are copied, never moved.")
-        return result
-    left = migrate.apply(course, found)
-    readme = course.root / "README.md"
-    if readme.exists():  # a course folder of layout 1 had the old README (it describes folders that are gone): keep it aside
-        aside = readme.with_name("README.old-layout.md")
-        readme.replace(aside if not aside.exists() else readme.with_name(f"README.old-layout-{os.getpid()}.md"))
-    write_context_files(course)
-    result.update(applied=True, left_behind=left)
-    result["summary"] = (f"Moved {len(found['moves'])} items into the new layout ({course.folder_names()['study']} is "
-                         f"your study vault)." + (f" Still there, not ours to remove: {', '.join(left)}." if left else ""))
-    return result
-
-
 def cmd_manifest(args):
     return resolve_course(args).manifest()
 
@@ -205,10 +180,10 @@ def cmd_courses(args):
             others = ", ".join(c["name"] for c in courses if c["path"] != str(course.root))
             summary += (f" (last active; not inside a course folder). Other courses: {others}. "
                         "If the request is about one of them, use it (--course <path>); if unclear, ask.")
-        return {"course": str(course.root), "name": name, "found_by": found_by, "legacy": course.legacy,
+        return {"course": str(course.root), "name": name, "found_by": found_by,
                 "inbox": str(course.inbox), "material": str(course.material), "study": str(course.study),
                 "wiki": str(course.wiki), "courses": courses,
-                "summary": summary + (" This course folder has the old layout: offer `us migrate`." if course.legacy else "")}
+                "summary": summary}
     courses = registry.courses()
     lines = [("* " if c["active"] else "  ") + f"{c['name']}  ({c['path']})" for c in courses]
     return {"courses": courses, "summary": "\n".join(lines) or "No courses yet."}
@@ -252,10 +227,6 @@ def build_parser():
     p = with_course(add("import", cmd_import, "copy a folder's files into the Material folder (the originals stay where they are)"))
     p.add_argument("folder")
     p.add_argument("--tier", choices=["official", "added"], default="added")
-
-    p = with_course(add("migrate", cmd_migrate, "move a course folder from the old layout (raw, materials, wiki, study) "
-                                                "to the three visible folders: lists the moves first"))
-    p.add_argument("--apply", action="store_true", help="do the moves (without it, only list them)")
 
     with_course(add("manifest", cmd_manifest, "print the Manifest"))
     with_course(add("unsorted", cmd_unsorted, "list files with no unit"))

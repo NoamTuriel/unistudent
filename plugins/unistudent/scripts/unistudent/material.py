@@ -13,7 +13,7 @@ from pathlib import Path
 
 from .common import UserError
 from .convert import kind
-from .course import parse_tier_folder, parse_unit, parse_unit_folder, safe_name
+from .course import LAYOUT, parse_tier_folder, parse_unit, parse_unit_folder, safe_name
 from .sorting import detect_unit
 
 SKIP_NAMES = {".DS_Store", "Thumbs.db", "desktop.ini"}
@@ -93,13 +93,13 @@ def _slot(course, tier, unit):
     return f"{course.label(tier)}/{course.unit_folder(unit)}"
 
 
-LEGACY = ("This course folder still has the old layout (raw, materials, wiki, study). Run `us migrate` first to see "
-          "what it will move, then `us migrate --apply` to move it.")
+LEGACY = ("This course folder has the old layout (raw, materials, wiki, study), which this version no longer reads. "
+          "Install UniStudent 0.4.2 once and run `us migrate --apply` there, then update again.")
 WINDOWS_PATH_LIMIT = 240  # Windows stops at 260 characters; keep room for what is added after the name
 
 
 def require_new_layout(course):
-    if course.legacy:
+    if course.settings().get("layout") != LAYOUT:
         raise UserError(LEGACY)
 
 
@@ -221,9 +221,6 @@ def unsorted(course):
 def path_of(course, rel):
     """Where the file can be opened."""
     entry = course.manifest()["files"].get(rel, {})
-    if course.legacy:
-        raw = course.raw / rel
-        return raw if raw.exists() else Path(entry.get("source_path") or raw)
     return Path(entry.get("stored_at") or course.material / rel)
 
 
@@ -266,8 +263,6 @@ def scan(course):
     (and into that unit's folder, so the folder tells the truth). Returns {moved, dropped, new}.
     An emptied or missing Material folder is never read as "the student deleted everything": it stops, changing nothing."""
     result = {"moved": [], "dropped": [], "new": []}
-    if course.legacy:
-        return result
     manifest = course.manifest()
     files = manifest["files"]
     if not course.material.is_dir():

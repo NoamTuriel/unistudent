@@ -6,7 +6,7 @@ from pathlib import Path
 
 STATE_DIR = ".unistudent"
 
-LAYOUT = 2  # 1 = the old layout (raw, materials, wiki, study at the top): still read, moved by `us migrate`
+LAYOUT = 2
 
 # The visible folder names and the labels inside them, one table per language (ADR 0007). A new language is one
 # more entry; a language with no entry falls back to English. The Hidden folder keeps English names.
@@ -29,7 +29,7 @@ DEFAULT_SETTINGS = {
     "frame_analysis": None,        # None (not asked yet) | True | False: per-segment vision calls (opt-in, costly)
     "recordings_dir": None,        # local non-synced folder when the course folder syncs
     "exam_date": None,
-    "layout": 1,                   # 2 once the course folder has the three visible folders
+    "layout": 1,                   # 2 once the course folder has the three visible folders (LAYOUT)
     "folders": {},                 # the visible folder names chosen at setup: inbox, material, study
 }
 
@@ -111,17 +111,8 @@ class Course:
         return self.root / STATE_DIR
 
     @property
-    def legacy(self):
-        """True for a course folder in the old layout (raw, materials, wiki, study), until `us migrate`."""
-        return self.settings().get("layout") != LAYOUT
-
-    @property
-    def raw(self):  # old layout only
-        return self.root / "raw"
-
-    @property
     def wiki(self):
-        return self.root / "wiki" if self.legacy else self.state / "wiki"
+        return self.state / "wiki"
 
     def folder_names(self, language=None, course_name=None):
         """The three visible folder names: the stored ones, or those the labels table gives."""
@@ -131,20 +122,20 @@ class Course:
         computed = {k: table[k].format(course=name) for k in ("inbox", "material", "study")}
         return computed if language else {**computed, **settings.get("folders", {})}
 
-    def _folder(self, key, old):
-        return self.root / (old if self.legacy else self.folder_names()[key])
+    def _folder(self, key):
+        return self.root / self.folder_names()[key]
 
     @property
     def material(self):
-        return self._folder("material", "materials")
+        return self._folder("material")
 
     @property
     def study(self):
-        return self._folder("study", "study")
+        return self._folder("study")
 
     @property
     def inbox(self):
-        return self._folder("inbox", "inbox")
+        return self._folder("inbox")
 
     def ensure_layout(self):
         """Create the three visible folders in the settings' language, renaming existing ones (and the trust-level and

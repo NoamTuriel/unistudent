@@ -1,4 +1,4 @@
-"""Seam 1 and 2: the three visible folders, the hidden folder, location-is-truth, and the move from the old layout."""
+"""Seam 1 and 2: the three visible folders, the hidden folder, location-is-truth."""
 import json
 import os
 import shutil
@@ -227,57 +227,16 @@ class OldLayout(CourseTestCase):
         self.course = self.tmp / "Old"
         make_old_course(self.course, self.tmp / "own")
 
-    def test_an_old_layout_folder_does_not_build_until_it_is_migrated(self):
+    def test_an_old_layout_folder_does_not_build_in_this_version(self):
         code, out = run("wiki", "build", "--course", self.course)
         self.assertEqual(code, 1)
         self.assertIn("us migrate --apply", out)
         self.assertFalse((self.course / ".unistudent" / "wiki").exists())
 
-    def test_adding_to_an_old_layout_folder_says_to_migrate_first(self):
+    def test_adding_to_an_old_layout_folder_is_refused(self):
         code, out = run("add", "--course", self.course)
         self.assertEqual(code, 1)
         self.assertIn("migrate", out)
-
-    def test_migrate_lists_every_move_first_and_changes_nothing_without_apply(self):
-        result = run_json("migrate", "--course", self.course)
-        self.assertFalse(result["applied"])
-        self.assertTrue((self.course / "raw").exists())
-        text = " ".join(f"{m['from']}>{m['to']}" for m in result["moves"])
-        self.assertIn("official/Unit 4/slides.txt", text)
-        self.assertIn("added/Unsorted/notes.txt", text)
-
-    def test_migrate_produces_the_new_layout_and_keeps_the_work(self):
-        run_json("migrate", "--course", self.course, "--apply")
-        self.assertEqual(top_level(self.course), [".unistudent", "1-inbox", "2-course-material", "3-Old-study-from-here"])
-        f = folders(self.course)
-        self.assertEqual((f.material / "official" / "Unit 4" / "slides.txt").read_text("utf-8"), "money multiplier")
-        self.assertEqual((f.material / "added" / "Unsorted" / "notes.txt").read_text("utf-8"), "my own notes")
-        self.assertTrue((f.wiki / "index.md").exists())
-        pack = (f.study / "Unit 4" / "4.1 Roadmap.md").read_text("utf-8")
-        self.assertIn("2-course-material/official/Unit%204/slides.txt", pack)
-        self.assertNotIn(".unistudent", pack)
-        self.assertIn("source: official/Unit 4/slides.txt", (f.wiki / "sources" / "unit-04" / "slides.md").read_text("utf-8"))
-        # the student's own original was copied, not moved
-        self.assertTrue((self.tmp / "own" / "Unit 4" / "slides.txt").exists())
-        files = run_json("manifest", "--course", self.course)["files"]
-        self.assertEqual(sorted(files), ["added/Unsorted/notes.txt", "official/Unit 4/slides.txt"])
-        self.assertEqual(list(json.loads((self.course / ".unistudent" / "wiki.json").read_text("utf-8"))),
-                         ["official/Unit 4/slides.txt"])
-        self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
-
-    def test_migrate_twice_changes_nothing_more(self):
-        run_json("migrate", "--course", self.course, "--apply")
-        before = sorted(str(p.relative_to(self.course)) for p in self.course.rglob("*"))
-        again = run_json("migrate", "--course", self.course, "--apply")
-        self.assertEqual(again["moves"], [])
-        self.assertEqual(before, sorted(str(p.relative_to(self.course)) for p in self.course.rglob("*")))
-
-    def test_migrate_refuses_when_a_target_exists_with_different_content(self):
-        write(self.course / "2-course-material" / "official" / "Unit 4" / "slides.txt", "something else")
-        code, out = run("migrate", "--course", self.course, "--apply")
-        self.assertEqual(code, 1)
-        self.assertIn("slides.txt", out)
-        self.assertTrue((self.course / "raw").exists())  # nothing was moved
 
 
 if __name__ == "__main__":

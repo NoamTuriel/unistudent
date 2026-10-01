@@ -3,16 +3,15 @@
 Open work found by the 2026-10-01 review and the work after it. Newest decisions first; remove an item when it ships.
 
 ## Decided, not yet built
-- **Material sorting as its own feature.** Sorting the Material folder (by unit and trust level) must not depend on unit summaries: a student may never want them. Spec: does the Material folder keep unit and trust-level sorting without a study pack, and is the Study vault optional?
+- **Material sorting does not depend on Study packs.** The Material folder keeps its trust-level and unit sorting for every student, whether or not they ever build a Study pack. Write the spec: what sets a unit when there is no Study pack, and how `us unsorted` behaves.
+- **The Study vault is created at the first Study pack**, not at setup. A student who only wants answers sees two folders (Inbox, Material folder). Update ADR 0007 ("three visible folders"), the setup text and the README when this ships.
+- **Hebrew folder and trust-level names become longer and more explicit.** A proposal was put to the owner for review; apply the names he approves in `LABELS` (`course.py`), then run `us language` on a test course to confirm renames work.
+- **Docs tools for Word, OneNote and Google Docs students.** When a student chooses one of these, setup recommends installing a docs tool for it (the way ticket 12 recommends plugins), and Study packs are then written through that tool. Every platform has links; do not invent a converter. Spec first: which tool for which platform, and how `file:` links behave in each.
 
 ## Known gaps in what shipped
-- **Wikilinks** (`[[page]]`) are not rewritten when a page moves, only Markdown links (Wiki and Study vault).
-- **Moved files in the Study vault**: a link to a moved file is found again only when exactly one file in the Material folder has that name.
-- **Word, OneNote and Google Docs copies** of study packs: `file:` links are untested there.
-- **Hebrew folder and trust-level names** (`רשמי` / `נוסף` and the other labels in `course.py`) were chosen by the implementer; a Hebrew reader should review them.
+- **Moved files in the Study vault**: a link to a moved file is found again only when exactly one file in the Material folder has that name; otherwise the link stays and `us check` flags it.
 - **No end-to-end test of the setup conversation** with a real AI (a sketch is in `evals/`).
-- **Regression tests missing** for two review fixes of ticket 16: `us check` on an old-layout course must not flag in-course links, and old Wiki links must be rewritten when the course folder sits under a symlink (macOS `/tmp`, `/var`).
+- Wikilinks need no work: Study packs never contain `[[wikilinks]]`; their citations are `file:` links (ticket 16).
 
 ## Cleanup
-- **Drop the old-layout compatibility** (`migrate.py`, `Course.legacy`) once every course folder has been migrated.
-- Delete the history-rewrite backup mirror kept next to the repo once no longer needed.
+- Done in 0.5.0: the old-layout code (`migrate.py`, `Course.legacy`) was removed; an old-layout folder is refused with a pointer to version 0.4.2.

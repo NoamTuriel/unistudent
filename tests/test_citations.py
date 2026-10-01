@@ -89,6 +89,17 @@ class Citations(CourseTestCase):
         run_json("wiki", "build", "--course", new_root)
         self.assertEqual(self.check(), [])
 
+    def test_old_wiki_links_are_rewritten_when_the_course_folder_is_reached_through_a_symlink(self):
+        link = self.tmp / "Link"
+        try:
+            link.symlink_to(self.course, target_is_directory=True)
+        except OSError:
+            self.skipTest("symlinks are not available here")
+        write(self.pack, f"✅ x. Sources: [slides]({(link / '.unistudent' / 'wiki' / self.page.relative_to(self.f.wiki)).as_uri()})\n")
+        run_json("wiki", "build", "--course", link)
+        self.assertEqual(disk_path(targets(self.pack)[0]).resolve(), self.material.resolve())
+        self.assertEqual(self.check(), [])
+
 
 if __name__ == "__main__":
     unittest.main()

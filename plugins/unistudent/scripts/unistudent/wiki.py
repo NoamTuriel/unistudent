@@ -301,8 +301,6 @@ def _for_the_vault(path: Path, video=None) -> str:
 def write_roadmaps(course, recordings):
     """One recordings roadmap per unit in the Study vault, from the hidden Wiki's recording pages: what each processed
     recording covers, with the announcements and exam hints the lecturer made, and a link to the video."""
-    if course.legacy:
-        return []
     by_unit = {}
     for rel, info in recordings.items():
         if info["processed"]:
@@ -330,7 +328,7 @@ def relink_vault(course):
     """Keep the citations in the Study vault pointing at the student's own files: a link that went stale because the
     course folder or the file moved is found again in the Material folder, and an old link into the hidden Wiki
     becomes a link to the file the Wiki page was made from (the page or time stays in the visible text)."""
-    if course.legacy or not course.study.is_dir():
+    if not course.study.is_dir():
         return
     state = course.read_state("wiki.json", {})
     page_source = {info["page"]: rel for rel, info in state.items() if info.get("page")}
@@ -352,7 +350,7 @@ def relink_vault(course):
             parsed = urlparse(raw)
             if parsed.scheme not in ("", "file"):
                 return match.group(0)
-            local = Path(url2pathname(parsed.path)) if parsed.scheme else resolve(page, raw.partition("#")[0])
+            local = Path(url2pathname(parsed.path)).resolve() if parsed.scheme else resolve(page, raw.partition("#")[0])
             anchor = raw.partition("#")[2]
             if local.is_relative_to(wiki_dir):  # an old link into the Wiki
                 inner = local.relative_to(wiki_dir).as_posix()

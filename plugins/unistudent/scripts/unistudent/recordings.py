@@ -241,7 +241,7 @@ def write_transcript(course, rel, segments, name):
     # A sidecar next to the video lets video tools (e.g. mcp-video-analyzer) use this transcript,
     # but only where the video lives in a folder the plugin owns.
     real = source.resolve()
-    owned = [(course.raw if course.legacy else course.material).resolve()] + ([Path(course.settings()["recordings_dir"]).resolve()]
+    owned = [course.material.resolve()] + ([Path(course.settings()["recordings_dir"]).resolve()]
                                       if course.settings().get("recordings_dir") else [])
     if any(str(real).startswith(str(root) + os.sep) for root in owned):
         real.with_suffix(".vtt").write_text(vtt, "utf-8")
