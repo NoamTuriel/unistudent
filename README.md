@@ -67,7 +67,7 @@ The skills are split across three plugins. `unistudent` is the core and works fo
 
 ## Install
 
-You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything else) and, for recordings only, [ffmpeg](https://ffmpeg.org).
+You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything else) and, for recordings only, [ffmpeg](https://ffmpeg.org). On a Mac, the `uv` installer may leave `uvx` off the PATH that apps see (zsh doesn't read the file it edits): add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshenv`, restart the app, and in a desktop app's MCP settings use the full path from `which uvx`.
 
 **Claude Code**
 
@@ -105,7 +105,7 @@ args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plu
 
 **Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add NoamTuriel/unistudent` (it reads the skills declared in this repo's Claude plugin files). The skills do their work through the UniStudent MCP server, so add the server too; alternatively `uv tool install` below gives them the `unistudent` command.
 
-Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It first asks your university: if there's no installed plugin for it (like `openu` above), it interviews you once — course site URL, how you organize material — and remembers the answer, so the next course at the same university skips that question. Setup can be stopped and resumed at any point; running it again picks up where you left off.
+Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It first asks your university, and once it knows your university and course it tells you which of the plugins above to install, with the exact command (so you only need `unistudent` to start). If there's no installed plugin for it (like `openu` above), it interviews you once — course site URL, how you organize material — and remembers the answer, so the next course at the same university skips that question. Setup can be stopped and resumed at any point; running it again picks up where you left off.
 
 Optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx), Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon) and matplotlib for the graphs in study packs. (The plugin and the `uvx` setups above already include matplotlib.)
 
@@ -117,7 +117,7 @@ UniStudent uses existing tools instead of reinventing them:
 - **[ivrit.ai](https://huggingface.co/ivrit-ai) Whisper models**: Hebrew speech-to-text, run locally through faster-whisper or mlx-whisper.
 - **[mcp-video-analyzer](https://github.com/guimatheus92/mcp-video-analyzer)**: add it next to UniStudent to let the AI look at the slides on screen while indexing a recording. Every transcript is also saved as WebVTT, which it (and video players) can use.
 - **A browser tool** (Claude in Chrome, or a browser MCP server) for downloading from your course site with your own login.
-- **[Obsidian](https://obsidian.md)**: study packs can use Obsidian links and callouts.
+- **[Obsidian](https://obsidian.md)**: the best way to read the Wiki and study packs (links between pages, callouts). Setup also offers Word, OneNote and Google Docs: the packs stay Markdown and you copy a finished pack into them.
 
 ## A course folder
 
@@ -134,7 +134,7 @@ UniStudent uses existing tools instead of reinventing them:
   .unistudent/            settings, manifest, full context
 ```
 
-Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected) and it picks the course up automatically through `AGENTS.md`/`CLAUDE.md`. If a session isn't rooted in the folder (or doesn't auto-read it), tell it once: "Read AGENTS.md in `<course folder path>` before answering" — that works in any AI app, not just Claude's.
+Each course has its own folder and its own Wiki. Open your AI app in the course folder (or, in Cowork, make one project per course with that folder connected) and it picks the course up automatically through `AGENTS.md`/`CLAUDE.md`. Claude Code, Cursor, Codex and Gemini CLI read the folder's instruction files on their own (VS Code Copilot does too once its `AGENTS.md` setting is on). Claude Desktop chat reads no folder: create a Project once with the instruction "Start each chat by calling the unistudent `course_context` tool" and every chat should start on your active course, the one you last set up or switched to (it asks which course if there are several and none is active). As a last resort in any app: "Read AGENTS.md in `<course folder path>` before answering".
 
 Course material is the university's: keep it in your own folders and never share it. The repo contains code only.
 

@@ -220,6 +220,32 @@ def _slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", str(text).strip().casefold()).strip("-") or "unknown"
 
 
+# The university-to-plugin and subject-to-plugin mapping, in one place (ticket 12). A university plugin is matched
+# by its own test on the normalized name ("Open University UK" must not match the Israeli one); a subject plugin on a keyword inside the field or course name. One entry per plugin.
+PLUGIN_RECOMMENDATIONS = [
+    {"name": "openu", "kind": "university",
+     "gives": "downloads new material from your Open University of Israel course site",
+     "match": lambda uni: (uni == "oui" or "פתוחה" in uni or "openu" in uni.replace("openuniversity", "")
+                           or ("openuniversity" in uni and ("israel" in uni or "ישראל" in uni)))},
+    {"name": "economics", "kind": "subject",
+     "gives": "study-pack rules for economics courses, plus a skill for intro macroeconomics",
+     "keywords": {"economics", "economy", "כלכלה", "כלכלי"}},
+]
+
+
+def _plain(text: str) -> str:
+    """Lowercase, keeping only letters and digits in any script (Hebrew included), so spelling drift still matches."""
+    return "".join(c for c in str(text or "").casefold() if c.isalnum())
+
+
+def recommend_plugins(university: str = "", field: str = "", course_name: str = "") -> list:
+    """The plugins that fit this university and course, university plugins first. Never installs anything."""
+    uni, subjects = _plain(university), [_plain(field), _plain(course_name)]  # matched apart: a keyword can't span the join
+    return [p for p in PLUGIN_RECOMMENDATIONS
+            if (p["kind"] == "university" and p["match"](uni))
+            or (p["kind"] == "subject" and any(_plain(k) in t for k in p["keywords"] for t in subjects))]
+
+
 def generated_university_file(university: str) -> Path:
     """A once-interviewed, cached fallback for a university with no installed plugin (ADR 0005)."""
     return home() / "generated" / _slug(university) / "site.md"
@@ -242,6 +268,17 @@ def write_generated_reference(path: Path, heading: str, sections: list) -> None:
     for title, words in sections:
         body += f"## {title}\n\n{' '.join(words)}\n\n"
     path.write_text(body, "utf-8")
+
+
+def list_generated() -> list:
+    """Every generated fallback on disk (university and course/subject), with a one-line preview."""
+    folder = home() / "generated"
+    out = []
+    for path in sorted(folder.rglob("*.md")) if folder.is_dir() else []:
+        lines = [l.strip() for l in path.read_text("utf-8").splitlines() if l.strip()]
+        out.append({"path": str(path), "kind": "university" if path.name == "site.md" else "course",
+                    "preview": lines[0].lstrip("# ") if lines else ""})
+    return out
 
 
 SETUP_STAGES = ["university", "course", "path", "format", "fetch-and-organize", "analyze", "capabilities"]
