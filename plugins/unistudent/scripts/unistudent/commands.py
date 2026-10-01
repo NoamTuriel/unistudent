@@ -184,7 +184,8 @@ def register(add, with_course):
         return {"generated": entries,
                 "summary": "\n".join(f"{e['preview']} ({e['path']})" for e in entries) or "Nothing generated yet."}
 
-    add("generated", cmd_generated, "list the generated university and course fallbacks saved for reuse")
+    p = add("generated", cmd_generated, "list the generated university and course fallbacks saved for reuse")
+    p.add_argument("action", nargs="?", choices=["list"], default="list")
 
     def cmd_setup_progress(args):
         if args.action == "list":
