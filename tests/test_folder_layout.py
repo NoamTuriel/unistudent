@@ -77,7 +77,7 @@ class LazyStudyVault(CourseTestCase):
 
     def test_a_missing_study_vault_is_never_a_problem(self):
         self.assertFalse(self.vault.exists())
-        page = write(self.course / "answer.md", "✅ From the material.\n")
+        page = write(self.course / "answer.md", "From the material.\n")
         self.assertEqual(run_json("check", page, "--course", self.course)["problems"], [])
         run_json("setup", self.course, "--name", "Macro", "--language", "en")  # setting up again keeps it absent
         self.assertFalse(self.vault.exists())
@@ -251,7 +251,7 @@ def make_old_course(root, own):
     write(root / "materials" / "Unit 4" / "slides.txt", "link stand-in")
     write(root / "wiki" / "index.md", "# Wiki\n")
     write(root / "wiki" / "sources" / "unit-04" / "slides.md", "---\nsource: Unit 4/slides.txt\n---\n# slides\n")
-    write(root / "study" / "Unit 4" / "4.1 Roadmap.md", "✅ x. Sources: [s](../../wiki/sources/unit-04/slides.md)\n")
+    write(root / "study" / "Unit 4" / "4.1 Roadmap.md", "x. Sources: [s](../../wiki/sources/unit-04/slides.md)\n")
 
 
 class OldLayout(CourseTestCase):

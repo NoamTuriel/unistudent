@@ -12,7 +12,7 @@ against these, not just against "does it pass tests":
 
 1. **Trust.** A general AI answers from the whole internet (other notation, other methods, other
    courses); this one must answer only from the student's own course material, and say so on every
-   paragraph: ✅ from the material, 💡 the AI's own explanation of it, ⚠️ outside it, ❌ conflicts with it.
+   paragraph: no mark means from the material (and cites it); anything else starts with a plain-words ⚠️ warning saying where it came from. ⚠️ is the only emoji in the repo.
 2. **Feeding it new material must be easy, and the student must know how.** Dropping a file in and
    getting it into the Wiki is not enough if the student doesn't know that's the move — `course-add` and
    the inbox exist for this, and every setup/help flow must actually tell the student about them, not

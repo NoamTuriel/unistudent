@@ -165,6 +165,9 @@ class WikiFollowsMoves(CourseTestCase):
         rows = {r["path"]: r for r in run_json("recordings", "list", "--course", self.course)["recordings"]}
         self.assertTrue(rows["official/Unit 4/s.mp4"]["has_transcript"])
         self.assertFalse(rows["added/Unit 4/s.mp4"]["has_transcript"])
+        summary = run_json("recordings", "list", "--course", self.course)["summary"]
+        self.assertIn("partial  official/Unit 4/s.mp4", summary)
+        self.assertIn("none  added/Unit 4/s.mp4", summary)
         # the other one is deleted: the first keeps its folder instead of taking the freed name
         (self.f.material / "added" / "Unit 4" / "s.mp4").unlink()
         run_json("wiki", "build", "--course", self.course)
@@ -227,14 +230,14 @@ class RoadmapsAndAnnouncements(CourseTestCase):
         text = self.roadmap.read_text("utf-8")
         self.assertIn("[00:01:00](file://", text)
         self.assertIn("session%205.mp4#t=60)", text)
-        self.assertIn("✅", text.split("<!-- unistudent:generated:start -->")[1].split("<!-- unistudent:generated:end -->")[0])
+        self.assertIn("Made from", text.split("<!-- unistudent:generated:start -->")[1].split("<!-- unistudent:generated:end -->")[0])
         self.assertEqual(run_json("check", self.roadmap, "--labels", "--course", self.course)["problems"], [])
 
-    def test_text_outside_the_generated_block_is_still_checked_for_labels(self):  # T3
+    def test_text_outside_the_generated_block_is_still_checked_for_sources(self):  # T3
         run_json("wiki", "build", "--course", self.course)
         self.roadmap.write_text(self.roadmap.read_text("utf-8") + "\nThe multiplier is always five in every economy.\n", "utf-8")
         kinds = [p["kind"] for p in run_json("check", self.roadmap, "--labels", "--course", self.course)["problems"]]
-        self.assertEqual(kinds, ["unlabeled"])
+        self.assertEqual(kinds, ["no-citation"])
 
     def test_a_roadmap_goes_when_its_recording_loses_its_summary_or_is_deleted(self):  # T3
         run_json("wiki", "build", "--course", self.course)
