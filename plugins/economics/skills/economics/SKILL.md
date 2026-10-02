@@ -7,7 +7,7 @@ Field skill for economics. It adds to or overrides the generic study-pack rules 
 
 ## Concepts (replaces the generic menu)
 
-`### <concept> — <English name>`. Like the generic rules, a topic bends to its subject: write only the parts the concept has, and never a part with nothing to say. Draw from this menu, in this order. The simple explanation and the trick are your own words, so they carry 💡; the deep explanation is 💡 when it reasons only from what the Wiki states, and ⚠️ when it brings in theory the course doesn't teach.
+`### <concept> — <English name>`. Like the generic rules, a topic bends to its subject: write only the parts the concept has, and never a part with nothing to say. Draw from this menu, in this order. The simple explanation and the trick are your own words and stay unmarked; the deep explanation is unmarked when it reasons only from what the Wiki states, and carries the warning from the course context when it brings in theory the course doesn't teach.
 
 - **In plain words:** one sentence saying what it is.
 - **Simple explanation:** for a young child, with a concrete everyday example (pocket money, a piggy bank, a shop). No jargon, no formulas.

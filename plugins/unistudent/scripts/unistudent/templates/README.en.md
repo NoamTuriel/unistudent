@@ -22,12 +22,9 @@ You see two folders now, numbered in the order you use them; the third (the stud
 
 You can also put files straight into `{material}/`: the next Wiki build notices them, and notices moves, renames and deletions too. The more course material there is, the more precise the answers.
 
-## Labels in answers
+## Warnings in answers
 
-- ✅ From course material, with a link to the source.
-- 💡 Claude's own explanation (an example, analogy or trick) of something in the course material, linked to what it explains.
-- ⚠️ Not in course material. General knowledge; may not match the exam.
-- ❌ Conflicts with the course. The course version comes first, then the explanation.
+A paragraph with no mark comes from the course material and links to the source; so does Claude's own explanation (an example, analogy or trick) of something in it. Anything that does not come from the course material starts with a warning in words, "⚠️ Not from your course material", and says where it comes from (general knowledge, or the web with a link). It may not match the exam.
 
 ## Commands
 

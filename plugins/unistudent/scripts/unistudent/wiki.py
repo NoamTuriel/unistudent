@@ -319,7 +319,7 @@ def write_roadmaps(course, recordings):
             for name in ("toc.md", "summary.md"):
                 if (course.wiki / info["folder"] / name).exists():
                     lines += [_for_the_vault(course.wiki / info["folder"] / name, video), ""]
-        lines[2:2] = ["✅ Made from the transcripts and summaries of these recordings; the times open the video. "
+        lines[2:2] = ["Made from the transcripts and summaries of these recordings; the times open the video. "
                       + "Sources: " + ", ".join(_link(Path(r).name, material.path_of(course, r).as_uri()) for r, _ in recs), ""]
         _write_generated(page, "\n".join(lines))
         written.append(page.relative_to(course.root).as_posix())
@@ -445,7 +445,7 @@ def coverage(course, write=False):
         rows.append({"path": rel, "status": status, "why": why, "page": info["page"] if info and what == "document" else None})
     counts = {name: sum(1 for r in rows if r["status"] == name) for name in ("analyzed", "failed", "skipped", "pending")}
     lines = ["# Coverage: what the Wiki has and hasn't read", "",
-             "Anything not marked analyzed is NOT in the Wiki: never present it as ✅ from the material.", ""]
+             "Anything not marked analyzed is NOT in the Wiki: never present it as from the course material.", ""]
     for name, title in (("failed", "Failed"), ("pending", "Not analyzed yet"), ("skipped", "Skipped"), ("analyzed", "Analyzed")):
         group = [r for r in rows if r["status"] == name]
         if group:

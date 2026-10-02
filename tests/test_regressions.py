@@ -30,12 +30,12 @@ class Regressions(CourseTestCase):
         self.assertTrue(text.startswith("# My own notes"))
         self.assertIn("@.unistudent/context.md", text)
         self.assertEqual(text.count("@.unistudent/context.md"), 1)
-        self.assertIn("Grounding labels", (course / ".unistudent" / "context.md").read_text("utf-8"))
+        self.assertIn("Grounding rule", (course / ".unistudent" / "context.md").read_text("utf-8"))
 
     def test_the_course_context_reaches_every_agent(self):
         course = self.tmp / "Macro"
         run_json("setup", course, "--name", "Macro")
-        self.assertIn("Grounding labels", (course / "AGENTS.md").read_text("utf-8"))
+        self.assertIn("Grounding rule", (course / "AGENTS.md").read_text("utf-8"))
         self.assertIn("@.unistudent/context.md", (course / "CLAUDE.md").read_text("utf-8"))
 
     def test_a_students_own_agents_md_is_kept(self):
