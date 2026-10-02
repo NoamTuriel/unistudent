@@ -77,7 +77,7 @@ class GraphCommand(CourseTestCase):
 
 PAGE = """## Money market
 
-✅ The money market clears where supply meets demand. Sources: [slides p.1](../../2-course-material/slides.txt)
+The money market clears where supply meets demand. Sources: [slides p.1](../../2-course-material/slides.txt)
 
 ![Md shifts right, the interest rate falls](graphs/money.png)
 {caption}
@@ -97,20 +97,18 @@ class GraphCaptions(CourseTestCase):
         page = write(self.folder / "page.md", PAGE.format(caption=caption))
         return sorted(p["kind"] for p in run_json("check", "--course", self.course, page, "--labels")["problems"])
 
-    def test_a_graph_with_a_labelled_caption_passes(self):
-        self.assertEqual(self.kinds("✅ Fig 3 [slides](../../2-course-material/slides.txt)"), [])
-        self.assertEqual(self.kinds("✅ Money market graph from the slides. [slides p.1](../../2-course-material/slides.txt)"), [])
-        self.assertEqual(self.kinds("💡 An illustration of the money market. [slides p.1](../../2-course-material/slides.txt)"), [])
+    def test_a_graph_with_a_cited_caption_passes(self):
+        self.assertEqual(self.kinds("Fig 3 [slides](../../2-course-material/slides.txt)"), [])
+        self.assertEqual(self.kinds("Money market graph from the slides. [slides p.1](../../2-course-material/slides.txt)"), [])
 
-    def test_a_graph_needs_a_caption_with_a_label_that_is_not_outside_the_course(self):
+    def test_a_graph_caption_cites_or_carries_the_warning(self):
         self.assertEqual(self.kinds(""), ["graph-no-caption"])
-        self.assertEqual(self.kinds("⚠️ A graph made up from outside the course material."), ["graph-label"])
-        self.assertEqual(self.kinds("A graph of the money market with no label at all."), ["graph-no-caption", "unlabeled"])
-        self.assertEqual(self.kinds("✅ A caption with no source link at all here."), ["no-citation", "no-citation"])
+        self.assertEqual(self.kinds("⚠️ A graph made up from outside the course material."), [])
+        self.assertEqual(self.kinds("A caption with no source link at all here."), ["no-citation", "no-citation"])
 
     def test_a_missing_image_file_is_reported(self):
         (self.folder / "graphs" / "money.png").unlink()
-        self.assertEqual(self.kinds("✅ Money market graph. [slides p.1](../../2-course-material/slides.txt)"), ["missing-image"])
+        self.assertEqual(self.kinds("Money market graph. [slides p.1](../../2-course-material/slides.txt)"), ["missing-image"])
 
 
 if __name__ == "__main__":

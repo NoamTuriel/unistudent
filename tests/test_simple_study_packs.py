@@ -10,7 +10,7 @@ GENERIC = ROOT / "plugins" / "unistudent" / "scripts" / "unistudent" / "referenc
 ECONOMICS = ROOT / "plugins" / "economics" / "skills" / "economics" / "SKILL.md"
 MACRO = ROOT / "plugins" / "economics" / "skills" / "macro" / "SKILL.md"
 
-TOPIC = "## Topic 1\n\n### Money — כסף\n\n✅ Money is 1/r.\n\n"
+TOPIC = "## Topic 1\n\n### Money — כסף\n\nMoney is 1/r.\n\n"
 
 
 class PackShape(CourseTestCase):
@@ -73,7 +73,7 @@ class Labels(PackShape):
 class Rules(unittest.TestCase):
     def test_generic_rules_bend_to_the_subject_and_close_each_topic(self):
         text = GENERIC.read_text("utf-8")
-        for needle in ("In the recordings", "From:", "How to answer", "Short version", "a part with nothing to say is not written", "folded", "no grounding labels"):
+        for needle in ("In the recordings", "From:", "How to answer", "Short version", "a part with nothing to say is not written", "folded", "no per-paragraph sources or warnings"):
             self.assertIn(needle, text)
         self.assertNotRegex(text, r"3b|practice-short|Practice stages")
 

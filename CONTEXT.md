@@ -112,6 +112,3 @@ Course material from the course site, or files the student marks as the lecturer
 **Added material**:
 Course material the student brings from anywhere else.
 _Avoid_: unofficial, external
-
-**Grounding label**:
-The mark on each paragraph stating where it stands against course material: ✅ from it, 💡 an explanation of it in Claude's own words, ⚠️ outside it, ❌ conflicts with it.

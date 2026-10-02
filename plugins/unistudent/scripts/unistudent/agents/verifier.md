@@ -1,6 +1,6 @@
 ---
 name: verifier
-description: Checks a study pack or Wiki page set against the course material - links, timestamps, grounding labels and unsupported claims - and reports problems without fixing them.
+description: Checks a study pack or Wiki page set against the course material - links, timestamps, the grounding rule and unsupported claims - and reports problems without fixing them.
 tools: Read, Grep, Glob, Bash
 ---
 

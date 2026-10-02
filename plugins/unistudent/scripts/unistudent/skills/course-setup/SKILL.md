@@ -79,7 +79,7 @@ Done when: you have a folder path, a format and the app they'll use, each record
 Ask one question at a time in this step, and say first, in plain words:
 
 - **What we're doing:** gathering your course's *official* material in one place: the lecturer's and university's slides, readings, textbook, exercises, solutions and past exams.
-- **Why official only:** the whole point is that the AI answers from *your course*. Official material is what you'll be tested on, with your course's notation and methods. A friend's summary, another university's notes or something from the internet may use a different method or contain mistakes, and then an answer would look like it came from your course when it doesn't. If they also have unofficial material, it's allowed, but it is kept apart as "added", labelled as such, and never overrides official.
+- **Why official only:** the whole point is that the AI answers from *your course*. Official material is what you'll be tested on, with your course's notation and methods. A friend's summary, another university's notes or something from the internet may use a different method or contain mistakes, and then an answer would look like it came from your course when it doesn't. If they also have unofficial material, it's allowed, but it is kept apart as "added", named as such, and never overrides official.
 - **Why more is better:** everything the AI can read is something it can cite. Solutions and past exams matter most: they show how the course wants problems solved. So ask for everything the course gave, not just the slides.
 
 Then ask: download from the course website, use a folder they already have, or both.
@@ -138,7 +138,7 @@ Done when: `us wiki check` reports 0 problems, the student has seen the coverage
 
 ## 9. Capabilities: explain, then show, what this can do
 
-Explain in the student's language, in a few short lines, following the course folder's `README.md`, using the real folder names from `us courses current`: the folders and the grounding labels (✅ 💡 ⚠️ ❌).
+Explain in the student's language, in a few short lines, following the course folder's `README.md`, using the real folder names from `us courses current`: the folders and the warning on anything not from the course material (⚠️ in words).
 
 Then, in plain words (no unexplained "MCP", "context file" or "grounding" without a one-clause gloss), cover each of these every time, not only if asked:
 

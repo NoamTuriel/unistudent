@@ -28,7 +28,7 @@ class CourseContext(CourseTestCase):
         with cwd(course):
             result = run_json("course-context")
         self.assertEqual(result["course"], "Macro")
-        self.assertIn("Grounding labels", result["summary"])
+        self.assertIn("Grounding rule", result["summary"])
 
     def test_from_a_folder_below_the_course_it_still_finds_the_course(self):
         course = self.make("Macro")
@@ -65,7 +65,7 @@ class CourseContext(CourseTestCase):
         course = self.make("Macro")
         (course / ".unistudent" / "context.md").unlink()
         with cwd(course):
-            self.assertIn("Grounding labels", run_json("course-context")["summary"])
+            self.assertIn("Grounding rule", run_json("course-context")["summary"])
 
     def test_an_explicit_course_wins(self):
         macro = self.make("Macro")
