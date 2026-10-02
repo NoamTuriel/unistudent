@@ -7,3 +7,10 @@ In ticket 20 the owner built unit Study packs from the generic rules alone and t
 - Read what the economics and macro skills add on top of the generic rules.
 - Build a partial pack with and without them and compare.
 - Keep them (then one field skill per major is needed: math, physics, computer science, and so on) or fold the useful parts into the generic rules and drop them.
+
+## Generic tools for better unit packs (graphs, pictures, flowcharts)
+The plugin already has a graph tool. Think about what other field-agnostic tools would help unit packs across most university degrees, and whether the plugin should ship them or only recommend installing them.
+- Candidates to evaluate: diagrams and flowcharts (Mermaid, Graphviz), plots and charts, math and equation rendering, generated or annotated pictures, timelines, concept maps, tables, code or circuit or chemistry drawing.
+- Rank candidates by how many degrees they help.
+- Decide first, before building anything: pros and cons of bundling tools in the plugin (works out of the box, consistent output, but more to maintain, dependencies, install size, platform issues) versus recommending the student install them (lighter plugin, student choice, but setup friction and unreliable results).
+- Then pick per tool: bundle, recommend, or skip.
