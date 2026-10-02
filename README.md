@@ -28,22 +28,17 @@ It builds a Wiki (a hidden set of Markdown pages that only the AI reads) out of 
 > material from other courses. Your exam grades your course's way. UniStudent keeps the AI inside your
 > course material and tells you when it steps outside.
 
-| Label | Meaning |
-|:---:|---|
-| ✅ | From your course material, with a link to the exact page or recording time |
-| 💡 | The AI's own explanation of your course material (an example, an analogy, a memory trick), linked to what it explains |
-| ⚠️ | Not in your course material |
-| ❌ | Conflicts with how your course does it (the course version comes first) |
+A paragraph with no mark comes from your course material and links to the exact page or recording time. That includes the AI's own explanations of your material (an example, an analogy, a memory trick): they link to what they explain. The one mark is a warning, in plain words, on anything that does not come from your course material (general knowledge, or the web with a link). When general practice differs from your course, the course version comes first.
 
-Here is what the labels look like. This is a made-up example for an intro to economics course, not a real transcript:
+Here is what it looks like. This is a made-up example for an intro to economics course, not a real transcript:
 
 > **Q: Why does the demand curve slope down?**
 >
-> ✅ As the price rises, buyers purchase less of the good (Unit 2, p. 14).
+> As the price rises, buyers purchase less of the good (Unit 2, p. 14).
 >
-> 💡 Think of coffee: if a cup goes from 10 to 20 shekels, you start making it at home. That is the substitution effect from the same page, in an everyday case.
+> Think of coffee: if a cup goes from 10 to 20 shekels, you start making it at home. That is the substitution effect from the same page, in an everyday case.
 >
-> ⚠️ Behavioral economists also explain this through loss aversion. Your course material doesn't cover that.
+> ⚠️ Not from your course material (general knowledge): behavioral economists also explain this through loss aversion.
 
 Works with Claude (Code, Desktop, Cowork), Cursor, VS Code, Codex, Gemini CLI and any other app that speaks MCP.
 

@@ -11,7 +11,7 @@ Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool 
 1. Run `us setup-progress list --json`. Any entries → tell the student setup for that course stopped partway (after its last recorded stage) and offer to resume it with `/unistudent:course-setup`.
    Run `us generated list --json` too. Any entries → mention once that earlier interviews were saved (show each one's preview and path) and that the student can re-read or delete them.
 2. Run `us courses current --json`. No course → say so and offer `/unistudent:course-setup`. Otherwise start with "Working on: <name>".
-3. Explain from the course folder's `README.md`, in the student's language and in the student's words: the flow (course material → Wiki → study packs), the three folders (inbox, Material folder, Study vault: open that one as the vault), and the grounding labels. Keep it to what fits one screen.
+3. Explain from the course folder's `README.md`, in the student's language and in the student's words: the flow (course material → Wiki → study packs), the three folders (inbox, Material folder, Study vault: open that one as the vault), and the warning on anything not from the course material. Keep it to what fits one screen.
 4. Show what is waiting, from real state:
    - `us unsorted --json`: files that need a unit.
    - `us recordings list --json`: recordings not processed.

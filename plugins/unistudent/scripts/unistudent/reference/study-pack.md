@@ -18,10 +18,10 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 
 | Key | Page (Hebrew / English title) | What it gives the student | Default |
 |---|---|---|---|
-| roadmap | `N.1 מפת דרכים` / `N.1 Roadmap` | How to start, the idea, what to know by heart, a table of topics, the solving order, what the lecturer said, a checklist, all sources (folded) | ✓ |
-| walkthrough | `N.2 הסבר החומר` / `N.2 Walkthrough` | The big idea, then every topic with its concepts (below), its "How to answer" block, and its folded sources | ✓ |
-| practice | `N.3 תרגול` / `N.3 Practice` | A table of topics with question counts; per topic its questions linked, easy to hard; the Short version at the end | ✓ |
-| recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | Per full lecture recording: the teacher's messages, then a short timeline of the lecture's parts. Only for lecture recordings with transcripts (below) | ✓ when such recordings exist |
+| roadmap | `N.1 מפת דרכים` / `N.1 Roadmap` | How to start, the idea, what to know by heart, a table of topics, the solving order, what the lecturer said, a checklist, all sources (folded) | yes |
+| walkthrough | `N.2 הסבר החומר` / `N.2 Walkthrough` | The big idea, then every topic with its concepts (below), its "How to answer" block, and its folded sources | yes |
+| practice | `N.3 תרגול` / `N.3 Practice` | A table of topics with question counts; per topic its questions linked, easy to hard; the Short version at the end | yes |
+| recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | Per full lecture recording: the teacher's messages, then a short timeline of the lecture's parts. Only for lecture recordings with transcripts (below) | yes, when such recordings exist |
 
 Save to the unit's folder in the Study vault (`pack_folder` in the result of `us study changes --unit N`): its name, the page titles and the content all follow the course language. The vault holds only study packs and the generated recordings roadmap.
 
@@ -129,4 +129,4 @@ A cause-and-effect chain of three or more steps (`G↑ → AD↑ → Y↑ → �
 
 ## Grounding
 
-A Study pack carries no grounding labels (no ✅ 💡 ⚠️ ❌): the Wiki is the student's knowledge base and the packs rest on it. Say only what the Wiki supports and bring in nothing from outside; if the student wants a line's source, they ask in chat, where every answer is labelled as the course context (`.unistudent/context.md`) says.
+A Study pack carries no per-paragraph sources or warnings: the Wiki is the student's knowledge base and the packs rest on it. Say only what the Wiki supports and bring in nothing from outside; if the student wants a line's source, they ask in chat, where answers follow the grounding rule in the course context (`.unistudent/context.md`).
