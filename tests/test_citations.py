@@ -55,19 +55,19 @@ class Citations(CourseTestCase):
         self.assertEqual(self.check(roadmap), [])
 
     def test_check_flags_a_pack_that_links_into_the_wiki_or_at_a_deleted_file(self):
-        write(self.pack, f"✅ It is 1/r. Sources: [slides](../../.unistudent/wiki/{self.wiki_link})\n")
+        write(self.pack, f"It is 1/r. Sources: [slides](../../.unistudent/wiki/{self.wiki_link})\n")
         self.assertIn("link-into-hidden", self.check())
-        write(self.pack, f"✅ It is 1/r. Sources: [slides, page 1]({self.material.as_uri()})\n")
+        write(self.pack, f"It is 1/r. Sources: [slides, page 1]({self.material.as_uri()})\n")
         self.assertEqual(self.check(), [])
         self.material.unlink()
         self.assertIn("broken-link", self.check())
 
     def test_a_hebrew_name_and_spaces_resolve(self):
-        write(self.pack, f"✅ x. Sources: [slides, page 1]({self.material.as_uri()})\n")
+        write(self.pack, f"x. Sources: [slides, page 1]({self.material.as_uri()})\n")
         self.assertTrue(disk_path(targets(self.pack)[0]).exists())
 
     def test_the_build_rewrites_old_wiki_links_to_the_students_file(self):
-        write(self.pack, "✅ It is 1/r. Sources: [slides](../../.unistudent/wiki/"
+        write(self.pack, "It is 1/r. Sources: [slides](../../.unistudent/wiki/"
                          f"{self.wiki_link}#page-3)\n")
         run_json("wiki", "build", "--course", self.course)
         link = targets(self.pack)[0]
@@ -76,7 +76,7 @@ class Citations(CourseTestCase):
         self.assertEqual(self.check(), [])
 
     def test_moving_a_file_or_the_whole_course_keeps_links_working(self):
-        write(self.pack, f"✅ x. Sources: [slides, page 1]({self.material.as_uri()})\n")
+        write(self.pack, f"x. Sources: [slides, page 1]({self.material.as_uri()})\n")
         moved = self.material.parent.parent / "Elsewhere" / self.material.name
         moved.parent.mkdir()
         shutil.move(self.material, moved)
@@ -96,7 +96,7 @@ class Citations(CourseTestCase):
             link.symlink_to(self.course, target_is_directory=True)
         except OSError:
             self.skipTest("symlinks are not available here")
-        write(self.pack, f"✅ x. Sources: [slides]({(link / '.unistudent' / 'wiki' / self.page.relative_to(self.f.wiki)).as_uri()})\n")
+        write(self.pack, f"x. Sources: [slides]({(link / '.unistudent' / 'wiki' / self.page.relative_to(self.f.wiki)).as_uri()})\n")
         run_json("wiki", "build", "--course", link)
         self.assertEqual(disk_path(targets(self.pack)[0]).resolve(), self.material.resolve())
         self.assertEqual(self.check(), [])

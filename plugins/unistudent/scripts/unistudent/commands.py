@@ -70,9 +70,9 @@ def register(add, with_course):
             lambda p: f"{p['kind']}: {p['page']}:{p.get('line', '')} {p.get('link', p.get('text', ''))[:80]}")
         return report
 
-    p = with_course(add("check", cmd_check, "check links (and grounding labels) in pages"))
+    p = with_course(add("check", cmd_check, "check links (and the grounding rule) in pages"))
     p.add_argument("files", nargs="+", help="Markdown files or folders")
-    p.add_argument("--labels", action="store_true", help="also require one grounding label per paragraph")
+    p.add_argument("--labels", action="store_true", help="also require every paragraph to cite a source or carry the warning")
 
     def cmd_graph(args):
         from . import graph
@@ -295,7 +295,7 @@ def register(add, with_course):
         if args.action == "list":
             rows = recordings.listing(course, args.unit)
             return {"recordings": rows, "summary": "\n".join(
-                f"{'✓' if r['processed'] else ('½' if r['has_transcript'] else '·')} {r['path']}" for r in rows)
+                f"{'done' if r['processed'] else ('partial' if r['has_transcript'] else 'none')}  {r['path']}" for r in rows)
                 or "No recordings."}
         if args.action == "estimate":
             est = recordings.estimate(course, args.unit)
