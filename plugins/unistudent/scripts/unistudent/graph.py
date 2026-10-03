@@ -21,6 +21,10 @@ HASH_KEY = "unistudent-graph"
 PALETTE = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#8c564b"]
 FUNCTIONS = {"sqrt": math.sqrt, "log": math.log, "exp": math.exp, "sin": math.sin, "cos": math.cos}
 FORMULA_HELP = "Use x, numbers, + - * / ^ and the functions sqrt, log, exp, sin, cos."
+INSTALL_HELP = ("Drawing graphs needs matplotlib, which is not installed here. If the UniStudent MCP tool `graph` "
+                "is available, call it instead: it includes matplotlib. Otherwise add it with: "
+                "pip install matplotlib (or pip install \"unistudent[graphs]\"). "
+                "Until then, link the slide page and describe the graph in one line.")
 KINDS = ("points", "vertical", "horizontal", "formula", "sketch")
 
 
@@ -457,7 +461,9 @@ def draw(spec_path, force=False):
     digest = spec_hash(spec_path)
     if not force and stored_hash(png) == digest:
         return {"png": str(png), "drawn": False}
-    Figure = _matplotlib()  # the dispatcher (draw.py) has already made sure matplotlib is importable
+    Figure = _matplotlib()
+    if Figure is None:
+        raise UserError(INSTALL_HELP)
 
     fig = Figure(figsize=(5.2, 4.0), dpi=150)
     ax = fig.subplots()
