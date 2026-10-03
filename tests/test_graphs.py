@@ -71,7 +71,7 @@ class GraphCommand(CourseTestCase):
         with mock_env(UNISTUDENT_NO_MATPLOTLIB="1", UNISTUDENT_NO_INSTALL="1"):
             code, out = run("graph", spec)
         self.assertEqual(code, 1)
-        self.assertIn("pip install", out)
+        self.assertIn("describe", out)
         self.assertFalse(spec.with_suffix(".png").exists())
 
 

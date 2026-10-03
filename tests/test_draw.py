@@ -64,7 +64,7 @@ class DrawCommand(CourseTestCase):
             code, out = run("draw", "fake", self.spec)
         self.assertEqual(code, 1)
         self.assertIn("describe", out)  # the words fallback for the study pack
-        self.assertIn("pip install unistudent_no_such_package", out)
+        self.assertIn("try the fake tool again", out)
         self.assertFalse(self.spec.with_suffix(".png").exists())
 
     def test_without_uv_or_with_installing_off_nothing_is_fetched(self):
@@ -82,6 +82,23 @@ class DrawCommand(CourseTestCase):
         self.assertEqual(dispatch.call_args[0][0], "graph")
 
 
+class CuratedKinds(CourseTestCase):
+    def test_a_broken_spec_is_a_plain_message_and_an_unchanged_spec_is_not_redrawn(self):
+        from unistudent import pictures
+        bad = write(self.tmp / "bad.json", "not json")
+        with self.assertRaises(Exception) as caught:
+            pictures.circuit(bad)
+        self.assertIn("valid JSON", str(caught.exception))
+        ok = write(self.tmp / "t.json", json.dumps({"newick": "(A,B);"}))
+        ok.with_suffix(".png").write_bytes(b"png")
+        self.assertFalse(pictures.tree(ok)["drawn"])
+
+    def test_the_curated_kinds_are_offered_by_the_field(self):
+        for name in ("circuit", "molecule", "tree"):
+            self.assertTrue(draw.KINDS[name]["offer"])
+            self.assertTrue(draw.KINDS[name]["fields"])
+
+
 @unittest.skipUnless(os.environ.get("UNISTUDENT_SMOKE") and shutil.which("uv"), "set UNISTUDENT_SMOKE=1 to download for real")
 class RealDownload(CourseTestCase):
     def test_the_graph_tool_is_fetched_by_uv_and_draws_a_png(self):
@@ -89,6 +106,16 @@ class RealDownload(CourseTestCase):
         result = draw._fetch_and_draw("graph", draw.KINDS["graph"], spec, False)
         self.assertTrue(result["drawn"])
         self.assertTrue(spec.with_suffix(".png").stat().st_size > 0)
+
+    def test_each_curated_kind_draws_through_uv(self):
+        specs = {"circuit": [{"el": "SourceV", "dir": "up", "label": "V"}, {"el": "Resistor", "dir": "right", "label": "R"},
+                             {"el": "Line", "dir": "down"}, {"el": "Line", "dir": "left"}],
+                 "molecule": {"smiles": "CCO"}, "tree": {"newick": "((A:1,B:1):1,(C:1,D:1):2);"}}
+        for name, body in specs.items():
+            spec = write(self.tmp / f"{name}.json", json.dumps(body))
+            result = draw._fetch_and_draw(name, draw.KINDS[name], spec, False)
+            self.assertTrue(result["drawn"], name)
+            self.assertTrue(spec.with_suffix(".png").stat().st_size > 0, name)
 
 
 def offerable(**extra):
