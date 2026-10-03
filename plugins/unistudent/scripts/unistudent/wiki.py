@@ -15,7 +15,7 @@ from . import material
 from .common import problems_summary
 from .convert import convert, kind
 from .course import LABELS, safe_name, unit_dir
-from .links_check import MD_LINK, STUB_MARK, check_links, has_sources
+from .links_check import MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources
 
 GEN_START = "<!-- unistudent:generated:start -->"
 GEN_END = "<!-- unistudent:generated:end -->"
@@ -213,7 +213,7 @@ def build(course, force=False):
         by_unit.setdefault(unit_dir(info["unit"]), [])
     unit_pages = []
     for folder in sorted(by_unit):
-        unit = {"unsorted": None, "general": "general"}.get(folder, folder[len("unit-"):])
+        unit = {"unsorted": None, "general": "general", "lessons": "lessons"}.get(folder, folder[len("unit-"):])
         lines = [f"# {course.unit_label(unit)}", "", "Sources:", ""]
         for rel, page in sorted(by_unit[folder], key=lambda item: item[1]):
             lines.append(f"- {_link(Path(page).stem, '../' + page)} ({manifest[rel].get('tier')}, {manifest[rel].get('origin')})")
@@ -286,10 +286,10 @@ def _section(text, title):
     return [re.sub(r"^\s*[-*]\s+", "", l).strip() for l in match.group(1).splitlines() if l.strip()] if match else []
 
 
-def _for_the_vault(path: Path, video=None) -> str:
-    """A Wiki page as the student reads it in the Study vault: no frontmatter, no links into the hidden Wiki,
+def _for_the_vault(text: str, video=None) -> str:
+    """Wiki page text as the student reads it in the Study vault: no frontmatter, no links into the hidden Wiki,
     headings two levels down."""
-    text = re.sub(r"\A---\n.*?\n---\n", "", path.read_text("utf-8"), flags=re.S)
+    text = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)
 
     def keep(match):  # a time in the transcript becomes a time in the video; other links into the hidden Wiki go
         stamp = re.fullmatch(r"(?:.*transcript\.md)?#(\d\d)(\d\d)(\d\d)", match.group(2).strip("<>"))
@@ -301,9 +301,31 @@ def _for_the_vault(path: Path, video=None) -> str:
     return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(keep, text)).strip()
 
 
+def description_line(text):
+    """The one line a recording summary opens with (what the recording is), or None when it opens with a heading or
+    its Sources line instead."""
+    body = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S).strip()
+    first = body.split("\n", 1)[0].strip() if body else ""
+    return None if not first or first.startswith("#") or SOURCES_LINE.match(first) else first
+
+
+def _without_sections(text, *titles):
+    """`text` with the `## ` sections whose heading contains one of `titles` taken out, and its Sources line."""
+    text = re.sub(r"(?m)^Sources:.*\n?", "", text)
+    for title in titles:
+        text = re.sub(rf"(?ms)^## [^\n]*{re.escape(title)}[^\n]*\n.*?(?=^## |\Z)", "", text)
+    return text
+
+
+def _only_sections(text, *titles):
+    return "\n\n".join(m.group(0).rstrip() for title in titles for m in
+                     re.finditer(rf"(?ms)^## [^\n]*{re.escape(title)}[^\n]*\n.*?(?=^## |\Z)", text))
+
+
 def write_roadmaps(course, recordings):
     """One recordings roadmap per unit in the Study vault, from the hidden Wiki's recording pages: what each processed
-    recording covers, with the announcements and exam hints the lecturer made, and a link to the video."""
+    recording is (its one-line description), the announcements and exam hints the lecturer made, a short timeline, and a
+    link to the video. Recordings of whole class sessions have their own roadmap, outside every unit."""
     by_unit = {}
     for rel, info in recordings.items():
         if info["processed"]:
@@ -315,12 +337,16 @@ def write_roadmaps(course, recordings):
         lines = [f"# {course.label('roadmap')}: {course.unit_label(unit)}", ""]
         for rel, info in recs:
             video = material.path_of(course, rel).as_uri()
-            lines += [f"## {Path(rel).name}", "", f"[recording]({video})", ""]
-            for name in ("toc.md", "summary.md"):
-                if (course.wiki / info["folder"] / name).exists():
-                    lines += [_for_the_vault(course.wiki / info["folder"] / name, video), ""]
-        lines[2:2] = ["Made from the transcripts and summaries of these recordings; the times open the video. "
-                      + "Sources: " + ", ".join(_link(Path(r).name, material.path_of(course, r).as_uri()) for r, _ in recs), ""]
+            where = course.wiki / info["folder"]
+            summary = (where / "summary.md").read_text("utf-8") if (where / "summary.md").exists() else ""
+            toc = (where / "toc.md").read_text("utf-8") if (where / "toc.md").exists() else ""
+            lines += [f"## {Path(rel).name}", "", _link("recording", video), ""]
+            if description_line(summary):
+                lines += [description_line(summary), ""]
+            for part in (_only_sections(summary, "Announcements", "This will be on the exam"),
+                         _without_sections(toc, "Solved in this recording")):
+                if part.strip():
+                    lines += [_for_the_vault(part, video), ""]
         _write_generated(page, "\n".join(lines))
         written.append(page.relative_to(course.root).as_posix())
     _remove_stale_roadmaps(course, written)
@@ -467,5 +493,8 @@ def check(course):
         problems += check_links(page, course.wiki)
         if page.name not in ("index.md", "coverage.md") and not has_sources(page):
             problems.append({"kind": "no-sources", "page": str(page)})
+        if page.name == "summary.md" and page.parent.parent.name == "recordings" \
+                and not description_line(page.read_text("utf-8")):
+            problems.append({"kind": "no-description", "page": str(page)})
     return {"problems": problems,
             "summary": problems_summary(problems, lambda p: f"{p['kind']}: {p['page']} {p.get('link', '')}")}
