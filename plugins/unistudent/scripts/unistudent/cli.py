@@ -30,6 +30,14 @@ def _rel(course: Course, folder: Path) -> str:
     return folder.relative_to(course.root).as_posix()
 
 
+def _tools_section(answers):
+    from . import draw
+    lines = [f"- {name}: {a['state']} ({a['date']})" for name, a in sorted(answers.items())]
+    return ("- Picture tools the student answered about (offered once, before the first Study pack; `us tools`):\n"
+            + ("\n".join("  " + l for l in lines) if lines else "  - none offered yet")
+            + "\n- This course can draw: " + ", ".join(draw.supports(answers)) + ".")
+
+
 def write_context_files(course: Course):
     settings = course.settings()
     exam = []
@@ -47,7 +55,8 @@ def write_context_files(course: Course):
                      study=_rel(course, course.study), material=_rel(course, course.material),
                      general_preferences=general_preferences_file(),
                      other_courses="\n".join(other_lines),
-                     exam_section="\n".join(exam))
+                     exam_section="\n".join(exam),
+                     tools_section=_tools_section(settings.get("tools") or {}))
     # The full context lives in .unistudent/context.md. AGENTS.md (read by Codex, Cursor, Gemini
     # and others) carries it in full; CLAUDE.md and GEMINI.md import it. A student's own file is kept and gets
     # one pointer line instead.
