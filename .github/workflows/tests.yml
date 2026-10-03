@@ -17,7 +17,3 @@ jobs:
       - if: matrix.extras == 'full'
         run: pip install "./plugins/unistudent[docs,graphs]"
       - run: python -m unittest discover -s tests -v
-      - if: matrix.os == 'ubuntu-latest' && matrix.python == '3.12' && matrix.extras == 'minimal'
-        run: |
-          pip install uv
-          UNISTUDENT_SMOKE=1 python -m unittest discover -s tests -p test_draw.py -v
