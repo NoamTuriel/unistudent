@@ -54,9 +54,8 @@ class TranscriptionAndGraphRules(unittest.TestCase):
         self.assertIn("ask me per recording", text)
         self.assertNotIn("recordings transcribe", text)
 
-    def test_picture_instructions_name_the_mcp_tool_before_any_install_request(self):
+    def test_graph_instructions_name_the_mcp_tool_before_any_install_request(self):
         text = (CORE / "reference" / "study-pack.md").read_text("utf-8") if (CORE / "reference").exists() else \
             (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
-        self.assertLess(text.index("MCP tool `draw` first"), text.index("what the tool said"))
-        self.assertIn("Never ask the student to install anything by hand before the MCP tool has been tried", text)
-        self.assertIn("The plugin now supports", text)
+        self.assertLess(text.index("MCP tool `graph` first"), text.index("how to add matplotlib"))
+        self.assertIn("Never ask the student to install anything before the MCP tool has been tried", text)

@@ -68,10 +68,10 @@ class GraphCommand(CourseTestCase):
 
     def test_without_matplotlib_nothing_is_drawn_and_the_message_says_how_to_add_it(self):
         spec = self.spec(SKETCH)
-        with mock_env(UNISTUDENT_NO_MATPLOTLIB="1", UNISTUDENT_NO_INSTALL="1"):
+        with mock_env(UNISTUDENT_NO_MATPLOTLIB="1"):
             code, out = run("graph", spec)
         self.assertEqual(code, 1)
-        self.assertIn("describe", out)
+        self.assertIn("pip install", out)
         self.assertFalse(spec.with_suffix(".png").exists())
 
 
