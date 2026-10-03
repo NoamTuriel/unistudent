@@ -317,6 +317,15 @@ def _without_sections(text, *titles):
     return text
 
 
+def _without_type_column(text):
+    """The toc table as a timeline: its five columns (Time, Until, Type, What happens, Topic) lose the Type."""
+    out = []
+    for line in text.split("\n"):
+        cells = line.strip().strip("|").split("|") if line.lstrip().startswith("|") else []
+        out.append("| " + " | ".join(c.strip() for c in cells[:2] + cells[3:]) + " |" if len(cells) == 5 else line)
+    return "\n".join(out)
+
+
 def _only_sections(text, *titles):
     return "\n\n".join(m.group(0).rstrip() for title in titles for m in
                      re.finditer(rf"(?ms)^## [^\n]*{re.escape(title)}[^\n]*\n.*?(?=^## |\Z)", text))
@@ -344,7 +353,7 @@ def write_roadmaps(course, recordings):
             if description_line(summary):
                 lines += [description_line(summary), ""]
             for part in (_only_sections(summary, "Announcements", "This will be on the exam"),
-                         _without_sections(toc, "Solved in this recording")):
+                         _without_type_column(_without_sections(toc, "Solved in this recording"))):
                 if part.strip():
                     lines += [_for_the_vault(part, video), ""]
         _write_generated(page, "\n".join(lines))

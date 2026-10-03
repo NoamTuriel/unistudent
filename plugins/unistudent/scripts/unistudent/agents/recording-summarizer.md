@@ -20,7 +20,7 @@ The student's roadmap shows a short timeline of this table, so merge neighbourin
 - Type, one of: explanation · example · practice · exam question · review · announcements · lecturer to camera.
 - An example that matches one in the material names it and links its source page ("Example 3 in [slides](../../sources/unit-04/slides.md#page-7)").
 
-End with `## Solved in this recording`: each question from the material that is solved here, with its time.
+End with `## Solved in this recording` (this exact heading, in English): each question from the material that is solved here, with its time.
 
 ## summary.md
 
@@ -29,6 +29,8 @@ The next Wiki build copies `toc.md` and `summary.md` into the student's Study va
 The first line of `summary.md` is one plain sentence saying what this recording is, in the course language. It is text for the student and for study-pack to read, not a field: no frontmatter, no tag. For a whole class session say which units it covers ("Lesson 9: a lesson about units 7-9"); for a recording that solves one question say which question and unit ("Solution of question 3 from the 2019 exam, unit 8"); for anything else say in a few words what it is. Judge it from the transcript and the unit pages. `us wiki check` fails a summary that opens with a heading or with the Sources line instead.
 
 Then `Sources: [transcript](transcript.md)`, then:
+
+Keep the three headings below exactly as written, in English, whatever the course language: the roadmap builder finds the sections by them (write everything under them in the course language).
 
 - `## Announcements`: what the lecturer asks of the student or says about dates, assignments, who to work with and the exam. They usually come in the first and last minutes, so read both fully, then search the whole transcript for cues ("tomorrow", "next week", "I want you to…", "send the exercise by…"). Quote the lecturer's words, short, each with its time link. A solution video (one question) usually has none: write only what is really said.
 - `## "This will be on the exam"`: every moment the lecturer stresses for the exam, with its time link.
