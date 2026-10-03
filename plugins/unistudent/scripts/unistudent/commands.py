@@ -74,16 +74,61 @@ def register(add, with_course):
     p.add_argument("files", nargs="+", help="Markdown files or folders")
     p.add_argument("--labels", action="store_true", help="also require every paragraph to cite a source or carry the warning")
 
-    def cmd_graph(args):
-        from . import graph
-        result = graph.draw(args.spec, force=args.force)
-        result["summary"] = (f"Drew {result['png']}" if result["drawn"]
-                             else f"{result['png']} is up to date (the spec has not changed).")
+    def cmd_draw(args, kind=None):
+        from . import draw
+        result = draw.draw(kind or args.kind, args.spec, force=args.force)
+        result.setdefault("summary", f"Drew {result['png']}" if result["drawn"]
+                          else f"{result['png']} is up to date (the spec has not changed).")
         return result
 
-    p = add("graph", cmd_graph, "draw a Graph spec (JSON) to a PNG next to it")
+    p = add("draw", cmd_draw, "draw a picture spec (JSON) to a PNG next to it; fetches the drawing tool on first use")
+    p.add_argument("kind", help="the picture kind, e.g. graph")
+    p.add_argument("spec", help="the spec file; the PNG is saved beside it")
+    p.add_argument("--force", action="store_true", help="draw again even if the spec has not changed")
+
+    p = add("graph", lambda args: cmd_draw(args, "graph"), "draw a Graph spec (JSON) to a PNG next to it")
     p.add_argument("spec", help="the Graph spec file; the PNG is saved beside it")
     p.add_argument("--force", action="store_true", help="draw again even if the spec has not changed")
+
+    def cmd_tools(args):
+        import datetime
+        from . import draw
+        from .cli import write_context_files
+        course = resolve_course(args)
+        answers = dict(course.settings().get("tools") or {})
+        if args.action == "status":
+            return {"tools": answers, "supports": draw.supports(answers),
+                    "summary": "This course can draw: " + ", ".join(draw.supports(answers)) + "."}
+        if args.action == "offer":
+            names = draw.offer(course.wiki, args.field, answers)
+            tools = [{"name": n, "draws": draw.KINDS[n]["draws"], "label": draw.KINDS[n]["label"]} for n in names]
+            summary = ("Nothing more to offer for this course." if not tools else
+                       "Offer the student, in one message: " + "; ".join(f"{t['label']} ({t['draws']})" for t in tools)
+                       + ". Then `us tools accept <name>` or `us tools skip <name>` for each answer.")
+            return {"tools": tools, "summary": summary}
+        names = args.names or []
+        unknown = [n for n in names if n not in draw.KINDS or not draw.KINDS[n].get("offer")]
+        if not names or unknown:
+            raise UserError(f"Name the tools to {args.action}; the ones that can be offered are: "
+                            + ", ".join(sorted(n for n, k in draw.KINDS.items() if k.get("offer")) or ["none yet"]) + ".")
+        failed, today = {}, datetime.date.today().isoformat()
+        for name in names:
+            reason = draw.accept(name) if args.action == "accept" else None
+            if reason:
+                failed[name] = reason
+                continue
+            answers[name] = {"state": "accepted" if args.action == "accept" else "skipped", "date": today}
+        course.update_settings(tools=answers)
+        write_context_files(course)
+        summary = (f"Noted: {', '.join(n for n in names if n not in failed) or 'nothing'}."
+                   + "".join(f" I couldn't get {n} ({why}); the study pack will describe those pictures in words."
+                             for n, why in failed.items()))
+        return {"tools": answers, "failed": list(failed), "summary": summary}
+
+    p = with_course(add("tools", cmd_tools, "offer, accept or skip the picture tools that fit this course; show what it can draw"))
+    p.add_argument("action", choices=["offer", "accept", "skip", "status"])
+    p.add_argument("names", nargs="*", help="accept/skip: the tool names")
+    p.add_argument("--field", help="offer: the course's academic field, used when the Wiki says little")
 
     def cmd_eval_grade(args):
         import json
