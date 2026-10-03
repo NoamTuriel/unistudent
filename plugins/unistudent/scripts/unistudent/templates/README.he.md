@@ -35,7 +35,7 @@
 | `/unistudent:course-help` | הסבר על הפלאגין ומה אפשר לעשות |
 | `/unistudent:course-add` | מעבד את מה שיש ב-`{inbox}/` |
 | `/unistudent:course-wiki` | בונה או מרענן את ה-Wiki |
-| `/unistudent:study-pack` | בונה חבילת לימוד ליחידה (בוחרים אילו דפים) |
+| `/unistudent:study-pack` | בונה חבילת לימוד ליחידה (כל הדפים) |
 | `/unistudent:course-recordings` | תמלול וסיכום הקלטות (כבד ואיטי, תמיד שואל קודם) |
 | `/unistudent:courses` | רשימת הקורסים שלך ומעבר ביניהם |
 
