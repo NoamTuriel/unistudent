@@ -82,21 +82,17 @@ class DrawCommand(CourseTestCase):
         self.assertEqual(dispatch.call_args[0][0], "graph")
 
 
-class CuratedKinds(CourseTestCase):
-    def test_a_broken_spec_is_a_plain_message_and_an_unchanged_spec_is_not_redrawn(self):
-        from unistudent import pictures
-        bad = write(self.tmp / "bad.json", "not json")
-        with self.assertRaises(Exception) as caught:
-            pictures.circuit(bad)
-        self.assertIn("valid JSON", str(caught.exception))
-        ok = write(self.tmp / "t.json", json.dumps({"newick": "(A,B);"}))
-        ok.with_suffix(".png").write_bytes(b"png")
-        self.assertFalse(pictures.tree(ok)["drawn"])
+class Draws(CourseTestCase):
+    def test_every_kind_is_listed_with_what_it_draws_and_needs_no_course(self):
+        result = run_json("draws")
+        self.assertIn("X-Y graphs", result["supports"])  # the kinds
+        self.assertIn("Mermaid flowcharts", result["supports"])  # drawn with no tool at all
+        self.assertIn("The plugin can draw", result["summary"])
 
-    def test_the_curated_kinds_are_offered_by_the_field(self):
-        for name in ("circuit", "molecule", "tree"):
-            self.assertTrue(draw.KINDS[name]["offer"])
-            self.assertTrue(draw.KINDS[name]["fields"])
+    def test_a_new_kind_shows_up_without_touching_the_command(self):
+        with mock.patch.dict(draw.KINDS, {"fake": fake_kind("json", [])}):
+            draw.KINDS["fake"]["draws"] = "fake pictures"
+            self.assertIn("fake pictures", run_json("draws")["supports"])
 
 
 @unittest.skipUnless(os.environ.get("UNISTUDENT_SMOKE") and shutil.which("uv"), "set UNISTUDENT_SMOKE=1 to download for real")
@@ -106,92 +102,6 @@ class RealDownload(CourseTestCase):
         result = draw._fetch_and_draw("graph", draw.KINDS["graph"], spec, False)
         self.assertTrue(result["drawn"])
         self.assertTrue(spec.with_suffix(".png").stat().st_size > 0)
-
-    def test_each_curated_kind_draws_through_uv(self):
-        specs = {"circuit": [{"el": "SourceV", "dir": "up", "label": "V"}, {"el": "Resistor", "dir": "right", "label": "R"},
-                             {"el": "Line", "dir": "down"}, {"el": "Line", "dir": "left"}],
-                 "molecule": {"smiles": "CCO"}, "tree": {"newick": "((A:1,B:1):1,(C:1,D:1):2);"}}
-        for name, body in specs.items():
-            spec = write(self.tmp / f"{name}.json", json.dumps(body))
-            result = draw._fetch_and_draw(name, draw.KINDS[name], spec, False)
-            self.assertTrue(result["drawn"], name)
-            self.assertTrue(spec.with_suffix(".png").stat().st_size > 0, name)
-
-
-def offerable(**extra):
-    kind = {"package": "json", "label": "the circuit tool", "draws": "circuit diagrams", "offer": True,
-            "fields": ["electrical", "engineering"], "evidence": ["resistor", "circuit"],
-            "run": lambda spec, force=False: {}}
-    kind.update(extra)
-    return kind
-
-
-class ToolOffer(CourseTestCase):
-    def setUp(self):
-        super().setUp()
-        self.course = self.tmp / "Circuits"
-        run("setup", self.course, "--name", "Circuits", "--language", "en")
-
-    def wiki(self, text):
-        write(self.course / ".unistudent" / "wiki" / "units" / "u1.md", text)
-
-    def offer(self, **kinds):
-        with mock.patch.dict(draw.KINDS, kinds):
-            return run_json("tools", "offer", "--course", self.course, "--field", "engineering")
-
-    def test_what_the_course_shows_decides_the_offer_and_graph_is_never_offered(self):
-        self.wiki("Kirchhoff on a resistor circuit.")
-        result = self.offer(circuit=offerable())
-        self.assertEqual([t["name"] for t in result["tools"]], ["circuit"])
-        self.assertIn("circuit diagrams", result["summary"])
-
-    def test_the_field_is_the_fallback_when_the_wiki_says_nothing(self):
-        result = self.offer(circuit=offerable())
-        self.assertEqual([t["name"] for t in result["tools"]], ["circuit"])
-
-    def test_a_tool_the_course_never_shows_is_not_offered_when_the_wiki_is_rich(self):
-        self.wiki("Only sets and groups. " * 50)
-        self.assertEqual(self.offer(circuit=offerable(fields=[]))["tools"], [])
-
-    def test_at_most_three_tools_are_offered(self):
-        self.wiki("resistor")
-        many = {f"k{i}": offerable() for i in range(5)}
-        self.assertEqual(len(self.offer(**many)["tools"]), 3)
-
-    def test_an_answer_is_remembered_and_not_asked_again_and_a_skip_can_be_undone(self):
-        self.wiki("resistor")
-        with mock.patch.dict(draw.KINDS, {"circuit": offerable()}):
-            run_json("tools", "skip", "circuit", "--course", self.course)
-            self.assertEqual(run_json("tools", "offer", "--course", self.course)["tools"], [])
-            context = (self.course / ".unistudent" / "context.md").read_text("utf-8")
-            self.assertIn("circuit: skipped", context)
-            with mock.patch("unistudent.draw.subprocess.run",
-                            return_value=types.SimpleNamespace(returncode=0, stdout="", stderr="")), \
-                    mock.patch("unistudent.draw.shutil.which", return_value="/bin/uv"):
-                run_json("tools", "accept", "circuit", "--course", self.course)
-            context = (self.course / ".unistudent" / "context.md").read_text("utf-8")
-        self.assertIn("circuit: accepted", context)
-        self.assertNotIn("circuit: skipped", context)
-
-    def test_accepting_fetches_the_package_and_a_failed_fetch_is_said_plainly(self):
-        failed = types.SimpleNamespace(returncode=1, stdout="", stderr="offline")
-        with mock.patch.dict(draw.KINDS, {"circuit": offerable(package="unistudent_no_such_package")}), \
-                mock.patch("unistudent.draw.shutil.which", return_value="/bin/uv"), \
-                mock.patch("unistudent.draw.subprocess.run", return_value=failed):
-            result = run_json("tools", "accept", "circuit", "--course", self.course)
-        self.assertIn("couldn't", result["summary"])
-        self.assertEqual(result["failed"], ["circuit"])
-
-    def test_the_supports_line_lists_what_this_course_can_draw(self):
-        with mock.patch.dict(draw.KINDS, {"circuit": offerable()}):
-            run_json("tools", "skip", "circuit", "--course", self.course)
-            self.assertNotIn("circuit diagrams", run_json("tools", "status", "--course", self.course)["supports"])
-            with mock.patch("unistudent.draw.subprocess.run",
-                            return_value=types.SimpleNamespace(returncode=0, stdout="", stderr="")):
-                run_json("tools", "accept", "circuit", "--course", self.course)
-            supports = run_json("tools", "status", "--course", self.course)["supports"]
-        self.assertIn("X-Y graphs", supports)
-        self.assertIn("circuit diagrams", supports)
 
 
 if __name__ == "__main__":
