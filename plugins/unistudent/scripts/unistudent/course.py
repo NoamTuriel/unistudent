@@ -14,10 +14,11 @@ LABELS = {
     "he": {"inbox": "1-קבצים-חדשים", "material": "2-חומרי-הקורס", "study": "3-{course}-ללמוד-מכאן",
            "official": "חומר-רשמי-של-הקורס", "added": "חומר-לא-רשמי", "unit": "יחידה {n}",
            "general": "חומר-כללי-לכל-היחידות", "unsorted": "עוד-לא-שויך-ליחידה", "roadmap": "מפת הקלטות",
-           "lessons": "הקלטות מפגשים"},
+           "lessons": "הקלטות מפגשים", "before_test": "לקראת מבחן", "question_pages": "עמודי שאלות"},
     "en": {"inbox": "1-inbox", "material": "2-course-material", "study": "3-{course}-study-from-here",
            "official": "official", "added": "added", "unit": "Unit {n}", "general": "General", "unsorted": "Unsorted",
-           "roadmap": "Recordings roadmap", "lessons": "Recorded lessons"},
+           "roadmap": "Recordings roadmap", "lessons": "Recorded lessons",
+           "before_test": "Before the test", "question_pages": "Question pages"},
 }
 # Hebrew names used before 0.5.0: still recognized (and renamed by `ensure_layout`) in folders made with them.
 OLD_LABELS = [{"official": "רשמי", "added": "נוסף", "unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין"}]

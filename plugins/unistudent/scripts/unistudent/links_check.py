@@ -3,6 +3,7 @@
 Understands Markdown links, Obsidian wikilinks, #heading anchors and file:// links.
 Used for the Wiki (`wiki check`) and study packs (`check`).
 """
+import html
 import re
 import unicodedata
 from pathlib import Path
@@ -16,6 +17,13 @@ FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.S)
 SOURCES_LINE = re.compile(r"(?im)^\s*(?:[-*>]\s*)?(?:\*\*)?(sources|מקורות|source|מקור)(?:\*\*)?\s*:")
 STUB_MARK = "<!-- unistudent:stub -->"
 CODE_BLOCK = re.compile(r"```.*?```|<!--.*?-->", re.S)
+HREF = re.compile(r'href="([^"]+)"')
+
+
+def _links(page: Path, text: str):
+    """(label, target) of every link: Markdown links, plus href attributes in an .html page."""
+    found = MD_LINK.findall(text)
+    return found + [("", html.unescape(h)) for h in HREF.findall(text)] if page.suffix == ".html" else found
 
 
 def slugify(text: str) -> str:
@@ -57,7 +65,7 @@ def check_links(page: Path, root: Path):
     """Problems with links in one page. `root` is where wikilinks are resolved from."""
     text = CODE_BLOCK.sub("", page.read_text("utf-8"))
     problems = []
-    for label, raw_target in MD_LINK.findall(text):
+    for label, raw_target in _links(page, text):
         target = raw_target.strip("<>")
         parsed = urlparse(target)
         if parsed.scheme in ("http", "https", "mailto", "obsidian"):
@@ -107,7 +115,7 @@ def has_sources(page: Path) -> bool:
 def check_vault_page(page: Path, hidden: Path):
     """A page in the Study vault never links into the hidden folder (the Wiki is for the AI, not the student)."""
     problems = []
-    for _, raw in MD_LINK.findall(CODE_BLOCK.sub("", page.read_text("utf-8"))):
+    for _, raw in _links(page, CODE_BLOCK.sub("", page.read_text("utf-8"))):
         target = raw.strip("<>")
         parsed = urlparse(target)
         if parsed.scheme not in ("", "file"):

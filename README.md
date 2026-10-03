@@ -55,6 +55,7 @@ The skills are split across three plugins. `unistudent` is the core and works fo
 | course-add | `unistudent` | Move what you dropped into the course's inbox into the Material folder and add it to the Wiki |
 | course-wiki | `unistudent` | Build or refresh the Wiki |
 | study-pack | `unistudent` | Build a study pack for a unit, or review proposed updates |
+| before-test | `unistudent` | Build the Before-the-test page: every past-exam question, grouped by method, with solution links (asks first, heavy) |
 | course-recordings | `unistudent` | Transcribe and summarise recordings (heavy; always asks first) |
 | courses | `unistudent` | List and switch courses |
 | openu-sync | `openu` | Download what's new on your OpenU course site |
