@@ -334,6 +334,23 @@ def register(add, with_course):
     p.add_argument("action", choices=["mark-built", "changes"])
     p.add_argument("--unit", required=True, help="unit number or 'general'")
 
+    def cmd_before_test(args):
+        from . import before_test
+        course = resolve_course(args)
+        scratch = course.state / "before-test"
+        scratch.mkdir(parents=True, exist_ok=True)
+        if args.action == "merge":
+            n = before_test.merge(args.files, scratch / "index.json")
+            return {"index": str(scratch / "index.json"), "scratch": str(scratch), "summary": f"Merged {n} questions into {scratch / 'index.json'}."}
+        fmt = args.format or ("obsidian" if course.settings().get("format") == "obsidian" else "markdown")
+        return before_test.build(course, scratch / "index.json", scratch / "clusters.json", fmt, args.note)
+
+    p = with_course(add("before-test", cmd_before_test, "merge the exam indexers' rows, or write the Before-the-test page from the index and clusters"))
+    p.add_argument("action", choices=["merge", "build"])
+    p.add_argument("files", nargs="*", help="merge: the indexers' JSON files")
+    p.add_argument("--format", choices=["html", "obsidian", "markdown"], help="build: default follows the course's format setting")
+    p.add_argument("--note", action="append", help="build: a line for the notes box (what was not verified)")
+
     def cmd_recordings(args):
         from . import recordings
         course = resolve_course(args)
