@@ -56,7 +56,7 @@ A pattern seen across several solutions is stated with the solutions it comes fr
 
 The page the student reads first, in this order, each part only when it has something to say:
 
-1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. Close the list with one line, "The plugin now supports: X, Y, Z" (from `us tools status`, in the course language), so the student knows they can ask for the same kind of picture in chat.
+1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. Close the list with one line, "The plugin now supports: X, Y, Z" (from `us draws`, in the course language), so the student knows they can ask for the same kind of picture in chat.
 2. **The idea** of the unit, one or two lines.
 3. **What to know by heart and what to understand:** one list for the whole unit, not one per topic.
 4. **A table of the unit's topics**, the same names and order as the walkthrough: per topic its tool, the question that recurs, the common mistake, and a pointer to the topic's "How to answer" block (only when it has one).
@@ -105,7 +105,7 @@ One line per covering lesson, in lesson order: the lesson (its summary line), wh
 
 ## Pictures and graphs
 
-**Before the first Study pack of a course** (the context file's "Picture tools" line shows nothing offered yet), run `us tools offer --field <the course's field>` (call the UniStudent MCP tool `tools` first) and, if it lists tools, ask the student once, in one message with no package names: for each tool what it will draw in this course, then "all", "none" or a pick. For each answer run `us tools accept <name>` (it installs the tool itself; say plainly if it could not, and that the pack will describe those pictures in words) or `us tools skip <name>`. A declined or failed tool never blocks the pack. Graphs need no question: their tool installs itself on first use. A field with no tool in the list gets no offer: its pictures are a slide link plus one line in words. Later, when the student asks in chat to add a skipped tool, run `us tools accept <name>`. Done when every offered tool is marked accepted or skipped (`us tools status`) and the student has been told plainly about any that failed.
+Never ask the student to install a drawing tool: every picture kind fetches its own tool the first time a picture needs it (`us draws` lists the kinds). A fetch that fails is a slide link plus one line in words, and never blocks the pack.
 
 Where the course material explains a concept with a graph (X and Y axes with lines or curves), or a question or its solution explicitly needs one, show it in that topic on the walkthrough page. Never on the roadmap, the Practice page, the recordings index or the navigation line, and never a graph that decorates a page the course didn't illustrate. A student preference such as "no graphs" or "only the key ones" overrides this.
 
@@ -115,7 +115,7 @@ Where the course material explains a concept with a graph (X and Y axes with lin
 4. **Embed it** with a standard image link, alt text saying in words what the graph shows (which curve shifts, which way, what happens to each variable), and on the next line a one-line caption, with a link to the slide page when it reproduces the course's graph.
 5. **Without drawing** (the tool reports it could not be fetched): write no image link; write the slide page link and one line describing the graph, and tell the student once what the tool said. Never ask the student to install anything by hand before the MCP tool has been tried.
 
-Other picture kinds the course shows (the ones `us tools status` lists as supported) follow the same five steps with `us draw <kind>`; a picture the course shows that no supported kind can draw is a slide link plus one line in words.
+Other picture kinds the course shows (the ones `us draws` lists) follow the same five steps with `us draw <kind>`; a picture the course shows that no kind can draw is a slide link plus one line in words.
 
 A cause-and-effect chain of three or more steps (`G↑ → AD↑ → Y↑ → …`) is drawn as a Mermaid flowchart in the topic that explains it (a plain Mermaid block, no tool; `flowchart RL` in a right-to-left language, short Hebrew labels), instead of an arrow line. Horizontal over vertical: a chain longer than about five steps is split into several short horizontal flowcharts, each its own `flowchart RL` of up to five steps, never one cramped row and never a tall column. Write each step's direction as a word (עולה / יורד) next to the symbol, not as an arrow glued to it, so a right-to-left box cannot flip it. One or two steps stay a formula line. Other flow pictures are Mermaid too; never a graph drawn with the tool for a flow.
 

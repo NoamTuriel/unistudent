@@ -61,4 +61,3 @@ Two folders are visible to the student from setup and a third once the first Stu
 ## Exam
 
 {exam_section}
-{tools_section}

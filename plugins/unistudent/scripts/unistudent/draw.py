@@ -9,7 +9,6 @@ import json
 import os
 import shutil
 import subprocess
-import sys
 from pathlib import Path
 
 from .common import UserError
@@ -24,31 +23,15 @@ def _graph(spec_path, force=False):
     return graph.draw(spec_path, force=force)
 
 
-def _pictures(name, spec_path, force):
-    from . import pictures
-    return getattr(pictures, name)(spec_path, force=force)
-
-
 # kind -> the library it needs (a pip name), a plain label for the student, and the drawer: run(spec_path, force).
 # Add a kind by adding a line here and a drawer module; `us draw` and the MCP tool need no other change.
-# `offer` kinds are asked about before the first Study pack (`us tools offer`); the others install themselves silently.
-# `draws` is the plain phrase the student reads; `evidence` are words in the Wiki that show the course uses the kind,
-# `fields` are the fallback when the Wiki says little. `module` is the import name when it differs from the pip name.
+# Every kind fetches its own library the first time a picture needs it, so no kind is ever asked about.
+# Add one when a real course shows that picture, not before: an untried drawer is a promise nobody has seen kept.
+# `draws` is the plain phrase the student reads; `module` is the import name when it differs from the pip name.
 KINDS = {
-    "graph": {"package": "matplotlib", "label": "the graph tool", "draws": "X-Y graphs", "offer": False, "run": _graph},
-    "circuit": {"package": "schemdraw matplotlib", "module": "schemdraw", "label": "the circuit tool",
-                "draws": "circuit diagrams", "offer": True, "fields": ["electrical", "electronic", "engineering", "physics"],
-                "evidence": ["resistor", "circuit", "capacitor", "kirchhoff"], "run": lambda s, force=False: _pictures("circuit", s, force)},
-    "molecule": {"package": "rdkit", "label": "the molecule tool", "draws": "molecule structures and reaction schemes",
-                 "offer": True, "fields": ["chemistry", "biochemistry"], "evidence": ["molecule", "reaction", "benzene", "functional group"],
-                 "run": lambda s, force=False: _pictures("molecule", s, force)},
-    "tree": {"package": "biopython matplotlib", "module": "Bio", "label": "the family-tree tool", "draws": "phylogenetic trees",
-             "offer": True, "fields": ["biology", "evolution"], "evidence": ["phylogen", "cladogram", "evolutionary tree"],
-             "run": lambda s, force=False: _pictures("tree", s, force)},
+    "graph": {"package": "matplotlib", "label": "the graph tool", "draws": "X-Y graphs", "run": _graph},
 }
 ALWAYS = ["Mermaid flowcharts"]  # drawn without any tool
-THIN_WIKI = 500  # characters: below this the Wiki says too little to judge, so the field decides
-MAX_OFFER = 3
 TIMEOUT = 300  # seconds for a one-time download
 
 
@@ -104,40 +87,6 @@ def draw(name, spec_path, force=False):
     return _fetch_and_draw(name, kind, spec_path, force)
 
 
-# --- the offer: which tools fit this course, and what the student answered ---
-
-def _wiki_text(wiki):
-    return " ".join(p.read_text("utf-8", errors="replace") for p in sorted(Path(wiki).rglob("*.md"))).casefold()
-
-
-def offer(wiki, field, answers):
-    """Up to three tools worth offering: what the Wiki shows first, the field only when the Wiki says little."""
-    text, field = _wiki_text(wiki), (field or "").casefold()
-    thin, found = len(text) < THIN_WIKI, []
-    for name, kind in KINDS.items():
-        if not kind.get("offer") or name in answers:
-            continue
-        shown = sum(text.count(w.casefold()) for w in kind.get("evidence", []))
-        if shown or (thin and any(f in field for f in kind.get("fields", []) if field)):
-            found.append((shown, name))
-    return [name for _, name in sorted(found, key=lambda f: -f[0])[:MAX_OFFER]]
-
-
-def accept(name):
-    """Fetch the kind's package now (so the first picture is instant). Returns None, or a plain reason it failed."""
-    kind = KINDS[name]
-    if _available(kind):
-        return None
-    uv = shutil.which("uv")
-    if not uv or os.environ.get("UNISTUDENT_NO_INSTALL"):
-        return f"uv isn't available here. {_words_fallback(kind)}"
-    done = subprocess.run([uv, "run", "--no-project", *_with(kind), "python", "-c",
-                           f"import {kind.get('module', kind['package'].split()[0])}"], capture_output=True, text=True,
-                          encoding="utf-8", errors="replace", timeout=TIMEOUT)
-    return None if done.returncode == 0 else f"the download failed ({(done.stderr or '').strip()[-120:] or 'no detail'})"
-
-
-def supports(answers):
-    """Everything this course can draw now: the baseline, the kinds that install themselves, and accepted tools."""
-    drawn = [k["draws"] for n, k in KINDS.items() if not k.get("offer") or answers.get(n, {}).get("state") == "accepted"]
-    return drawn + ALWAYS
+def supports():
+    """Every picture the plugin can draw: one phrase per kind, plus what needs no tool at all."""
+    return [k["draws"] for k in KINDS.values()] + ALWAYS
