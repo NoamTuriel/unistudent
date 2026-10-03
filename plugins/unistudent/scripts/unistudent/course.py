@@ -33,7 +33,6 @@ DEFAULT_SETTINGS = {
     "frame_analysis": None,        # None (not asked yet) | True | False: per-segment vision calls (opt-in, costly)
     "recordings_dir": None,        # local non-synced folder when the course folder syncs
     "exam_date": None,
-    "tools": {},                   # picture tools offered before the first Study pack: name -> {state: accepted|skipped, date}
     "layout": 1,                   # 2 once the course folder has the three visible folders (LAYOUT)
     "folders": {},                 # the visible folder names chosen at setup: inbox, material, study
 }
