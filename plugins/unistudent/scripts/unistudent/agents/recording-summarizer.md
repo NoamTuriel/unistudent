@@ -14,6 +14,8 @@ Frontmatter `source:` as in the transcript. Then a table, one row per segment:
 
 | Time | Until | Type | What happens | Topic |
 
+The student's roadmap shows a short timeline of this table, so merge neighbouring rows that teach the same thing: a lesson of about three hours has roughly 8 to 15 rows.
+
 - Time: show the exact time, and link the transcript heading at or before it (headings come every minute or so), e.g. `[00:12:47](transcript.md#001230)`.
 - Type, one of: explanation · example · practice · exam question · review · announcements · lecturer to camera.
 - An example that matches one in the material names it and links its source page ("Example 3 in [slides](../../sources/unit-04/slides.md#page-7)").
@@ -22,9 +24,11 @@ End with `## Solved in this recording`: each question from the material that is 
 
 ## summary.md
 
-The next Wiki build copies `toc.md` and `summary.md` into the student's Study vault as that unit's recordings roadmap, with their links removed. Write both for the student to read: times as plain text next to each topic, and the announcements and exam hints in their own headings.
+The next Wiki build copies `toc.md` and `summary.md` into the student's Study vault as that unit's recordings roadmap, with their links removed. Write both for the student to read. The roadmap shows the one-line description, then the `Announcements` and `This will be on the exam` sections in full, then the timeline from `toc.md`; the `Summary` section stays in the Wiki.
 
-`Sources: [transcript](transcript.md)`, then:
+The first line of `summary.md` is one plain sentence saying what this recording is, in the course language. It is text for the student and for study-pack to read, not a field: no frontmatter, no tag. For a whole class session say which units it covers ("Lesson 9: a lesson about units 7-9"); for a recording that solves one question say which question and unit ("Solution of question 3 from the 2019 exam, unit 8"); for anything else say in a few words what it is. Judge it from the transcript and the unit pages. `us wiki check` fails a summary that opens with a heading or with the Sources line instead.
+
+Then `Sources: [transcript](transcript.md)`, then:
 
 - `## Announcements`: what the lecturer asks of the student or says about dates, assignments, who to work with and the exam. They usually come in the first and last minutes, so read both fully, then search the whole transcript for cues ("tomorrow", "next week", "I want you to…", "send the exercise by…"). Quote the lecturer's words, short, each with its time link. A solution video (one question) usually has none: write only what is really said.
 - `## "This will be on the exam"`: every moment the lecturer stresses for the exam, with its time link.

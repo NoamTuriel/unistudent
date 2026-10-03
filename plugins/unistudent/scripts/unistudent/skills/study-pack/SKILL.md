@@ -39,7 +39,7 @@ Done when: you know the page list, each page's content rules, and the concept st
 
 ## 4. Pick pages
 
-**Ask** (several answers allowed): every available page with its one-line "what it gives you", all default pages selected. Skip the recordings page when the unit has no transcripts, and say why.
+**Ask** (several answers allowed): every available page with its one-line "what it gives you", all default pages selected. Offer the recordings page only when a recorded lesson covers this unit: read the first line of each summary in the Recorded lessons recordings (the Wiki's `recordings/` folders of recordings assigned to `lessons`) and keep the ones that say they cover the unit. A unit with only solution recordings gets no recordings page; say why.
 
 Done when: the student chose the pages.
 
