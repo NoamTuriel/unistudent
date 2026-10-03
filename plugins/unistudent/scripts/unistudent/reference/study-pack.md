@@ -18,10 +18,10 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 
 | Key | Page (Hebrew / English title) | What it gives the student | Default |
 |---|---|---|---|
-| roadmap | `N.1 מפת דרכים` / `N.1 Roadmap` | How to start, the idea, what to know by heart, a table of topics, the solving order, what the lecturer said, a checklist, all sources (folded) | yes |
+| roadmap | `N.1 מפת דרכים` / `N.1 Roadmap` | How to start, the idea, what to know by heart, a table of topics, the solving order, a checklist, all sources (folded) | yes |
 | walkthrough | `N.2 הסבר החומר` / `N.2 Walkthrough` | The big idea, then every topic with its concepts (below), its "How to answer" block, and its folded sources | yes |
 | practice | `N.3 תרגול` / `N.3 Practice` | A table of topics with question counts; per topic its questions linked, easy to hard; the Short version at the end | yes |
-| recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | One line per recorded lesson that covers the unit, pointing into the Recorded lessons roadmap (below) | yes, when such a lesson exists |
+| recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | One line per recorded lesson that covers the unit, pointing into the Recorded lessons roadmap, then that lesson's announcements and exam hints (below) | yes, when such a lesson exists |
 
 Save to the unit's folder in the Study vault (`pack_folder` in the result of `us study changes --unit N`): its name, the page titles and the content all follow the course language. The vault holds only study packs and the generated recordings roadmap.
 
@@ -67,10 +67,6 @@ The page the student reads first, in this order, each part only when it has some
 
 Formulas and Latin symbols follow the right-to-left rule above.
 
-## Announcements and exam hints (roadmap)
-
-The unit page in the Wiki collects what the lecturer said in this unit's recordings: `Announcements` (dates, assignments, who to work with, exam information) and `This will be on the exam`. The roadmap page always has a section for them, every line with its recording and time link. Leave it out only when the unit page lists none. These are first-class: never summarise them away.
-
 ## Concepts (walkthrough)
 
 `### <concept> — <English name>` (only concepts use `###`; the big idea and the closing sections do not). Draw only the parts the concept has, from this menu, in this order:
@@ -101,7 +97,7 @@ For a student short on time: every topic still appears, but with the fewest ques
 
 Only **recorded lessons**: recordings of a whole class session, which belong to no unit (the Recorded lessons folder of the Study vault). The first line of each lesson's summary says which units it covers; use it to decide which lessons cover this unit. A recording that solves one question is never pointed to here; the other pages still cite it. A unit no recorded lesson covers gets no Recordings page at all, not an empty one.
 
-One line per covering lesson, in lesson order: the lesson (its summary line), where in it the unit's part starts (linked at that time), and roughly how long that part is, with a link to the lesson's entry in the Recorded lessons roadmap. Nothing else: the lesson's announcements, exam hints and full timeline live only in that roadmap, so nothing is written twice.
+One line per covering lesson, in lesson order: the lesson (its summary line), where in it the unit's part starts (linked at that time), and roughly how long that part is, with a link to the lesson's entry in the Recorded lessons roadmap. Under each lesson's line, the lesson's `Announcements` and `This will be on the exam` sections from its summary, in full: every line with its recording and time link, in their own two headings. Leave a heading out only when the summary has none. These are first-class: never summarise them away, a student must never miss what the lecturer said out loud. Nothing else: the full timeline lives only in the roadmap.
 
 ## Pictures and graphs
 

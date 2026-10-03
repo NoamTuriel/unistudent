@@ -35,7 +35,7 @@ In Claude Code type them as shown; in other AI apps, ask for the skill by name (
 | `/unistudent:course-help` | How the plugin works and what it can do |
 | `/unistudent:course-add` | Processes what's in `{inbox}/` |
 | `/unistudent:course-wiki` | Builds or refreshes the Wiki |
-| `/unistudent:study-pack` | Builds a study pack for a unit (you pick the pages) |
+| `/unistudent:study-pack` | Builds a study pack for a unit (all the pages) |
 | `/unistudent:course-recordings` | Transcribes and summarises recordings (heavy and slow; always asks first) |
 | `/unistudent:courses` | Lists your courses and switches between them |
 
