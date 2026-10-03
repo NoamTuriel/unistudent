@@ -231,7 +231,7 @@ def build_parser():
     with_course(add("manifest", cmd_manifest, "print the Manifest"))
     with_course(add("unsorted", cmd_unsorted, "list files with no unit"))
 
-    p = with_course(add("assign", cmd_assign, "assign an unsorted file to a unit or 'general'"))
+    p = with_course(add("assign", cmd_assign, "assign an unsorted file to a unit, 'general', or (a recording of a whole class session) 'lessons'"))
     p.add_argument("path")
     p.add_argument("unit")
 

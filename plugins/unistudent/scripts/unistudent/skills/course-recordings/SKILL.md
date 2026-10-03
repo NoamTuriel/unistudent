@@ -48,6 +48,6 @@ Done when: every class session is assigned to `lessons` or the student deferred 
 
 Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, and the Recorded lessons roadmap, with the announcements and exam hints, is written into the student's Study vault), then `us wiki check`.
 
-Done when: `us wiki check` reports 0 problems. If a unit with a study pack got new recordings, offer `/unistudent:study-pack N` for proposed changes.
+Done when: `us wiki check` reports 0 problems. If a new recorded lesson covers a unit that has a study pack (read the lesson's first summary line for the units), offer `/unistudent:study-pack N` for that unit; `us study changes` cannot see lessons, since they belong to no unit.
 
 Report: which recordings are done (and that each unit's roadmap, and the Recorded lessons roadmap, is in the study vault), and the announcements and "this will be on the exam" moments the summarizers found.

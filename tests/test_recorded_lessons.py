@@ -21,7 +21,8 @@ class RecordedLessons(CourseTestCase):
             for rel in (LESSON, "official/Unit 4/question 1.mp4"):
                 run_json("recordings", "approve", "--course", self.course, rel)
                 run_json("recordings", "transcribe", "--course", self.course, rel)
-        write(self.lesson / "toc.md", "Sources: [transcript](transcript.md)\n\n| 00:00:00 | explanation | [00:00:00](transcript.md#000000) |\n\n"
+        write(self.lesson / "toc.md", "Sources: [transcript](transcript.md)\n\n| Time | Until | Type | What happens | Topic |\n|---|---|---|---|---|\n"
+                                      "| [00:00:00](transcript.md#000000) | 00:01:41 | explanation | Intro | Unit 7 |\n\n"
                                       "## Solved in this recording\n\n- question 3 (00:40:00)\n")
         write(self.lesson / "summary.md", "Lesson 9: a lesson about units 7-9.\n\nSources: [transcript](transcript.md)\n\n"
                                           "## Announcements\n\nHomework due Sunday.\n\n## Summary\n\nLong paragraph.\n")
@@ -53,6 +54,9 @@ class RecordedLessons(CourseTestCase):
         for gone in ("Sources:", "Solved in this recording", "Long paragraph."):
             self.assertNotIn(gone, text)
         self.assertEqual(text.count("[recording]("), 1)
+        self.assertNotIn("Type", text)
+        self.assertNotIn("explanation", text)
+        self.assertIn("Intro", text)
 
     def test_only_a_recording_can_be_assigned_to_recorded_lessons(self):
         write(self.course / "1-inbox" / "notes.txt", "notes")
