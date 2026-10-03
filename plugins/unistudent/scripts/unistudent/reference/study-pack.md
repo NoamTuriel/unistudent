@@ -79,7 +79,10 @@ Formulas and Latin symbols follow the right-to-left rule above.
 ## Practice page
 
 1. A table of the unit's topics with how many questions each has.
-2. Under each topic, every suited question from the course material as a link to its question file, easy to hard, with one line saying what it exercises. Nothing else per question: no stage, no tag, no recording time.
+2. Under each topic, every suited question from the course material, easy to hard, as one checklist bullet (`- [ ]`, so the student ticks what is solved): the question's number and source page (`שאלה 3, עמוד 4`, in the course language), a link to the question, a link to its solution right beside it, and one line saying what it exercises. Nothing else per question: no stage, no tag, no recording time.
+   - **Links:** full `file:` links to the student's own file with `#page=N`. The solution link is the solution's page (same file or the solutions file); a question with no solution in the files says so in words instead of a link. Check the layout before linking: render the page and look, never assume the solution is on the next page.
+   - **Hide the answer:** when the question's page also shows the solution (handwritten answer on the same page, or the solution on the page right after in the same PDF), make a single-page copy of the question page (`pdfseparate -f N -l N`) in the unit's folder in the Study vault and link the question to it. Never modify the original. A page whose answer can't be hidden says so in the link text.
+   - **Groups:** inside a topic, put similar questions together, 3-8 from different sources, easy to hard, so a student who fails one and understands its solution meets the same idea next. Each group opens with one line on what to master. Questions that fit no group stand alone.
 3. Ends with the **Short version**, introduced by one line saying what it is: the must-do questions, one per distinct way of solving, past-exam questions first.
 
 No graphs on the Practice page.
