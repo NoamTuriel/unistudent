@@ -1,6 +1,6 @@
 ---
 name: study-pack
-description: Build a study pack for one unit (the student picks the pages), or propose updates to an existing one.
+description: Build a study pack for one unit (all the pages, always), or propose updates to an existing one.
 disable-model-invocation: true
 ---
 
@@ -37,15 +37,15 @@ Read, in this order (later wins):
 
 Done when: you know the page list, each page's content rules, and the concept structure.
 
-## 4. Pick pages
+## 4. Pages
 
-**Ask** (several answers allowed): every available page with its one-line "what it gives you", all default pages selected. Offer the recordings page only when a recorded lesson covers this unit: read the first line of each summary in the Recorded lessons recordings (the Wiki's `recordings/` folders of recordings assigned to `lessons`) and keep the ones that say they cover the unit. A unit with only solution recordings gets no recordings page; say why.
+Never ask which pages to build: build every page of the rules' page list, every time. The recordings page exists only when a recorded lesson covers this unit: read the first line of each summary in the Recorded lessons recordings (the Wiki's `recordings/` folders of recordings assigned to `lessons`) and keep the ones that say they cover the unit. A unit with only solution recordings gets no recordings page; say so in one line.
 
-Done when: the student chose the pages.
+Done when: you know the page list and, for the recordings page, which lessons it points to.
 
 ## 5. Build
 
-**Delegate** to one `study-pack-writer` worker, giving it: course folder, unit, the pack folder, the chosen pages, the resolved rules (paste them in full: the worker can't see your skills), the format (Obsidian or Markdown), and the language.
+**Delegate** to one `study-pack-writer` worker, giving it: course folder, unit, the pack folder, the page list and the covering lessons, the resolved rules (paste them in full: the worker can't see your skills), the format (Obsidian or Markdown), and the language.
 
 Done when: the writer returned its page list.
 
