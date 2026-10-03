@@ -13,10 +13,11 @@ LAYOUT = 2
 LABELS = {
     "he": {"inbox": "1-קבצים-חדשים", "material": "2-חומרי-הקורס", "study": "3-{course}-ללמוד-מכאן",
            "official": "חומר-רשמי-של-הקורס", "added": "חומר-לא-רשמי", "unit": "יחידה {n}",
-           "general": "חומר-כללי-לכל-היחידות", "unsorted": "עוד-לא-שויך-ליחידה", "roadmap": "מפת הקלטות"},
+           "general": "חומר-כללי-לכל-היחידות", "unsorted": "עוד-לא-שויך-ליחידה", "roadmap": "מפת הקלטות",
+           "lessons": "הקלטות מפגשים"},
     "en": {"inbox": "1-inbox", "material": "2-course-material", "study": "3-{course}-study-from-here",
            "official": "official", "added": "added", "unit": "Unit {n}", "general": "General", "unsorted": "Unsorted",
-           "roadmap": "Recordings roadmap"},
+           "roadmap": "Recordings roadmap", "lessons": "Recorded lessons"},
 }
 # Hebrew names used before 0.5.0: still recognized (and renamed by `ensure_layout`) in folders made with them.
 OLD_LABELS = [{"official": "רשמי", "added": "נוסף", "unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין"}]
@@ -42,15 +43,18 @@ def safe_name(name: str) -> str:
 
 
 def parse_unit(value):
-    """A unit as stored: an int, "general" (whole course), or None (unsorted)."""
+    """A unit as stored: an int, "general" (whole course), "lessons" (Recorded lessons: recordings of whole class
+    sessions, outside every unit), or None (unsorted)."""
     if value is None or value == "unsorted":
         return None
     if str(value).strip().lower() in ("general", "0"):
         return "general"
+    if str(value).strip().lower() == "lessons":
+        return "lessons"
     try:
         number = int(str(value).strip())
     except ValueError:
-        raise ValueError(f"A unit is a number, 'general' or 'unsorted', not {value!r}.")
+        raise ValueError(f"A unit is a number, 'general', 'lessons' or 'unsorted', not {value!r}.")
     if number < 0:
         raise ValueError(f"A unit number can't be negative: {value!r}.")
     return number
@@ -62,10 +66,12 @@ def parse_tier_folder(name):
 
 
 def parse_unit_folder(name):
-    """(True, unit) when `name` is a unit folder in any language: a number, "general" or None (unsorted)."""
+    """(True, unit) when `name` is a unit folder in any language: a number, "general", "lessons" or None (unsorted)."""
     for table in (*LABELS.values(), *OLD_LABELS):
         if name == table["general"]:
             return True, "general"
+        if name == table.get("lessons"):  # the pre-0.5.0 names had no lessons folder
+            return True, "lessons"
         if name == table["unsorted"]:
             return True, None
         head, tail = table["unit"].split("{n}")
@@ -80,8 +86,8 @@ def unit_dir(unit) -> str:
     unit = parse_unit(unit)
     if unit is None:
         return "unsorted"
-    if unit == "general":
-        return "general"
+    if unit in ("general", "lessons"):
+        return unit
     return f"unit-{unit:02d}"
 
 
@@ -241,8 +247,8 @@ class Course:
         unit = parse_unit(unit)
         if unit is None:
             return self.label("unsorted")
-        if unit == "general":
-            return self.label("general")
+        if unit in ("general", "lessons"):
+            return self.label(unit)
         return self.label("unit", n=unit)
 
     def unit_label(self, unit):
@@ -250,8 +256,8 @@ class Course:
         unit = parse_unit(unit)
         if unit is None:
             return self.label("unsorted")
-        if unit == "general":
-            return self.label("general")
+        if unit in ("general", "lessons"):
+            return self.label(unit)
         return self.label("unit", n=unit)
 
 

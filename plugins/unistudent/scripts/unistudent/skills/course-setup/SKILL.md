@@ -102,7 +102,7 @@ Done when: the course folder exists, the files the student has (from the site, t
 
 ## 6. Sort the material into units
 
-Say the step in one line: the AI needs to know which unit (chapter) each file belongs to, so study packs and answers use the right material. Run `us unsorted --json`. If any file has no unit, ask one grouped question (unit number, or "general" for whole-course files such as past exams) and record each answer with `us assign "<path>" <unit|general>`. Nothing unsorted → say so in one line and go on.
+Say the step in one line: the AI needs to know which unit (chapter) each file belongs to, so study packs and answers use the right material. Run `us unsorted --json`. If any file has no unit, ask one grouped question (unit number, or "general" for whole-course files such as past exams) and record each answer with `us assign "<path>" <unit|general>`. A recording of a whole class session (judge it from the whole file name and folder names, in any naming scheme) belongs to no unit: propose "Recorded lessons" for it and record it with `us assign "<path>" lessons`. Nothing unsorted → say so in one line and go on.
 
 Record it: `us setup-progress advance --course-name "<course>" --stage sort`.
 

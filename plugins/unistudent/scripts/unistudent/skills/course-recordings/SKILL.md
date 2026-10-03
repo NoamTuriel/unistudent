@@ -38,10 +38,16 @@ For each transcript, **delegate** to one `recording-summarizer` worker, telling 
 
 Done when: every transcript has `toc.md` and `summary.md`.
 
-## 5. Update
+## 5. Where each recording belongs
 
-Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, with the announcements and exam hints, is written into the student's Study vault), then `us wiki check`.
+A recording of a whole class session often teaches several units at once, so it belongs to no unit: it goes to **Recorded lessons**. Decide from the recording's meaning, never from a keyword list: read each recording's whole file name and its folder names (in any language or naming scheme the university uses) and judge whether it is a whole class session, a recording that solves one question, or something else. A name that settles it is enough. If it does not, read the start of the transcript. If you are still unsure, ask the student one grouped question. Record each class session with `us assign "<path>" lessons`; a recording that solves a question stays in its unit.
 
-Done when: `us wiki check` reports 0 problems. If a unit with a study pack got new recordings, offer `/unistudent:study-pack N` for proposed changes.
+Done when: every class session is assigned to `lessons` or the student deferred it.
 
-Report: which recordings are done (and that each unit's roadmap is in the study vault), and the announcements and "this will be on the exam" moments the summarizers found.
+## 6. Update
+
+Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, and the Recorded lessons roadmap, with the announcements and exam hints, is written into the student's Study vault), then `us wiki check`.
+
+Done when: `us wiki check` reports 0 problems. If a new recorded lesson covers a unit that has a study pack (read the lesson's first summary line for the units), offer `/unistudent:study-pack N` for that unit; `us study changes` cannot see lessons, since they belong to no unit.
+
+Report: which recordings are done (and that each unit's roadmap, and the Recorded lessons roadmap, is in the study vault), and the announcements and "this will be on the exam" moments the summarizers found.

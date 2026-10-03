@@ -221,7 +221,7 @@ class RoadmapsAndAnnouncements(CourseTestCase):
             run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
         self.rec = self.f.wiki / "recordings" / "session 5"
         write(self.rec / "toc.md", "Sources: [transcript](transcript.md)\n\n| 00:01:00 | exam question | [00:01:00](transcript.md#000100) |\n")
-        write(self.rec / "summary.md", "Sources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n\n"
+        write(self.rec / "summary.md", "Session 5: a lesson about unit 4.\n\nSources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n\n"
                                        '## "This will be on the exam"\n\n- The multiplier, at 00:12:47.\n\n## Topics\n\nMoney.\n')
         self.roadmap = self.f.study / "Unit 4" / "Recordings roadmap.md"
 
@@ -230,7 +230,7 @@ class RoadmapsAndAnnouncements(CourseTestCase):
         text = self.roadmap.read_text("utf-8")
         self.assertIn("[00:01:00](file://", text)
         self.assertIn("session%205.mp4#t=60)", text)
-        self.assertIn("Made from", text.split("<!-- unistudent:generated:start -->")[1].split("<!-- unistudent:generated:end -->")[0])
+        self.assertEqual(text.count("Sources:"), 0)  # one video link per recording, no repeated list of sources
         self.assertEqual(run_json("check", self.roadmap, "--labels", "--course", self.course)["problems"], [])
 
     def test_text_outside_the_generated_block_is_still_checked_for_sources(self):  # T3

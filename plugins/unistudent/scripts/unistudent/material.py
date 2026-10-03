@@ -194,14 +194,17 @@ def import_folder(course, folder, tier="added"):
 
 
 def assign(course, rel, unit):
-    """Answer for one unsorted file: move it into its unit's folder. Returns its new path."""
+    """Answer for one unsorted file: move it into its unit's folder (or "general", or "lessons" for a recording of a whole
+    class session). Returns its new path."""
     require_new_layout(course)
     manifest = course.manifest()
     files = manifest["files"]
     if rel not in files:
         raise KeyError(rel)
-    entry = files.pop(rel)
     value = parse_unit(unit)
+    if value == "lessons" and kind(rel) != "recording":
+        raise UserError(f"Only a recording can go to the recorded lessons: {rel}")
+    entry = files.pop(rel)
     new_rel = f"{_slot(course, entry['tier'], value)}/{Path(rel).name}"
     if entry.get("stored_at") is None and new_rel != rel:
         target = course.material / new_rel

@@ -45,6 +45,10 @@ The drop zone in a course folder for material the student adds by hand.
 The video file of one course session (מפגש).
 _Avoid_: video, lecture
 
+**Recorded lessons**:
+The place, outside every unit, for recordings of whole class sessions, which often teach several units at once. It is a folder in both the Material folder and the Study vault, and its recordings are never unsorted.
+_Avoid_: lectures folder, general recordings
+
 ### Knowledge and output
 
 **Wiki**:

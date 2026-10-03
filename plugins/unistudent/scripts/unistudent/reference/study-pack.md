@@ -21,7 +21,7 @@ Split the unit into 4–6 topics in teaching order (usually the lecture order). 
 | roadmap | `N.1 מפת דרכים` / `N.1 Roadmap` | How to start, the idea, what to know by heart, a table of topics, the solving order, what the lecturer said, a checklist, all sources (folded) | yes |
 | walkthrough | `N.2 הסבר החומר` / `N.2 Walkthrough` | The big idea, then every topic with its concepts (below), its "How to answer" block, and its folded sources | yes |
 | practice | `N.3 תרגול` / `N.3 Practice` | A table of topics with question counts; per topic its questions linked, easy to hard; the Short version at the end | yes |
-| recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | Per full lecture recording: the teacher's messages, then a short timeline of the lecture's parts. Only for lecture recordings with transcripts (below) | yes, when such recordings exist |
+| recordings | `N.4 תוכן עניינים להקלטות` / `N.4 Recordings index` | One line per recorded lesson that covers the unit, pointing into the Recorded lessons roadmap (below) | yes, when such a lesson exists |
 
 Save to the unit's folder in the Study vault (`pack_folder` in the result of `us study changes --unit N`): its name, the page titles and the content all follow the course language. The vault holds only study packs and the generated recordings roadmap.
 
@@ -99,12 +99,9 @@ For a student short on time: every topic still appears, but with the fewest ques
 
 ## Recordings index page
 
-Only **lecture recordings**: long recordings of a whole class that teach the course. A short recording that solves one question or one exam question (a solution video) is never indexed here; the other pages still cite it. A unit with no lecture recording with a transcript gets no Recordings page at all, not an empty one.
+Only **recorded lessons**: recordings of a whole class session, which belong to no unit (the Recorded lessons folder of the Study vault). The first line of each lesson's summary says which units it covers; use it to decide which lessons cover this unit. A recording that solves one question is never pointed to here; the other pages still cite it. A unit no recorded lesson covers gets no Recordings page at all, not an empty one.
 
-Per lecture recording, in this order:
-
-1. **The teacher's messages**: everything the lecturer says about what the student must do or know, with the time linked. Usually in the first and last minutes, so read both fully, then search the whole transcript for requests and deadlines ("tomorrow", "next week", "I want you to…", "send the exercise by…", who to work with, assignments, dates, exam information, "this will be on the exam"). Quote the lecturer's own words, short; never summarise them away. No messages found: leave the section out.
-2. **The timeline**: a short list, not a table. Merge neighbouring stretches that teach the same thing into one part, so a lecture of about three hours has roughly 8 to 15 lines. Each line: the time span (linked at its start), the **roadmap topic** it teaches (the topic names of the unit's Roadmap, nothing invented), and one short sentence on what happens. Show every break as a one-word line. Show every exercise the lecturer sets as one line saying when it was posed and when it was solved ("exercise: <name>, set 00:41:00, solved 00:47:30"). No type column, no per-example lines, no repeated explanations.
+One line per covering lesson, in lesson order: the lesson (its summary line), where in it the unit's part starts (linked at that time), and roughly how long that part is, with a link to the lesson's entry in the Recorded lessons roadmap. Nothing else: the lesson's announcements, exam hints and full timeline live only in that roadmap, so nothing is written twice.
 
 ## Graphs
 
