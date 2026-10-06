@@ -66,12 +66,25 @@ class GraphCommand(CourseTestCase):
         code, out = run("graph", self.spec(parallel, "parallel"))
         self.assertIn("do not cross", out)
 
-    def test_without_matplotlib_nothing_is_drawn_and_the_message_says_how_to_add_it(self):
+    def test_a_broken_spec_is_reported_as_a_spec_mistake_naming_the_spec(self):
+        broken = {"x": "x", "y": "y", "curves": [{"name": "A"}]}
+        for env in ({}, {"UNISTUDENT_NO_MATPLOTLIB": "1"}):
+            with mock_env(**env):
+                code, out = run("graph", self.spec(broken, "broken"))
+            self.assertEqual(code, 1)
+            self.assertIn("broken.json", out)
+            self.assertIn("Fix the spec", out)
+            self.assertNotIn("matplotlib", out)
+
+    def test_without_matplotlib_nothing_is_drawn_and_the_message_says_slide_link_and_words(self):
         spec = self.spec(SKETCH)
         with mock_env(UNISTUDENT_NO_MATPLOTLIB="1"):
             code, out = run("graph", spec)
         self.assertEqual(code, 1)
-        self.assertIn("pip install", out)
+        self.assertIn("slide", out)
+        self.assertIn("in words", out)
+        self.assertNotIn("pip", out)
+        self.assertNotIn("Fix the spec", out)
         self.assertFalse(spec.with_suffix(".png").exists())
 
 
