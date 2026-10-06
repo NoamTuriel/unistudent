@@ -194,7 +194,7 @@ class RecommendedTools(unittest.TestCase):
 
     def test_the_section_holds_every_rule_and_one_harness_row_per_app(self):
         section = self.section()
-        for rule in ("**Tool bar.**", "**Boundary.**", "**Harness table.**", "**Entry rule.**", "**Evidence.**",
+        for rule in ("**Tool bar.**", "**Boundary.**", "**Harness table.**", "**Entry rule.**",
                      "**Unattended surface.**", "uv run --with", "proven by one sample call in CI",
                      "needs a restart", "`us tools add <name>`", "no keyword pre-scan"):
             self.assertIn(rule, section)
@@ -209,8 +209,11 @@ class RecommendedTools(unittest.TestCase):
     def test_the_roadmap_closing_line_names_the_per_kind_sentence(self):
         how_to_start = self.RULES.split("## Roadmap page")[1].split("\n2. ")[0]
         closing = how_to_start.split("on request")[1]
-        for words in ("per missing kind", "what to say in chat", "Recommended tools"):
+        for words in ("study-pack skill", "Recommended tools"):
             self.assertIn(words, closing)
+        build = (CORE / "study-pack" / "SKILL.md").read_text("utf-8").split("## 5. Build")[1].split("\n## ")[0]
+        for words in ("`picture` gap", "Presentation kind words", "Tool list", "per missing kind", "`rule`"):
+            self.assertIn(words, build)
 
     def test_no_rule_asks_the_student_during_the_build(self):
         self.assertIsNone(re.search(r"(?i)\bask|interview|\bconfirm", self.section()))

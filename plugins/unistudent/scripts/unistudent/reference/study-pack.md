@@ -58,12 +58,12 @@ A quote in a Model answer or Say it is copied word for word from the solution: `
 
 The page the student reads first, in this order, each part only when it has something to say:
 
-1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. End with this fixed sentence, written in the course language, its example request built from one of this unit's own concepts: "UniStudent draws graphs and flowcharts on request: ask in chat, for example \"draw the graph of <concept>\"." Then, per missing kind with a Tool list entry (Recommended tools, below), one sentence: what this unit shows and what to say in chat to add the tool.
+1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. End with this fixed sentence, written in the course language, its example request built from one of this unit's own concepts: "UniStudent draws graphs and flowcharts on request: ask in chat, for example \"draw the graph of <concept>\"." The study-pack skill adds the Recommended tools sentences after the pack is written (Recommended tools, below).
 2. **The idea** of the unit, one or two lines.
 3. **What to know by heart and what to understand:** one list for the whole unit, not one per topic.
 4. **A table of the unit's topics**, the same names and order as the walkthrough: per topic its tool, the question that recurs, the common mistake, and a pointer to the topic's "How to answer" block (only when it has one).
 5. **The solving order**, a few short steps.
-6. **What the lecturer said** (the section below).
+6. **What the lecturer said**, only when a recorded lesson covers the unit: its announcements and exam hints are on the Recordings index page (below), so point there.
 7. **A checklist** before the exam (or the course's end, when it has no exam).
 8. **All the unit's sources:** one folded block (closed by default, a foldable callout in Obsidian format, `<details>` in plain Markdown) listing every source file and recording of the unit as links, plain names only. The roadmap is where a student looks for where things are, so this is the one place the whole unit's sources are together.
 
@@ -140,8 +140,7 @@ A picture the course shows that UniStudent cannot draw gets a tool only from the
 | Any other app | name it and give the steps |
 
 - **Entry rule.** An entry joins the Tool list only when a real course shows a picture no existing kind draws. A dispatcher for Python kinds comes at the third real kind.
-- **Evidence.** Two sources, matched to the Tool list by the main session after the pack is written, no keyword pre-scan: the unit page's Presentation kind words and the writer's Known gaps `picture` lines.
-- **Unattended surface.** The roadmap's How to start line is the only place a tool is named: per missing kind with an entry, one sentence saying what this unit shows and what to say in chat to add it. The build installs nothing and waits on no one. In chat, on the student's request, `us tools add <name>` writes the course folder's config or returns the steps, and says whether a restart is needed; it lands with the first entry.
+- **Unattended surface.** The roadmap's How to start line is the only place a tool is named: per missing kind with an entry, one sentence saying what this unit shows and what to say in chat to add it. The study-pack skill adds it after the pack is written, from the unit page's Presentation kind words and the writer's Known gaps `picture` lines; no keyword pre-scan. The build installs nothing and waits on no one. In chat, on the student's request, `us tools add <name>` writes the course folder's config or returns the steps, and says whether a restart is needed; it lands with the first entry.
 
 ## When the course has …
 
