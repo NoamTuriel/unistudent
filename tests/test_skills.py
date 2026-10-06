@@ -163,3 +163,23 @@ class WorkersGetTheTools(unittest.TestCase):
         short = rules.split("### Short version")[1].split("\n#")[0]
         self.assertNotIn("when unsure", short.lower())
         self.assertIn("read both solutions", short)
+
+
+class RulesByPath(unittest.TestCase):
+    """Ticket 29: the writer and verifier read the three rule files themselves; nothing is pasted."""
+    SKILL = (CORE / "study-pack" / "SKILL.md").read_text("utf-8")
+
+    def test_the_skill_passes_three_rule_paths_to_the_writer_and_the_verifier(self):
+        self.assertNotIn("paste", self.SKILL.lower())
+        for step in ("## 5.", "## 6."):
+            text = self.SKILL[self.SKILL.index(step):].split("\n## ")[0]
+            self.assertIn("three rule paths", text)
+        for worker in ("study-pack-writer.md", "verifier.md"):
+            text = (CORE.parent / "agents" / worker).read_text("utf-8")
+            for layer in ("generic rules", "General preferences", "Course preferences"):
+                self.assertIn(layer, text, worker)
+
+    def test_links_are_one_per_recording_per_section_and_a_question_without_an_anchor_is_named(self):
+        rules = (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
+        self.assertIn("one `file:` link per recording per section", rules)
+        self.assertIn("no page anchor", rules.split("## Practice page")[1].split("\n## ")[0])
