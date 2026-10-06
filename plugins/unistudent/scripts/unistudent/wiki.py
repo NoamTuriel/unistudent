@@ -66,6 +66,20 @@ def _plan_pages(course):
     return plan
 
 
+def _image_page(rel, entry):
+    """Where the source-reader worker writes an image's source page."""
+    return f"sources/{unit_dir(entry.get('unit'))}/{safe_name(Path(rel).stem)}.md"
+
+
+def _read_visually(course, rel, fp, page):
+    """Whether the source-reader worker has read `rel` as it is now: `page` names it and the fingerprint it read."""
+    path = course.wiki / page
+    if not path.is_file():
+        return False
+    head = path.read_text("utf-8").split("\n---", 1)[0] + "\n"
+    return f"\nsource: {rel}\n" in head and f"\nfingerprint: {fp}\n" in head
+
+
 def _source_page(rel, entry, conversion):
     lines = [
         "---",
@@ -183,7 +197,9 @@ def build(course, force=False):
         target = wiki / page
         info = state.get(rel)
         if not force and info and info.get("fingerprint") == entry.get("fingerprint") and target.exists():
-            needs_visual += [{"source": rel, "pages": info.get("empty_pages", [])}] if info.get("empty_pages") else []
+            if info.get("empty_pages") and not _read_visually(course, rel, entry.get("fingerprint"), page):
+                needs_visual.append({"source": rel, "pages": info["empty_pages"], "page": page,
+                                     "fingerprint": entry.get("fingerprint")})
             continue
         conversion = convert(material.path_of(course, rel))
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -195,11 +211,14 @@ def build(course, force=False):
         touched.add(unit_dir(entry.get("unit")))
         warnings_out += [f"{rel}: {w}" for w in conversion.warnings]
         if conversion.empty_pages:
-            needs_visual.append({"source": rel, "pages": conversion.empty_pages})
+            needs_visual.append({"source": rel, "pages": conversion.empty_pages, "page": page,
+                                 "fingerprint": entry.get("fingerprint")})
     course.write_state("wiki.json", state)
     _relink_pages(wiki, {old: new for old, new in moved_pages.items() if (wiki / new).exists()})
 
-    images = [rel for rel in manifest if kind(rel) == "image"]
+    images = [{"source": rel, "page": _image_page(rel, entry), "fingerprint": entry.get("fingerprint")}
+              for rel, entry in manifest.items()
+              if kind(rel) == "image" and not _read_visually(course, rel, entry.get("fingerprint"), _image_page(rel, entry))]
     recordings = recording_pages(course)
     for name, template in STUBS.items():
         if not (wiki / name).exists():
@@ -211,6 +230,15 @@ def build(course, force=False):
         by_unit.setdefault(unit_dir(manifest[rel].get("unit")), []).append((rel, page))
     for rel, info in recordings.items():
         by_unit.setdefault(unit_dir(info["unit"]), [])
+    # A new table of contents makes its units' pages stale: the unit writer can now fill "Solved in a recording".
+    seen = set(course.read_state("tocs.json", []))
+    for rel, info in recordings.items():
+        if info["processed"] and (wiki / info["folder"] / "toc.md").exists() and info["folder"] not in seen:
+            seen.add(info["folder"])
+            line = description_line((wiki / info["folder"] / "summary.md").read_text("utf-8")) or ""
+            touched |= ({unit_dir(n) for n in _units_named(line)} & set(by_unit) if info["unit"] == "lessons"
+                        else {unit_dir(info["unit"])})
+    course.write_state("tocs.json", sorted(seen))
     unit_pages = []
     for folder in sorted(by_unit):
         unit = {"unsorted": None, "general": "general", "lessons": "lessons"}.get(folder, folder[len("unit-"):])
@@ -278,6 +306,14 @@ def build(course, force=False):
         "summary": f"Wiki: {converted} converted, {len(plan)} source pages, {len(recordings)} recordings, "
                    f"{len(images)} images and {len(needs_visual)} files needing visual reading. {covered['summary']}",
     }
+
+
+def _units_named(line):
+    """The unit numbers a lesson's one-line description says it covers ("a lesson about units 7-9")."""
+    # ponytail: English and Hebrew unit words only; add a language's word when it gets a LABELS table
+    parts = re.split(r"(?i)unit|יחיד", line, maxsplit=1)
+    return {n for a, b in re.findall(r"(\d+)(?:\s*[-–]\s*(\d+))?", parts[1] if len(parts) == 2 else "")
+            for n in range(int(a), int(b or a) + 1)}
 
 
 def _section(text, title):
@@ -454,12 +490,13 @@ def coverage(course, write=False):
     for rel in sorted(files):
         what = kind(rel)
         info = state.get(rel)
+        page = info["page"] if info and what == "document" else None
         if what == "document":
             if info is None or info.get("fingerprint") != files[rel].get("fingerprint"):
                 status, why = "pending", "new or changed since the last build: run the Wiki build"
             elif info.get("method") == "none":
                 status, why = "failed", " ".join(info.get("warnings") or ["could not be read"])
-            elif info.get("empty_pages"):
+            elif info.get("empty_pages") and not _read_visually(course, rel, files[rel].get("fingerprint"), info["page"]):
                 status = "analyzed"
                 why = f"pages with no text layer need visual reading: {', '.join(map(str, info['empty_pages']))}"
             else:
@@ -473,11 +510,13 @@ def coverage(course, write=False):
                 status, why = "pending", "you haven't chosen yet whether to transcribe recordings"
             else:
                 status, why = "pending", "waiting for transcription (/unistudent:course-recordings)"
+        elif what == "image" and _read_visually(course, rel, files[rel].get("fingerprint"), _image_page(rel, files[rel])):
+            status, why, page = "analyzed", "", _image_page(rel, files[rel])
         elif what == "image":
             status, why = "skipped", "images are listed but not read"
         else:
             status, why = "skipped", "not a file type the Wiki reads"
-        rows.append({"path": rel, "status": status, "why": why, "page": info["page"] if info and what == "document" else None})
+        rows.append({"path": rel, "status": status, "why": why, "page": page})
     counts = {name: sum(1 for r in rows if r["status"] == name) for name in ("analyzed", "failed", "skipped", "pending")}
     lines = ["# Coverage: what the Wiki has and hasn't read", "",
              "Anything not marked analyzed is NOT in the Wiki: never present it as from the course material.", ""]
