@@ -5,8 +5,7 @@ from pathlib import Path
 from .common import UserError, problems_summary, resolve_course
 from .course import (Course, Registry, find_course, SETUP_STAGES, clear_setup_progress, generated_university_file,
                      list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, recommend_plugins,
-                     safe_name, unit_dir,
-                     write_generated_reference, write_setup_progress)
+                     safe_name, unit_dir, write_setup_progress)
 
 
 def register(add, with_course):
@@ -134,29 +133,30 @@ def register(add, with_course):
     p.add_argument("--text", nargs="+")
     p.add_argument("--scope", choices=["course", "general"], default="course")
 
-    def fallback(args, path, name, noun, need, heading, sections):
-        """Shared status/save for a generated fallback (ADR 0005): `noun` names it, `need` the missing-option message."""
-        if args.action == "status":
-            exists = path.exists()
-            return {"generated": exists, "path": str(path),
-                    "content": path.read_text("utf-8") if exists else None,
-                    "summary": (f"Reusing the generated {noun} for {name} ({path})." if exists
-                                else f"No generated {noun} yet for {name}.")}
-        if not all(words for _, words in sections):
-            raise UserError(need)
-        write_generated_reference(path, heading, sections)
-        return {"path": str(path), "summary": f"Saved a generated {noun} for {name} at {path}."}
-
     def cmd_university(args):
-        if args.university.strip().casefold() == "none":  # self-study: no university at all
+        """The once-interviewed, cached fallback for a university with no installed plugin (ADR 0005)."""
+        name = args.university
+        if name.strip().casefold() == "none":  # self-study: no university at all
             if args.action == "save":
                 raise UserError("No university (self-study): there is no course site, so nothing to save.")
             return {"generated": False, "path": None, "content": None,
                     "summary": "No university (self-study): no plugin, no fallback, nothing to interview."}
-        return fallback(args, generated_university_file(args.university), args.university, "fallback",
-                        "Give both --url and --organizing.",
-                        f"{args.university}: how the student reaches the course site",
-                        [("Site", args.url), ("How the student organizes and prioritizes material", args.organizing)])
+        path = generated_university_file(name)
+        if args.action == "status":
+            exists = path.exists()
+            return {"generated": exists, "path": str(path),
+                    "content": path.read_text("utf-8") if exists else None,
+                    "summary": (f"Reusing the generated fallback for {name} ({path})." if exists
+                                else f"No generated fallback yet for {name}.")}
+        if not (args.url and args.organizing):
+            raise UserError("Give both --url and --organizing.")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {name}: how the student reaches the course site\n\n"
+                        "Written once from the student's own description, not independently verified — "
+                        "a starting point, not gospel.\n\n"
+                        f"## Site\n\n{' '.join(args.url)}\n\n"
+                        f"## How the student organizes and prioritizes material\n\n{' '.join(args.organizing)}\n\n", "utf-8")
+        return {"path": str(path), "summary": f"Saved a generated fallback for {name} at {path}."}
 
     p = add("university", cmd_university, "check for or save a generated university fallback (no installed plugin)")
     p.add_argument("action", choices=["status", "save"])
@@ -165,9 +165,7 @@ def register(add, with_course):
     p.add_argument("--organizing", nargs="+", help="how the student organizes and prioritizes material")
 
     def cmd_plugins(args):
-        if not args.university:
-            raise UserError("Give --university.")
-        found = [{"name": p["name"], "kind": p["kind"], "gives": p["gives"],
+        found = [{"name": p["name"], "gives": p["gives"],
                   "install": f"/plugin install {p['name']}@unistudent"}
                  for p in recommend_plugins(args.university)]
         other = ("In another app (Cursor, Codex, Gemini CLI...), add the skills with "
@@ -179,7 +177,7 @@ def register(add, with_course):
 
     p = add("plugins", cmd_plugins, "recommend the plugins to install for a university (never installs)")
     p.add_argument("action", choices=["recommend"])
-    p.add_argument("--university")
+    p.add_argument("--university", required=True)
 
     def cmd_course_context(args):
         """The course rules for the AI: from --course, else the folder it runs in, else the active course."""

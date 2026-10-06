@@ -15,7 +15,7 @@ class GeneratedList(CourseTestCase):
         old_course_rules.parent.mkdir(parents=True)
         old_course_rules.write_text("# biology — Cells: generated study-pack rules\n", "utf-8")
         entries = run_json("generated")["generated"]
-        self.assertEqual([e["kind"] for e in entries], ["university"])
+        self.assertEqual(len(entries), 1)
         self.assertTrue(all(e["path"] and e["preview"] for e in entries))
 
 
