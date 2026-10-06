@@ -153,3 +153,89 @@ def check_pack_page(page: Path):
             if re.search(r"(?m)^### ", section) and not CLOSING_FROM.search(section):
                 problem("topic-missing-from-line", section.splitlines()[0][:80])
     return problems
+
+
+SECTION = re.compile(r"(?ms)^## (Notation|Assumptions)\s*$(.*?)(?=^## |\Z)")
+# A Latin symbol: up to four Latin letters, then digits or a _subscript (Y, MPC, C0, Y_d); a longer word is not one.
+SYMBOL = re.compile(r"(?<![A-Za-z0-9_./#])[A-Za-z]{1,4}(?:_[A-Za-z0-9]+|[0-9]+)?(?!\.?[A-Za-z0-9])")
+ASSUMPTION = re.compile(r"(?i)(?:assumption|הנחה)\D{0,8}?(\d+)")
+MATH = re.compile(r"\$\$?(.+?)\$\$?", re.S)
+NOT_PROSE = re.compile(r"!?\[\[[^\]]*\]\]|!?\[[^\]]*\]\([^)]*\)|https?://\S+|<[^>]+>|\[![^\]]*\]|\A---\n.*?\n---\n", re.S)
+QUOTE = re.compile(r'(?<!\w)["“„](.+?)["”“](?!\w)', re.S)
+LABEL_LINE = re.compile(r"^\s*(?:>\s*)*(?:[-*+]\s+)?\*\*")
+
+
+def _normal(text):
+    """Text with whitespace and punctuation gone, so a quote matches its source however it was wrapped."""
+    return re.sub(r"[\W_]+", "", unicodedata.normalize("NFKC", text)).casefold()
+
+
+def check_pack_against_unit(page: Path, course):
+    """Notation and quotes of a pack page against its unit's Wiki (ticket 30): every Latin symbol and assumption number
+    is listed in the unit page's Notation or Assumptions sections; every quote in a Say it or Model answer block occurs
+    in the unit's source pages. Course-language terms are left to the verifier (the glossary)."""
+    from .course import LABELS, parse_unit_folder, unit_dir
+    known, unit = parse_unit_folder(page.parent.name)
+    if not known or not isinstance(unit, int):
+        return []
+    unit_page = course.wiki / "units" / f"{unit_dir(unit)}.md"
+    listed = " ".join(m.group(2) for m in SECTION.finditer(unit_page.read_text("utf-8") if unit_page.is_file() else ""))
+    text = NOT_PROSE.sub(" ", CODE_BLOCK.sub("", page.read_text("utf-8")))
+    problems = []
+
+    def problem(kind, text_):
+        problems.append({"kind": kind, "page": str(page), "text": text_})
+
+    if listed:  # a unit page with neither section is not written yet: nothing to check against
+        language = course.settings()["language"]
+        prose = " ".join(MATH.findall(text)) if language == "en" else text  # in English every short word looks Latin
+        symbols, numbers = set(SYMBOL.findall(listed)), set(re.findall(r"\d+", listed))
+        for symbol in dict.fromkeys(SYMBOL.findall(prose)):
+            if symbol not in symbols:
+                problem("notation", symbol)
+        for hit in ASSUMPTION.finditer(text):
+            if hit.group(1) not in numbers:
+                problem("notation", hit.group(0))
+
+    labels = {_normal(table[key]) for table in LABELS.values() for key in ("model_answer", "say_it")}
+    sources = None
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        head = re.match(r"^\s*(?:>\s*)*(?:[-*+]\s+)?\*\*([^*]+)\*\*", line)
+        if not head or _normal(head.group(1)) not in labels:
+            continue
+        block = [line[head.end():]]
+        for more in lines[i + 1:]:
+            if not more.strip() or LABEL_LINE.match(more):
+                break
+            block.append(more)
+        for quote in QUOTE.findall("\n".join(block)):
+            if sources is None:
+                folder = course.wiki / "sources"
+                sources = _normal(" ".join(p.read_text("utf-8") for name in (unit_dir(unit), "general")
+                                           for p in sorted((folder / name).glob("*.md"))))
+            if _normal(quote) and _normal(quote) not in sources:
+                problem("quote", quote.strip()[:80])
+    return problems
+
+
+RETURN_PAGE = re.compile(r"^\s*(?:[-*]\s+)?\d+\.\d\b\S*\s+\S")
+RETURN_GAP = re.compile(r"^\s*[-*]\s+\w+\s+·\s+[^·]*\S[^·]*·\s*\S")
+
+
+def check_return(path: Path):
+    """The writer's return (ticket 30): the page list, one line per page, then `Known gaps:` and one line per gap as
+    kind · page · what's missing (or `Known gaps: none`). One `return` problem names the first line out of shape."""
+    lines = [line for line in path.read_text("utf-8").splitlines() if line.strip()]
+    gaps = next((i for i, line in enumerate(lines) if re.match(r"^\s*(?:\*\*)?Known gaps:", line)), None)
+    if gaps is None:
+        bad = "no `Known gaps:` line"
+    elif gaps == 0:
+        bad = "no page list before `Known gaps:`"
+    else:
+        tail = lines[gaps].split(":", 1)[1].strip(" *")
+        wrong = ([line for line in lines[:gaps] if not RETURN_PAGE.match(line)]
+                 + ([lines[gaps]] if tail and tail.lower() != "none" else [])
+                 + [line for line in lines[gaps + 1:] if not RETURN_GAP.match(line)])
+        bad = wrong[0].strip()[:80] if wrong else None
+    return [{"kind": "return", "page": str(path), "text": bad}] if bad else []

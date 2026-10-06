@@ -43,7 +43,9 @@ Done when: you know the pages to build and, for the recordings page, which lesso
 
 **Delegate** to one `study-pack-writer` worker, giving it: course folder, unit, the pack folder, the pages to build and the covering lessons, the resolved rules (paste them in full: the worker can't see your skills), the format (Obsidian or Markdown), and the language.
 
-Done when: the writer returned its page list.
+Save the writer's return, exactly as returned, to `.unistudent/writer-returns/<pack folder name>.md` in the course folder (the check in step 6 checks its shape). Act on its Known gaps: every `source` or `question` gap goes in your closing message to the student in one line each.
+
+Done when: the writer's return is saved.
 
 ## 6. Verify
 

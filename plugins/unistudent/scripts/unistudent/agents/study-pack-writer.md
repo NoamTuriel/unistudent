@@ -17,4 +17,12 @@ Input: the course folder, the unit, the pack folder (the unit's folder in the St
 7. **Graphs:** wherever the rules call for one, write the Graph spec, draw it, compare the PNG with the slide page once and embed it, all as the resolved rules' graphs section says.
 8. **Check:** run `us check --labels "<pack folder>"` (`us`: the UniStudent MCP tool `check`, or the `unistudent` command) and fix everything it reports.
 
-Done when: every page exists, every graph the rules call for is drawn, captioned and embedded (or described, when drawing is unavailable), every question-bank entry for the unit is on the Practice page, whose Short version has at least one question per topic, every walkthrough topic has its closing line(s), and the check reports 0 problems. Return the page list and one line per page on what it covers.
+Done when: every page exists, every graph the rules call for is drawn, captioned and embedded (or described, when drawing is unavailable), every question-bank entry for the unit is on the Practice page, whose Short version has at least one question per topic, every walkthrough topic has its closing line(s), and the check reports 0 problems. Return exactly this shape, nothing before or after it:
+
+```
+- <page name>: <what it covers>      (one line per page you wrote)
+Known gaps:
+- <kind> · <page> · <what's missing>   (one line per gap; `Known gaps: none` when there is none)
+```
+
+Known gaps list what you could not do. Kinds: `picture` (a picture you described in words; what's missing starts with its Presentation kind word, e.g. `picture · 4.2 Walkthrough · circuit: the amplifier on slide 12`), `question` (a question-bank entry you could not place or solve from the material), `source` (a page or recording you could not open), `rule` (a rule you could not follow, and why).
