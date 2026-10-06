@@ -23,6 +23,6 @@ Every bullet ends with `Sources:` and a link to the source page and page anchor 
 ## Return (don't write these files)
 
 - Glossary entries for the unit's terms, in the format at the top of `<wiki>/glossary.md`.
-- Question-bank entries for every question in the unit's Q&A files, assignment and past exams, in the format at the top of `<wiki>/question-bank.md`, tagged `#<unit>/<topic>`.
+- Question-bank entries for every question in the unit's Q&A files, assignment and past exams, in the format at the top of `<wiki>/question-bank.md`, tagged `#<unit>/<topic>`. Fill "Solved in a recording" only from a covering recording's `toc.md` (a recording of this unit, or a Recorded lesson whose `summary.md` first line says it covers this unit, both listed on the unit page): link the row that solves the question, or write "no" when that `## Solved in this recording` section lists no such question. With no covering `toc.md` yet, leave the field out: it is not knowable yet, and the Wiki build hands you this unit again when a table of contents appears.
 
 Done when: every source page of the unit has been read, and every method, symbol, assumption and question found in them is written or returned. Return the entries, then one line: counts of each.
