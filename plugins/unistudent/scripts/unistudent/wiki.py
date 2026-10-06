@@ -309,7 +309,7 @@ def _units_named(line):
     """The unit numbers a lesson's one-line description says it covers ("a lesson about units 7-9")."""
     # ponytail: English and Hebrew unit words only; add a language's word when it gets a LABELS table
     parts = re.split(r"(?i)unit|יחיד", line, maxsplit=1)
-    return {n for a, b in re.findall(r"(\d+)(?:\s*[-–]\s*(\d+))?", parts[1] if len(parts) == 2 else "")
+    return {n for a, b in re.findall(r"(\d+)(?:\s*(?:[-–]|עד|to|through)\s*(\d+))?", parts[1] if len(parts) == 2 else "")
             for n in range(int(a), int(b or a) + 1)}
 
 
