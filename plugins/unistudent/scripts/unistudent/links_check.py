@@ -132,6 +132,27 @@ CLOSING_FROM = re.compile(r"(?im)^\s*(?:[-*>]\s*)?(?:\*\*)?(?:from|מתוך)(?:\
 STAGE = re.compile(r"(?im)^\s*(?:#+\s*|[-*>]\s*)?(?:\*\*)?(?:stage|שלב)\s+\d")
 TOPIC_TAG = re.compile(r"(?<![\w&])#(?:unit-\d+/|י\d+/)")
 IMAGE = re.compile(r"!\[[^\]]*\]\(|!\[\[")
+TIME = re.compile(r"(?<![\d:])\d{1,2}:\d\d:\d\d(?![\d:])")
+
+
+def recording_link_problems(page: Path, text: str):
+    """Per section: one link per recording, and every time in the text follows a recording's link (ticket 29)."""
+    from .convert import RECORDINGS
+    problems = []
+    for section in re.split(r"(?m)^#{1,6} ", text):
+        seen, first = set(), None
+        for match in MD_LINK.finditer(section):
+            target, _, anchor = match.group(2).strip("<>").partition("#")
+            if not (anchor.startswith("t=") or Path(unquote(target)).suffix.lower() in RECORDINGS):
+                continue
+            first = match.start() if first is None else first
+            if target in seen:
+                problems.append({"kind": "repeated-recording-link", "page": str(page), "link": match.group(2)})
+            seen.add(target)
+        for time in TIME.finditer(section):
+            if first is None or time.start() < first:
+                problems.append({"kind": "time-without-link", "page": str(page), "text": time.group(0)})
+    return problems
 
 
 def check_pack_page(page: Path):
@@ -152,4 +173,6 @@ def check_pack_page(page: Path):
         for section in re.split(r"(?m)^## ", text)[1:]:
             if re.search(r"(?m)^### ", section) and not CLOSING_FROM.search(section):
                 problem("topic-missing-from-line", section.splitlines()[0][:80])
+    if re.match(r"\d+\.\d", page.name):  # pack pages only: the generated recordings roadmap links every line
+        problems += recording_link_problems(page, text)
     return problems

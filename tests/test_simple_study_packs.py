@@ -55,6 +55,16 @@ class PackShape(CourseTestCase):
         self.assertIn("practice-tag", self.kinds("4.3 Practice.md", "## Money\n\n- Q1 #unit-04/t01-money\n"))
         self.assertIn("practice-graph", self.kinds("4.3 Practice.md", "![curve](graphs/a.png)\n"))
 
+    def test_one_link_per_recording_per_section_with_the_times_as_text(self):
+        video = write(folders(self.course).material / "lecture 3.mp4", "").as_uri()
+        single = f"In the recordings: [lecture 3]({video}#t=767) 00:12:47, 00:30:10\n\nFrom: [slides]({self.slides.as_uri()})\n"
+        self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + single), [])
+        per_line = (f"In the recordings: [lecture 3, 00:12:47]({video}#t=767)\n\n"
+                    f"[lecture 3, 00:30:10]({video}#t=1810)\n\nFrom: [slides]({self.slides.as_uri()})\n")
+        self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + per_line), ["repeated-recording-link"])
+        orphan = f"In the recordings: lecture 3, 00:12:47\n\nFrom: [slides]({self.slides.as_uri()})\n"
+        self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + orphan), ["time-without-link"])
+
     def test_a_separate_short_practice_page_fails(self):
         self.assertIn("short-practice-page", self.kinds("4.3b Short practice.md", "- Q1\n"))
 
