@@ -85,12 +85,12 @@ class SetupFlow(CourseTestCase):
         self.assertNotIn("## Exam", context)
         run_json("wiki", "build", *course)
         write(folders(folder).wiki / "course.md", "# The course\n\n## Exam format\n\nnot in the course material yet\n")
-        run_json("context", *course)
+        run("wiki", "check", *course)
         self.assertNotIn("## Exam", run_json("course-context", *course)["summary"])
         # The exam section comes back as soon as the course page has exam information.
         write(folders(folder).wiki / "course.md", "# The course\n\n## Exam format\n\nThree hours, closed book. "
                                                   "Sources: [exam info](sources/general/exam.md)\n")
-        run_json("context", *course)
+        run("wiki", "check", *course)
         self.assertIn("## Exam", run_json("course-context", *course)["summary"])
 
 
