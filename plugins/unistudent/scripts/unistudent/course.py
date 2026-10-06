@@ -327,7 +327,7 @@ def _slug(text: str) -> str:
 # The university-to-plugin mapping, in one place (ticket 12). A university plugin is matched by its own test on the
 # normalized name ("Open University UK" must not match the Israeli one). One entry per plugin.
 PLUGIN_RECOMMENDATIONS = [
-    {"name": "openu", "kind": "university",
+    {"name": "openu",
      "gives": "downloads new material from your Open University of Israel course site",
      "match": lambda uni: (uni == "oui" or "פתוחה" in uni or "openu" in uni.replace("openuniversity", "")
                            or ("openuniversity" in uni and ("israel" in uni or "ישראל" in uni)))},
@@ -349,29 +349,14 @@ def _plain(text: str) -> str:
     return "".join(c for c in str(text or "").casefold() if c.isalnum())
 
 
-def recommend_plugins(university: str = "") -> list:
+def recommend_plugins(university: str) -> list:
     """The plugins that fit this university. Never installs anything."""
-    uni = _plain(university)
-    return [p for p in PLUGIN_RECOMMENDATIONS if p["match"](uni)]
+    return [p for p in PLUGIN_RECOMMENDATIONS if p["match"](_plain(university))]
 
 
 def generated_university_file(university: str) -> Path:
     """A once-interviewed, cached fallback for a university with no installed plugin (ADR 0005)."""
     return home() / "generated" / _slug(university) / "site.md"
-
-
-def write_generated_reference(path: Path, heading: str, sections: list) -> None:
-    """The interview-generate-persist mechanism of the university fallback (ADR 0005).
-
-    `sections` is [(title, words)]; `words` is joined with spaces, matching how the CLI collects free text.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    body = (f"# {heading}\n\n"
-            "Written once from the student's own description, not independently verified — "
-            "a starting point, not gospel.\n\n")
-    for title, words in sections:
-        body += f"## {title}\n\n{' '.join(words)}\n\n"
-    path.write_text(body, "utf-8")
 
 
 def list_generated() -> list:
@@ -380,7 +365,7 @@ def list_generated() -> list:
     out = []
     for path in sorted(folder.rglob("site.md")) if folder.is_dir() else []:  # other files are course rules from before ADR 0011
         lines = [l.strip() for l in path.read_text("utf-8").splitlines() if l.strip()]
-        out.append({"path": str(path), "kind": "university",
+        out.append({"path": str(path),
                     "preview": lines[0].lstrip("# ") if lines else ""})
     return out
 
