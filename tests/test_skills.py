@@ -142,6 +142,8 @@ class WorkersGetTheTools(unittest.TestCase):
         manifest = (ROOT / "plugins" / "unistudent" / ".claude-plugin" / "plugin.json").read_text("utf-8")
         workers = sorted(self.AGENTS.glob("*.md"))
         self.assertEqual(len(workers), 7)
+        for skill in sorted(CORE.glob("*/SKILL.md")):
+            self.assertIn(f"./scripts/unistudent/skills/{skill.parent.name}\"", manifest)
         for worker in workers:
             self.assertIn(f"./scripts/unistudent/agents/{worker.name}", manifest)
             tools = re.search(r"(?m)^tools:(.*)$", worker.read_text("utf-8")).group(1)
