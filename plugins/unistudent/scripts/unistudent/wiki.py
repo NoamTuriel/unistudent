@@ -51,10 +51,11 @@ STUBS = {
 
 
 def _plan_pages(course):
-    """Stable Material folder path → Wiki page mapping (sorted, so collisions resolve the same way every time)."""
+    """Stable Material folder path → Wiki page mapping for documents and images (sorted, documents first, so
+    collisions resolve the same way every time and an image never takes a document's page)."""
     plan, used = {}, set()
-    for rel, entry in sorted(course.manifest()["files"].items()):
-        if kind(rel) != "document":
+    for rel, entry in sorted(course.manifest()["files"].items(), key=lambda i: (kind(i[0]) != "document", i[0])):
+        if kind(rel) not in ("document", "image"):
             continue
         folder = unit_dir(entry.get("unit"))
         stem = safe_name(Path(rel).stem)
@@ -64,11 +65,6 @@ def _plan_pages(course):
         used.add(candidate)
         plan[rel] = candidate
     return plan
-
-
-def _image_page(rel, entry):
-    """Where the source-reader worker writes an image's source page."""
-    return f"sources/{unit_dir(entry.get('unit'))}/{safe_name(Path(rel).stem)}.md"
 
 
 def _read_visually(course, rel, fp, page):
@@ -175,7 +171,8 @@ def build(course, force=False):
     found = material.scan(course)  # the folder is the truth: follow moves, drop deletions, take new files as added
     manifest = course.manifest()["files"]
     state = course.read_state("wiki.json", {})
-    plan = _plan_pages(course)
+    pages = _plan_pages(course)
+    plan = {rel: page for rel, page in pages.items() if kind(rel) == "document"}
 
     # Pages whose file was deleted, moved or renamed (the scan above already followed it in the Manifest).
     moved_pages = {}
@@ -216,9 +213,9 @@ def build(course, force=False):
     course.write_state("wiki.json", state)
     _relink_pages(wiki, {old: new for old, new in moved_pages.items() if (wiki / new).exists()})
 
-    images = [{"source": rel, "page": _image_page(rel, entry), "fingerprint": entry.get("fingerprint")}
-              for rel, entry in manifest.items()
-              if kind(rel) == "image" and not _read_visually(course, rel, entry.get("fingerprint"), _image_page(rel, entry))]
+    images = [{"source": rel, "page": page, "fingerprint": manifest[rel].get("fingerprint")}
+              for rel, page in pages.items()
+              if kind(rel) == "image" and not _read_visually(course, rel, manifest[rel].get("fingerprint"), page)]
     recordings = recording_pages(course)
     for name, template in STUBS.items():
         if not (wiki / name).exists():
@@ -486,7 +483,7 @@ def coverage(course, write=False):
     state = course.read_state("wiki.json", {})
     level = course.settings().get("recording_level")
     recordings = recording_pages(course)
-    files, rows = course.manifest()["files"], []
+    files, rows, pages = course.manifest()["files"], [], _plan_pages(course)
     for rel in sorted(files):
         what = kind(rel)
         info = state.get(rel)
@@ -510,8 +507,8 @@ def coverage(course, write=False):
                 status, why = "pending", "you haven't chosen yet whether to transcribe recordings"
             else:
                 status, why = "pending", "waiting for transcription (/unistudent:course-recordings)"
-        elif what == "image" and _read_visually(course, rel, files[rel].get("fingerprint"), _image_page(rel, files[rel])):
-            status, why, page = "analyzed", "", _image_page(rel, files[rel])
+        elif what == "image" and _read_visually(course, rel, files[rel].get("fingerprint"), pages[rel]):
+            status, why, page = "analyzed", "", pages[rel]
         elif what == "image":
             status, why = "skipped", "images are listed but not read"
         else:
