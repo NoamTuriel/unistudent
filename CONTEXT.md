@@ -75,6 +75,14 @@ _Avoid_: notes, warnings
 A picture in a study pack with X and Y axes and the lines or curves drawn on them, reproducing one the course material shows.
 _Avoid_: diagram, plot, chart, figure (a figure is the picture inside the course material itself)
 
+**Recommended tool**:
+A tool outside the plugin that draws a kind of picture the course shows, named in the Tool list, set up for the student on request.
+_Avoid_: plugin recommendation, tool offer
+
+**Tool list**:
+The hardcoded, CI-proven list of self-installing kinds and Recommended tools.
+_Avoid_: plugin recommendation, tool offer
+
 **Unit**:
 A chapter of the course as the course itself numbers it (יחידה).
 
