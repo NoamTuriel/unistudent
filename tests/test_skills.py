@@ -54,9 +54,25 @@ class TranscriptionAndGraphRules(unittest.TestCase):
         self.assertIn("ask me per recording", text)
         self.assertNotIn("recordings transcribe", text)
 
-    def test_picture_instructions_name_the_mcp_tool_before_any_install_request(self):
-        text = (CORE / "reference" / "study-pack.md").read_text("utf-8") if (CORE / "reference").exists() else \
-            (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
-        self.assertLess(text.index("MCP tool `draw` first"), text.index("what the tool said"))
-        self.assertIn("Never ask the student to install anything by hand before the MCP tool has been tried", text)
-        self.assertIn("The plugin now supports", text)
+    RULES = (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
+
+    def test_graph_instructions_name_the_mcp_tool_and_never_an_install(self):
+        self.assertIn("MCP tool `graph` first", self.RULES)
+        self.assertIn("The student is never told to install anything", self.RULES)
+        self.assertLess(self.RULES.index("MCP tool `graph` first"), self.RULES.index("never told to install"))
+        self.assertNotIn("pip install", self.RULES)
+        self.assertIn("not a graph or a flow is a slide link plus one line in words", self.RULES)
+
+    def test_the_roadmap_rule_holds_the_one_discovery_sentence(self):
+        sentence = "UniStudent draws graphs and flowcharts on request"
+        roadmap = self.RULES.split("## Roadmap page")[1].split("\n## ")[0]
+        self.assertIn(sentence, roadmap)
+        self.assertEqual(self.RULES.count(sentence), 1)
+        for skill in ALL:
+            self.assertNotIn(sentence, skill.read_text("utf-8"), skill)
+
+    def test_no_skill_names_the_removed_picture_commands(self):
+        for doc in ALL + [CORE.parent / "reference" / "study-pack.md"] + sorted((CORE.parent / "agents").glob("*.md")):
+            text = doc.read_text("utf-8")
+            for gone in ("us tools", "us draw", "tools status"):
+                self.assertNotIn(gone, text, doc)

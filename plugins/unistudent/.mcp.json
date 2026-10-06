@@ -5,6 +5,8 @@
       "args": [
         "--from",
         "${CLAUDE_PLUGIN_ROOT}",
+        "--with",
+        "matplotlib",
         "unistudent-mcp"
       ]
     }

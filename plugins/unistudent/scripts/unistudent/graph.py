@@ -21,6 +21,9 @@ HASH_KEY = "unistudent-graph"
 PALETTE = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#8c564b"]
 FUNCTIONS = {"sqrt": math.sqrt, "log": math.log, "exp": math.exp, "sin": math.sin, "cos": math.cos}
 FORMULA_HELP = "Use x, numbers, + - * / ^ and the functions sqrt, log, exp, sin, cos."
+NO_DRAWING = ("Could not draw this graph: the drawing library (matplotlib) is not available here. If the UniStudent "
+              "MCP tool `graph` is available, call it instead: it includes matplotlib. Otherwise write no image: "
+              "link the slide page and describe the graph in words, in one line.")
 KINDS = ("points", "vertical", "horizontal", "formula", "sketch")
 
 
@@ -152,7 +155,7 @@ def load_spec(path):
     try:
         raw = json.loads(Path(path).read_text("utf-8"))
     except (OSError, ValueError) as error:
-        raise UserError(f"Can't read the Graph spec {path}: {error}")
+        raise UserError(f"it is not readable JSON ({error})")
     if not isinstance(raw, dict) or not isinstance(raw.get("curves"), list) or not raw["curves"]:
         raise UserError('The Graph spec needs a "curves" list with at least one curve.')
     curves, names = [], set()
@@ -450,14 +453,19 @@ def _avoid_overlaps(fig, labels, obstacles):
 def draw(spec_path, force=False):
     """Draw the spec to a PNG beside it. Returns {png, drawn}."""
     spec_path = Path(spec_path)
-    spec = load_spec(spec_path)
-    lines, ((xlo, xhi), (ylo, yhi)), sketch_only = layout(spec)
-    points = point_positions(spec, lines)
+    try:
+        spec = load_spec(spec_path)
+        lines, ((xlo, xhi), (ylo, yhi)), sketch_only = layout(spec)
+        points = point_positions(spec, lines)
+    except UserError as error:
+        raise UserError(f"The Graph spec {spec_path} has a mistake: {error} Fix the spec and draw again.")
     png = spec_path.with_suffix(".png")
     digest = spec_hash(spec_path)
     if not force and stored_hash(png) == digest:
         return {"png": str(png), "drawn": False}
-    Figure = _matplotlib()  # the dispatcher (draw.py) has already made sure matplotlib is importable
+    Figure = _matplotlib()
+    if Figure is None:
+        raise UserError(NO_DRAWING)
 
     fig = Figure(figsize=(5.2, 4.0), dpi=150)
     ax = fig.subplots()
