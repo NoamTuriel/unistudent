@@ -203,7 +203,7 @@ class Course:
         return changed
 
     def pack_folder(self, unit):
-        """Where a unit's study pack lives in the Study vault (the vault itself is made by the first Study pack request)."""
+        """Where a unit's study pack lives in the Study vault (the vault itself is made by the first Study pack)."""
         return self.study / self.unit_folder(unit)
 
     @property
