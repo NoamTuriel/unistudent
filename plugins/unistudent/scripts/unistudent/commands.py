@@ -53,15 +53,18 @@ def register(add, with_course):
 
     def cmd_check(args):
         from . import labels
-        from .links_check import check_links, check_pack_page, check_vault_page
+        from .links_check import check_links, check_pack_against_unit, check_pack_page, check_return, check_vault_page
         course = resolve_course(args)
         report = {"paragraphs": [], "problems": []}
         for name in args.files:
             page = Path(name).resolve()
             pages = sorted(page.rglob("*.md")) if page.is_dir() else [page]
+            if (course.state / "writer-returns" / f"{page.name}.md").is_file() and page.is_dir():  # a pack folder
+                report["problems"] += check_return(course.state / "writer-returns" / f"{page.name}.md")
             for one in pages:
                 if one.resolve().is_relative_to(course.study.resolve()):
-                    report["problems"] += check_vault_page(one, course.state) + check_pack_page(one)
+                    report["problems"] += (check_vault_page(one, course.state) + check_pack_page(one)
+                                           + check_pack_against_unit(one, course))
                 if args.labels:
                     part = labels.check_page(one, course.root)
                     report["paragraphs"] += part["paragraphs"]
