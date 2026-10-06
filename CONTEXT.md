@@ -63,6 +63,10 @@ _Avoid_: unit summary, unit pack
 The closing list of the Practice page of a Study pack: the must-do questions of the unit, one per distinct way of solving, past-exam questions first. It replaces the separate short practice page.
 _Avoid_: short practice, summary list
 
+**Presentation**:
+The form (table, steps, flowchart, graph, picture kind) a course uses to teach one topic, as recorded on the unit's Wiki page.
+_Avoid_: layout, format
+
 **Graph**:
 A picture in a study pack with X and Y axes and the lines or curves drawn on them, reproducing one the course material shows.
 _Avoid_: diagram, plot, chart, figure (a figure is the picture inside the course material itself)
