@@ -71,11 +71,14 @@ def register(add, with_course):
         report["summary"] = problems_summary(
             report["problems"],
             lambda p: f"{p['kind']}: {p['page']}:{p.get('line', '')} {p.get('link', p.get('text', ''))[:80]}")
+        if not args.full:  # every paragraph's body, prefix and link targets: most of a unit's output
+            report.pop("paragraphs")
         return report
 
     p = with_course(add("check", cmd_check, "check links (and the grounding rule) in pages"))
     p.add_argument("files", nargs="+", help="Markdown files or folders")
     p.add_argument("--labels", action="store_true", help="also require every paragraph to cite a source or carry the warning")
+    p.add_argument("--full", action="store_true", help="also return paragraph bodies, prefixes and link targets")
 
     def cmd_graph(args):
         from . import graph

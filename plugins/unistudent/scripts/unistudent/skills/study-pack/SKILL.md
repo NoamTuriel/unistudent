@@ -23,15 +23,15 @@ Run `us study changes --unit N --json`: its `pack_folder` is where the unit's pa
 
 Done when: the update flow ended, or you are building.
 
-## 3. Resolve the rules
+## 3. The three rule paths
 
-Read, in this order (later wins):
+The workers read the rules themselves; you hold only these paths, in this order (later wins):
 
-1. the generic rules: `<this skill's base directory>/../../reference/study-pack.md` (or `us doc study-pack`);
+1. the generic rules: `<this skill's base directory>/../../reference/study-pack.md` (where that file is missing, pass `us doc study-pack` instead: the worker reads the rules from it);
 2. General preferences;
 3. Course preferences, `course-preferences.md` (both paths are in the course context, `.unistudent/context.md`).
 
-Done when: you know the page list, each page's content rules, and the concept structure.
+Done when: you have the three paths and the page list: the generic rules' `## Pages` table, changed by any page a preference file adds or drops.
 
 ## 4. Pages
 
@@ -41,13 +41,13 @@ Done when: you know the pages to build and, for the recordings page, which lesso
 
 ## 5. Build
 
-**Delegate** to one `study-pack-writer` worker, giving it: course folder, unit, the pack folder, the pages to build and the covering lessons, the resolved rules (paste them in full: the worker can't see your skills), the format (Obsidian or Markdown), and the language.
+**Delegate** to one `study-pack-writer` worker, giving it: course folder, unit, the pack folder, the pages to build and the covering lessons, the three rule paths (it reads the files itself), the format (Obsidian or Markdown), and the language.
 
 Done when: the writer returned its page list.
 
 ## 6. Verify
 
-**Delegate** `<pack folder>` to the `verifier` worker. Fix what it reports, then run it again.
+**Delegate** `<pack folder>` and the three rule paths to the `verifier` worker. Fix what it reports, then run it again.
 
 Done when: `us check --labels "<pack folder>"` reports 0 problems.
 

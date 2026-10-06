@@ -37,7 +37,7 @@ A formula, an arrow chain or any run of Latin letters or symbols (`r↑`, `Y↑ 
 
 The text of a topic has no links and no source names: nothing breaks the reading. At the end of each topic, one **folded** block holds the sources, closed by default (a good summary means the student rarely opens it). In Obsidian format it is a foldable callout (`> [!note]- <Sources, in the course language>`); in plain Markdown a `<details>` block. Inside it two lines:
 
-- **In the recordings:** the recording and the time it is taught or solved, linked once (`#t=<seconds>`, the time in the text). A topic no recording covered has no such line. A recording without a transcript is shown by its file name alone, with no time.
+- **In the recordings:** each recording linked once, then the times it is taught or solved as plain text after the link (Links, below). A topic no recording covered has no such line. A recording without a transcript is shown by its file name alone, with no time.
 - **From:** the source files the topic rests on. Link text is the file's plain name ("the slides of lectures 8–9"), never a page or slide number. A file with no link is named by its file name.
 
 Chat answers keep a link on every claim.
@@ -82,7 +82,7 @@ Formulas and Latin symbols follow the right-to-left rule above.
 
 1. A table of the unit's topics with how many questions each has.
 2. Under each topic, every suited question from the course material, easy to hard, as one checklist bullet (`- [ ]`, so the student ticks what is solved): the question's number and source page (`שאלה 3, עמוד 4`, in the course language), a link to the question, a link to its solution right beside it, and one line saying what it exercises. Nothing else per question: no stage, no tag, no recording time.
-   - **Links:** full `file:` links to the student's own file with `#page=N`. The solution link is the solution's page (same file or the solutions file); a question with no solution in the files says so in words instead of a link. Check the layout before linking: render the page and look, never assume the solution is on the next page.
+   - **Links:** full `file:` links to the student's own file with `#page=N`. The solution link is the solution's page (same file or the solutions file); a question with no solution in the files says so in words instead of a link. A question with no page anchor (a `.doc`, a scan) links the file by its plain name and says in words where in it to look. Check the layout before linking: render the page and look, never assume the solution is on the next page.
    - **Hide the answer:** when the question's page also shows the solution (handwritten answer on the same page, or the solution on the page right after in the same PDF), make a single-page copy of the question page (`pdfseparate -f N -l N`) in the unit's folder in the Study vault and link the question to it. Never modify the original. A page whose answer can't be hidden says so in the link text.
    - **Groups:** inside a topic, put similar questions together, 3-8 from different sources, easy to hard, so a student who fails one and understands its solution meets the same idea next. Each group opens with one line on what to master. Questions that fit no group stand alone.
 3. Ends with the **Short version**, introduced by one line saying what it is: the must-do questions, one per distinct way of solving, past-exam questions first.
@@ -102,7 +102,7 @@ For a student short on time: every topic still appears, but with the fewest ques
 
 Only **recorded lessons**: recordings of a whole class session, which belong to no unit (the Recorded lessons folder of the Study vault). The first line of each lesson's summary says which units it covers; use it to decide which lessons cover this unit. A recording that solves one question is never pointed to here; the other pages still cite it. A unit no recorded lesson covers gets no Recordings page at all, not an empty one.
 
-One line per covering lesson, in lesson order: the lesson (its summary line), where in it the unit's part starts (linked at that time), and roughly how long that part is, with a link to the lesson's entry in the Recorded lessons roadmap. Under each lesson's line, the lesson's `Announcements` and `This will be on the exam` sections from its summary, in full: every line with its recording and time link, in their own two headings. Leave a heading out only when the summary has none. These are first-class: never summarise them away, a student must never miss what the lecturer said out loud. Nothing else: the full timeline lives only in the roadmap.
+One line per covering lesson, in lesson order: the lesson (its summary line), where in it the unit's part starts (linked at that time), and roughly how long that part is, with a link to the lesson's entry in the Recorded lessons roadmap. Under each lesson's line, the lesson's `Announcements` and `This will be on the exam` sections from its summary, in full: every line with its time, in their own two headings. Leave a heading out only when the summary has none. These are first-class: never summarise them away, a student must never miss what the lecturer said out loud. Nothing else: the full timeline lives only in the roadmap.
 
 ## Graphs
 
@@ -132,7 +132,7 @@ Each item applies only when the course material has it.
 ## Links
 
 - In a Study pack, citations are the folded sources block of each topic, not a link on every paragraph. A citation points at the student's own file in the Material folder, never at the Wiki (the student does not read it): a full disk link, a `file:` URL with the path percent-encoded (`file:///…/<material folder>/official/<unit folder>/slides.pdf`). Link text is the file's plain name; a recording's time goes in the text ("lecture 3, 00:12:47"), never a page or slide number. Read the Wiki page's `source:` line to find the file. A file that failed, was skipped or is not analyzed yet (`coverage.md`) is named as such, not cited as read.
-- Recordings: link the video file the same way; for a time add `#t=<seconds>` and write the time in the text. The transcript is in the Wiki, so it is not linked.
+- Recordings: one `file:` link per recording per section (heading to heading), to the video file the same way, with `#t=<seconds>` of its first time; every time follows it as plain text (`[lecture 3](file:///…/lecture%203.mp4#t=767) 00:12:47, 00:30:10`). `us check` fails a recording linked twice in one section and a time with no recording link before it in its section. The transcript is in the Wiki, so it is not linked.
 - `us check` fails a vault page that links into the hidden folder or at a missing file; the Wiki build repairs links after the course folder or a file moves.
 - Wikilinks are only for moving between pages of the vault, never for a citation (a citation is the `file:` link above).
 - Obsidian format: wikilinks and callouts (`> [!tip]`) are fine. Plain Markdown: standard links and blockquotes only.
