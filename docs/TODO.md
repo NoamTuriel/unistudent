@@ -2,12 +2,6 @@
 
 Remove an item when it ships.
 
-## Revisit the course-specific skills (economics, macro)
-In ticket 20 the owner built unit Study packs from the generic rules alone and they were good. Decide whether the course skills earn their place:
-- Read what the economics and macro skills add on top of the generic rules.
-- Build a partial pack with and without them and compare.
-- Keep them (then one field skill per major is needed: math, physics, computer science, and so on) or fold the useful parts into the generic rules and drop them.
-
 ## Practice page: question number, page, and the solution link right next to it
 Today the practice page (`N.3 תרגול`) lists questions per topic, but the student can't jump straight from a question to its answer. Seen in the Macroeconomics course (2026-10-03): the student failed a question, then had to hunt for the solution page in a different file.
 Change the rules so each practice row has:

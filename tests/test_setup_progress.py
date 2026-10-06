@@ -13,7 +13,7 @@ class SetupProgress(CourseTestCase):
     def test_each_stage_resumes_at_the_next_one_with_answers_intact(self):
         stages_and_answers = [
             ("university", {"university": "Bar-Ilan"}),
-            ("course", {"course_skill": "macro"}),
+            ("course", {"course_name": "Macro"}),
             ("path", {"path": "/tmp/Macro"}),
             ("format", {"format": "obsidian"}),
             ("fetch", {"origin_mode": "own-folder"}),

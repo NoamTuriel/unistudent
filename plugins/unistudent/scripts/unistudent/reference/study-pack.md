@@ -1,6 +1,6 @@
 # Study pack: generic rules
 
-The generic rules for building a study pack, used when no field skill, course skill or preference says otherwise. Later layers override earlier ones: generic → field skill → course skill → general preferences → course preferences.
+The generic rules for building a study pack, used when no preference says otherwise. Later layers override earlier ones: generic → General preferences → Course preferences.
 
 ## The student's flow (every format decision serves it)
 
@@ -65,6 +65,8 @@ The page the student reads first, in this order, each part only when it has some
 7. **A checklist** before the exam.
 8. **All the unit's sources:** one folded block (closed by default, a foldable callout in Obsidian format, `<details>` in plain Markdown) listing every source file and recording of the unit as links, plain names only. The roadmap is where a student looks for where things are, so this is the one place the whole unit's sources are together.
 
+What to know by heart and each topic's recurring question come from the Wiki course page's Exam format section and from the past-exam questions in the question bank, never from the student.
+
 Formulas and Latin symbols follow the right-to-left rule above.
 
 ## Concepts (walkthrough)
@@ -115,6 +117,17 @@ Where the course material explains a concept with a graph (X and Y axes with lin
 A cause-and-effect chain of three or more steps (`G↑ → AD↑ → Y↑ → …`) is drawn as a Mermaid flowchart in the topic that explains it (a plain Mermaid block, no tool; `flowchart RL` in a right-to-left language, short Hebrew labels), instead of an arrow line. Horizontal over vertical: a chain longer than about five steps is split into several short horizontal flowcharts, each its own `flowchart RL` of up to five steps, never one cramped row and never a tall column. Write each step's direction as a word (עולה / יורד) next to the symbol, not as an arrow glued to it, so a right-to-left box cannot flip it. One or two steps stay a formula line. Other flow pictures are Mermaid too; never a graph drawn with the tool for a flow.
 
 A picture the course shows that is not a graph or a flow is a slide link plus one line in words.
+
+## When the course has …
+
+Each item applies only when the course material has it.
+
+- **models that shift:** draw a shift as the original curve, the moved curve (`shift_of`) and both equilibria, labelled as the course labels them. Give each change the material covers as a chain: which curve moves, which way, what happens to each variable.
+- **an assumptions sheet:** quote the assumptions a model relies on by number.
+- **a formula sheet:** everything not on it is "know by heart" on the roadmap; check it line by line for what applies to the unit.
+- **verbal solutions:** the Model answer is a chain in the solutions' own words (which curve or variable moves, which way, what happens to each variable, ending in the answer). Say it quotes how the solutions name each curve and each direction of change, and the assumption they state aloud. Prove it lists the steps a solution gives that look obvious (an assumption holding, why a curve shifts, why a variable stays fixed).
+- **explanations of wrong answers** (Q&A files, assignment solutions): the roadmap's common mistakes come from them.
+- **two units using one name for two concepts:** a cross-reference warning at the end of the concept, in both units.
 
 ## Links
 

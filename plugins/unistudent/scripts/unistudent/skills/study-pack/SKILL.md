@@ -28,8 +28,8 @@ Done when: the update flow ended, or you are building.
 Read, in this order (later wins):
 
 1. the generic rules: `<this skill's base directory>/../../reference/study-pack.md` (or `us doc study-pack`);
-2. the field and course skills: if `.unistudent/settings.json` names a `course_skill`, load that skill (it names its field skill; load that too). No `course_skill` set, or it isn't installed: check `us course-skill status --field "<broad field>" --course-name "<course name>" --json` for a previously generated fallback and use it if there is one; otherwise the generic rules carry the build.
-3. general preferences, then `course-preferences.md` (paths in the course context, `.unistudent/context.md`).
+2. General preferences;
+3. Course preferences, `course-preferences.md` (both paths are in the course context, `.unistudent/context.md`).
 
 Done when: you know the page list, each page's content rules, and the concept structure.
 
