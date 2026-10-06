@@ -58,7 +58,7 @@ A quote in a Model answer or Say it is copied word for word from the solution: `
 
 The page the student reads first, in this order, each part only when it has something to say:
 
-1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. End with this fixed sentence, written in the course language, its example request built from one of this unit's own concepts: "UniStudent draws graphs and flowcharts on request: ask in chat, for example \"draw the graph of <concept>\"."
+1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. End with this fixed sentence, written in the course language, its example request built from one of this unit's own concepts: "UniStudent draws graphs and flowcharts on request: ask in chat, for example \"draw the graph of <concept>\"." Then, per missing kind with a Tool list entry (Recommended tools, below), one sentence: what this unit shows and what to say in chat to add the tool.
 2. **The idea** of the unit, one or two lines.
 3. **What to know by heart and what to understand:** one list for the whole unit, not one per topic.
 4. **A table of the unit's topics**, the same names and order as the walkthrough: per topic its tool, the question that recurs, the common mistake, and a pointer to the topic's "How to answer" block (only when it has one).
@@ -119,6 +119,29 @@ Where the course material explains a concept with a graph (X and Y axes with lin
 A cause-and-effect chain of three or more steps (`G↑ → AD↑ → Y↑ → …`) is drawn as a Mermaid flowchart in the topic that explains it (a plain Mermaid block, no tool; `flowchart RL` in a right-to-left language, short Hebrew labels), instead of an arrow line. Horizontal over vertical: a chain longer than about five steps is split into several short horizontal flowcharts, each its own `flowchart RL` of up to five steps, never one cramped row and never a tall column. Write each step's direction as a word (עולה / יורד) next to the symbol, not as an arrow glued to it, so a right-to-left box cannot flip it. One or two steps stay a formula line. Other flow pictures are Mermaid too; never a graph drawn with the tool for a flow.
 
 A picture the course shows that is not a graph or a flow is a slide link plus one line in words.
+
+## Recommended tools
+
+A picture the course shows that UniStudent cannot draw gets a tool only from the Tool list: a hardcoded list in the plugin, never an online search. The Tool list is empty until a real course needs its first entry; while it is empty, no unit gets a Recommended tools sentence.
+
+- **Tool bar.** Every entry is free, needs no account or key, runs offline on Windows, macOS and Linux, installs in one step, is driven by a short text spec through an MCP stdio server or a command line, and is proven by one sample call in CI.
+- **Boundary.** A Python library runnable through `uv run --with` is a self-installing kind: a drawer in the repo, no student action, as graphs are. Anything else is a Recommended tool, set up in chat (the harness table).
+- **Harness table.** You know which app you run in; find its row. Course-scoped first: write the tool into the course folder's own MCP config file; user-scoped only for an app with no project-level file, by naming the tool and giving the exact steps. A newly configured server needs a restart, so the pack is built without it and the roadmap says so.
+
+| App | Where a Recommended tool goes |
+|---|---|
+| Claude Code | `.mcp.json` in the course folder (`mcpServers`) |
+| Cursor | `.cursor/mcp.json` in the course folder (`mcpServers`) |
+| Codex | `.codex/config.toml` in the course folder (`[mcp_servers.<name>]`) |
+| Gemini CLI | `.gemini/settings.json` in the course folder (`mcpServers`) |
+| VS Code | `.vscode/mcp.json` in the course folder (`servers`) |
+| Claude Desktop | name it and give the steps (Settings, Developer, Edit Config) |
+| Cowork | name it and give the steps |
+| Any other app | name it and give the steps |
+
+- **Entry rule.** An entry joins the Tool list only when a real course shows a picture no existing kind draws. A dispatcher for Python kinds comes at the third real kind.
+- **Evidence.** Two sources, matched to the Tool list by the main session after the pack is written, no keyword pre-scan: the unit page's Presentation kind words and the writer's Known gaps `picture` lines.
+- **Unattended surface.** The roadmap's How to start line is the only place a tool is named: per missing kind with an entry, one sentence saying what this unit shows and what to say in chat to add it. The build installs nothing and waits on no one. In chat, on the student's request, `us tools add <name>` writes the course folder's config or returns the steps, and says whether a restart is needed; it lands with the first entry.
 
 ## When the course has …
 

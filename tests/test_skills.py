@@ -74,7 +74,7 @@ class TranscriptionAndGraphRules(unittest.TestCase):
     def test_no_skill_names_the_removed_picture_commands(self):
         for doc in ALL + [CORE.parent / "reference" / "study-pack.md"] + sorted((CORE.parent / "agents").glob("*.md")):
             text = doc.read_text("utf-8")
-            for gone in ("us tools", "us draw", "tools status"):
+            for gone in ("us draw", "tools status", "tools offer", "tools accept", "tools skip"):
                 self.assertNotIn(gone, text, doc)
 
 
@@ -183,3 +183,34 @@ class RulesByPath(unittest.TestCase):
         rules = (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
         self.assertIn("one `file:` link per recording per section", rules)
         self.assertIn("no page anchor", rules.split("## Practice page")[1].split("\n## ")[0])
+
+
+class RecommendedTools(unittest.TestCase):
+    """Ticket 32 (ADR 0012): recommended tools on paper: the rules section, the harness table, the roadmap line."""
+    RULES = (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
+
+    def section(self):
+        return self.RULES.split("## Recommended tools")[1].split("\n## ")[0]
+
+    def test_the_section_holds_every_rule_and_one_harness_row_per_app(self):
+        section = self.section()
+        for rule in ("**Tool bar.**", "**Boundary.**", "**Harness table.**", "**Entry rule.**", "**Evidence.**",
+                     "**Unattended surface.**", "uv run --with", "proven by one sample call in CI",
+                     "needs a restart", "`us tools add <name>`", "no keyword pre-scan"):
+            self.assertIn(rule, section)
+        rows = [line for line in section.splitlines() if line.startswith("| ") and "---" not in line][1:]
+        for app, where in (("Claude Code", "`.mcp.json`"), ("Cursor", "`.cursor/mcp.json`"),
+                           ("Codex", "`.codex/config.toml`"), ("Gemini CLI", "`.gemini/settings.json`"),
+                           ("VS Code", "`.vscode/mcp.json`"), ("Claude Desktop", "name it and give the steps"),
+                           ("Cowork", "name it and give the steps"), ("Any other app", "name it and give the steps")):
+            row = next(r for r in rows if r.startswith(f"| {app} "))
+            self.assertIn(where, row)
+
+    def test_the_roadmap_closing_line_names_the_per_kind_sentence(self):
+        how_to_start = self.RULES.split("## Roadmap page")[1].split("\n2. ")[0]
+        closing = how_to_start.split("on request")[1]
+        for words in ("per missing kind", "what to say in chat", "Recommended tools"):
+            self.assertIn(words, closing)
+
+    def test_no_rule_asks_the_student_during_the_build(self):
+        self.assertIsNone(re.search(r"(?i)\bask|interview|\bconfirm", self.section()))
