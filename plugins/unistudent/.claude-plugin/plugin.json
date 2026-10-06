@@ -16,6 +16,8 @@
     "./scripts/unistudent/skills/study-pack"
   ],
   "agents": [
+    "./scripts/unistudent/agents/exam-clusterer.md",
+    "./scripts/unistudent/agents/exam-indexer.md",
     "./scripts/unistudent/agents/recording-summarizer.md",
     "./scripts/unistudent/agents/source-reader.md",
     "./scripts/unistudent/agents/study-pack-writer.md",
