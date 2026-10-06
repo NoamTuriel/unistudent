@@ -58,8 +58,9 @@ def register(add, with_course):
         for name in args.files:
             page = Path(name).resolve()
             pages = sorted(page.rglob("*.md")) if page.is_dir() else [page]
-            if (course.state / "writer-returns" / f"{page.name}.md").is_file() and page.is_dir():  # a pack folder
-                report["problems"] += check_return(course.state / "writer-returns" / f"{page.name}.md")
+            ret = course.state / "writer-returns" / f"{page.name}.md"
+            if page.is_dir() and ret.is_file():  # a pack folder
+                report["problems"] += check_return(ret)
             for one in pages:
                 if one.resolve().is_relative_to(course.study.resolve()):
                     report["problems"] += (check_vault_page(one, course.state) + check_pack_page(one)

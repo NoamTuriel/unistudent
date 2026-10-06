@@ -128,7 +128,7 @@ def check_vault_page(page: Path, hidden: Path):
 
 PRACTICE_PAGE = re.compile(r"^\d+\.3(?!\d)")
 WALKTHROUGH_PAGE = re.compile(r"^\d+\.2(?!\d)")
-CLOSING_FROM = re.compile(r"(?im)^\s*(?:[-*>]\s*)?(?:\*\*)?(?:from|מתוך)(?:\*\*)?\s*:")
+CLOSING_FROM = re.compile(r"(?im)^\s*(?:[-*>]\s*)*(?:\*\*)?(?:from|מתוך)(?:\*\*)?\s*:")
 STAGE = re.compile(r"(?im)^\s*(?:#+\s*|[-*>]\s*)?(?:\*\*)?(?:stage|שלב)\s+\d")
 TOPIC_TAG = re.compile(r"(?<![\w&])#(?:unit-\d+/|י\d+/)")
 IMAGE = re.compile(r"!\[[^\]]*\]\(|!\[\[")
@@ -181,7 +181,7 @@ def check_pack_page(page: Path):
 SECTION = re.compile(r"(?ms)^## (Notation|Assumptions)\s*$(.*?)(?=^## |\Z)")
 # A Latin symbol: up to four Latin letters, then digits or a _subscript (Y, MPC, C0, Y_d); a longer word is not one.
 SYMBOL = re.compile(r"(?<![A-Za-z0-9_./#])[A-Za-z]{1,4}(?:_[A-Za-z0-9]+|[0-9]+)?(?!\.?[A-Za-z0-9])")
-ASSUMPTION = re.compile(r"(?i)(?:assumption|הנחה)\D{0,8}?(\d+)")
+ASSUMPTION = re.compile(r"(?i)(?<!\w)(?:assumption|הנחה)\s*(?:no\.?\s*|#|מס['׳]?\s*)?(\d+)\b")
 MATH = re.compile(r"\$\$?(.+?)\$\$?", re.S)
 
 
@@ -192,7 +192,7 @@ def _latex(text):
 
 NOT_PROSE = re.compile(r"!?\[\[[^\]]*\]\]|!?\[[^\]]*\]\([^)]*\)|https?://\S+|<[^>]+>|\[![^\]]*\]|\A---\n.*?\n---\n", re.S)
 QUOTE = re.compile(r'(?<!\w)["“„](.+?)["”“](?!\w)', re.S)
-LABEL_LINE = re.compile(r"^\s*(?:>\s*)*(?:[-*+]\s+)?\*\*")
+LABEL_LINE = re.compile(r"^\s*(?:>\s*)*(?:[-*+]\s+)?\*\*([^*]+)\*\*")
 
 
 def _normal(text):
@@ -206,10 +206,12 @@ def check_pack_against_unit(page: Path, course):
     in the unit's source pages. Course-language terms are left to the verifier (the glossary)."""
     from .course import LABELS, parse_unit_folder, unit_dir
     known, unit = parse_unit_folder(page.parent.name)
-    if not known or not isinstance(unit, int):
+    if not known or not isinstance(unit, int) or not re.match(r"\d+\.\d", page.name):  # not the generated roadmap
         return []
     unit_page = course.wiki / "units" / f"{unit_dir(unit)}.md"
-    listed = " ".join(m.group(2) for m in SECTION.finditer(unit_page.read_text("utf-8") if unit_page.is_file() else ""))
+    sections = {m.group(1): NOT_PROSE.sub(" ", m.group(2))  # no links: their page anchors are not assumption numbers
+                for m in SECTION.finditer(unit_page.read_text("utf-8") if unit_page.is_file() else "")}
+    listed = " ".join(sections.values())
     text = NOT_PROSE.sub(" ", CODE_BLOCK.sub("", page.read_text("utf-8")))
     problems = []
 
@@ -218,9 +220,12 @@ def check_pack_against_unit(page: Path, course):
 
     if listed:  # a unit page with neither section is not written yet: nothing to check against
         language = course.settings()["language"]
-        prose = " ".join(MATH.findall(text)) if language == "en" else text  # in English every short word looks Latin
-        prose = _latex(prose)
-        symbols, numbers = set(SYMBOL.findall(_latex(listed))), set(re.findall(r"\d+", listed))
+        # In English every short word looks Latin: only math counts. Elsewhere a concept heading's English name goes.
+        prose = _latex(" ".join(MATH.findall(text)) if language == "en"
+                       else re.sub(r"(?m)^(###\s.*?)\s+—\s.*$", r"\1", text))
+        symbols = set(SYMBOL.findall(_latex(listed)))
+        numbers = (set(re.findall(r"(?m)^\s*(\d+)[.)]", sections.get("Assumptions", "")))
+                   | {hit.group(1) for hit in ASSUMPTION.finditer(listed)})
         for symbol in dict.fromkeys(SYMBOL.findall(prose)):
             if symbol not in symbols:
                 problem("notation", symbol)
@@ -232,7 +237,7 @@ def check_pack_against_unit(page: Path, course):
     sources = None
     lines = text.split("\n")
     for i, line in enumerate(lines):
-        head = re.match(r"^\s*(?:>\s*)*(?:[-*+]\s+)?\*\*([^*]+)\*\*", line)
+        head = LABEL_LINE.match(line)
         if not head or _normal(head.group(1)) not in labels:
             continue
         block = [line[head.end():]]
