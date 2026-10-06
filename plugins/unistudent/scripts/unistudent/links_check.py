@@ -181,7 +181,7 @@ def check_pack_page(page: Path):
 SECTION = re.compile(r"(?ms)^## (Notation|Assumptions)\s*$(.*?)(?=^## |\Z)")
 # A Latin symbol: up to four Latin letters, then digits or a _subscript (Y, MPC, C0, Y_d); a longer word is not one.
 SYMBOL = re.compile(r"(?<![A-Za-z0-9_./#])[A-Za-z]{1,4}(?:_[A-Za-z0-9]+|[0-9]+)?(?!\.?[A-Za-z0-9])")
-ASSUMPTION = re.compile(r"(?i)(?<!\w)(?:assumption|הנחה)\s*(?:no\.?\s*|#|מס['׳]?\s*)?(\d+)\b")
+ASSUMPTION = re.compile(r"(?i)(?<!\w)(?:assumptions?|[בהלמשו]{0,2}הנחה)\s*(?:no\.?\s*|#|מס['׳]?\s*)?(\d+)\b")
 MATH = re.compile(r"\$\$?(.+?)\$\$?", re.S)
 
 

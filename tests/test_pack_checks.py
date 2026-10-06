@@ -54,6 +54,10 @@ class PackAgainstTheUnit(CourseTestCase):
         write(pack / "מפת הקלטות.md", "## Zoom lesson.mp4\n\n- IS-LM\n")
         self.assertEqual([p["kind"] for p in run_json("check", pack, "--course", self.course)["problems"]], [])
 
+    def test_a_hebrew_assumption_reference_with_a_prefix_letter_is_checked(self):
+        self.assertEqual(self.problems("4.2 Walkthrough.md", "בהנחה 7 הצריכה קבועה. הנחה של 20% במחיר.\n", "he"),
+                         [("notation", "בהנחה 7")])
+
     def test_in_a_hebrew_pack_a_latin_symbol_in_the_prose_is_checked(self):
         self.assertEqual(self.problems("4.2 Walkthrough.md", "כאשר Y עולה גם C עולה, ו-MPC קבוע.\n", "he"),
                          [("notation", "MPC")])
