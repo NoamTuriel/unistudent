@@ -1,6 +1,6 @@
 # {course_name}: how this folder works
 
-This folder is your whole course in one place. Claude answers questions about the course **only from the material here**, not from the internet, so answers match your course's methods, notation and assumptions: the things your exam grades.
+This folder is your whole course in one place. Claude answers questions about the course **only from the material here**, not from the internet, so answers match your course's methods, notation and assumptions: the things your course expects.
 
 Two words used below: the **Wiki** is a hidden set of pages the AI reads to answer from your material (you never open it), and a **vault** is simply a folder that a notes app such as Obsidian opens as its library.
 
@@ -24,7 +24,7 @@ You can also put files straight into `{material}/`: the next Wiki build notices 
 
 ## Warnings in answers
 
-A paragraph with no mark comes from the course material and links to the source; so does Claude's own explanation (an example, analogy or trick) of something in it. Anything that does not come from the course material starts with a warning in words, "⚠️ Not from your course material", and says where it comes from (general knowledge, or the web with a link). It may not match the exam.
+A paragraph with no mark comes from the course material and links to the source; so does Claude's own explanation (an example, analogy or trick) of something in it. Anything that does not come from the course material starts with a warning in words, "⚠️ Not from your course material", and says where it comes from (general knowledge, or the web with a link). It may not match your course.
 
 ## Commands
 

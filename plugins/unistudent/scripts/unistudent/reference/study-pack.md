@@ -8,7 +8,7 @@ The generic rules for building a study pack, used when no field skill, course sk
 2. **Walkthrough:** learn one whole topic at a time. When something is unclear, ask Claude or jump to the recording.
 3. **Practice:** solve that topic's questions.
 4. After the unit: the whole Practice page in order.
-5. Before the exam: the roadmap topic by topic, then the Short version to find weak spots.
+5. Before the exam (or the course's end, when it has no exam): the roadmap topic by topic, then the Short version to find weak spots.
 
 ## Topics: the backbone
 
@@ -44,7 +44,7 @@ Chat answers keep a link on every claim.
 
 ## How to answer (inside each topic of the walkthrough)
 
-A verbal answered question is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. A topic that has verbal answered questions gets a short **How to answer** block (its name, and the labels **Model answer**, **Say it**, **Prove it** below, are in the course language), after its concepts. Done when every verbal answered question of the topic has been read and the block gives:
+A verbal answered question is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the course accepts; the solved answers show what is. A topic that has verbal answered questions gets a short **How to answer** block (its name, and the labels **Model answer**, **Say it**, **Prove it** below, are in the course language), after its concepts. Done when every verbal answered question of the topic has been read and the block gives:
 
 - **Model answer:** one short justification as a chain, in the solutions' own wording.
 - **Say it:** the steps a solution spells out, quoted.
@@ -62,7 +62,7 @@ The page the student reads first, in this order, each part only when it has some
 4. **A table of the unit's topics**, the same names and order as the walkthrough: per topic its tool, the question that recurs, the common mistake, and a pointer to the topic's "How to answer" block (only when it has one).
 5. **The solving order**, a few short steps.
 6. **What the lecturer said** (the section below).
-7. **A checklist** before the exam.
+7. **A checklist** before the exam (or the course's end, when it has no exam).
 8. **All the unit's sources:** one folded block (closed by default, a foldable callout in Obsidian format, `<details>` in plain Markdown) listing every source file and recording of the unit as links, plain names only. The roadmap is where a student looks for where things are, so this is the one place the whole unit's sources are together.
 
 Formulas and Latin symbols follow the right-to-left rule above.

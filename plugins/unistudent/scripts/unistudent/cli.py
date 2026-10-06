@@ -7,6 +7,7 @@ from the current folder, then from the Registry's active course.
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
@@ -30,13 +31,22 @@ def _rel(course: Course, folder: Path) -> str:
     return folder.relative_to(course.root).as_posix()
 
 
+def _course_page_has_exam_information(course: Course) -> bool:
+    """True once the Wiki's course page says something real: a line that is not a heading, a comment or
+    the course-wiki skill's "not in the course material yet"."""
+    page = course.wiki / "course.md"
+    text = re.sub(r"<!--.*?-->", "", page.read_text("utf-8"), flags=re.S) if page.exists() else ""
+    return any(line.strip() and not line.startswith("#") and "not in the course material yet" not in line
+               for line in text.splitlines())
+
+
 def write_context_files(course: Course):
     settings = course.settings()
-    exam = []
+    exam = []  # written only when the course has an exam to speak of (a self-learner's may not)
     if settings.get("exam_date"):
         exam.append(f"- Exam date: {settings['exam_date']}")
-    exam.append(f"- Exam format, formula sheet and lecturer emphasis: see `{_rel(course, course.wiki)}/course.md` "
-                "(filled when the Wiki is built).")
+    if _course_page_has_exam_information(course):
+        exam.append(f"- Exam format, formula sheet and lecturer emphasis: see `{_rel(course, course.wiki)}/course.md`.")
     others = [c for c in Registry().courses() if c["path"] != str(course.root)]
     other_lines = [f"- {c['name']}: `{Course(c['path']).wiki}`" for c in others] or ["- None."]
     context = render("context.md",
@@ -47,7 +57,7 @@ def write_context_files(course: Course):
                      study=_rel(course, course.study), material=_rel(course, course.material),
                      general_preferences=general_preferences_file(),
                      other_courses="\n".join(other_lines),
-                     exam_section="\n".join(exam))
+                     exam_section="\n## Exam\n\n" + "\n".join(exam) + "\n" if exam else "")
     # The full context lives in .unistudent/context.md. AGENTS.md (read by Codex, Cursor, Gemini
     # and others) carries it in full; CLAUDE.md and GEMINI.md import it. A student's own file is kept and gets
     # one pointer line instead.

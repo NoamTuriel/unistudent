@@ -140,6 +140,11 @@ def register(add, with_course):
         return {"path": str(path), "summary": f"Saved a generated {noun} for {name} at {path}."}
 
     def cmd_university(args):
+        if args.university.strip().casefold() == "none":  # self-study: no university at all
+            if args.action == "save":
+                raise UserError("No university (self-study): there is no course site, so nothing to save.")
+            return {"generated": False, "path": None, "content": None,
+                    "summary": "No university (self-study): no plugin, no fallback, nothing to interview."}
         return fallback(args, generated_university_file(args.university), args.university, "fallback",
                         "Give both --url and --organizing.",
                         f"{args.university}: how the student reaches the course site",
