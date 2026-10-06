@@ -1,0 +1,34 @@
+name: tool-list
+# Proves every Tool list entry (ADR 0012) with its one sample call. Does nothing while the list is empty.
+on:
+  push:
+    paths: [plugins/unistudent/scripts/unistudent/course.py, .github/workflows/tool-list.yml]
+  pull_request:
+    paths: [plugins/unistudent/scripts/unistudent/course.py, .github/workflows/tool-list.yml]
+jobs:
+  samples:
+    strategy:
+      fail-fast: false
+      matrix:
+        os: [ubuntu-latest, macos-latest, windows-latest]
+    runs-on: ${{ matrix.os }}
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.12"
+      - id: list
+        shell: bash
+        working-directory: plugins/unistudent/scripts
+        run: python -c "from unistudent.course import TOOL_LIST as t; print('count=%d' % len(t)); print('node=%s' % str(any(e['install'].get('node') for e in t)).lower())" >> "$GITHUB_OUTPUT"
+      - if: steps.list.outputs.node == 'true'
+        uses: actions/setup-node@v4
+        with:
+          node-version: "20"
+      - if: steps.list.outputs.count == '0'
+        run: echo "Tool list is empty, nothing to prove."
+      - if: steps.list.outputs.count != '0'
+        shell: bash
+        working-directory: plugins/unistudent/scripts
+        # The first entry brings `us tools add` and the sample runner; replace this step with it.
+        run: echo "Tool list has entries but no sample runner yet." && exit 1

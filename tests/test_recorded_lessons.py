@@ -58,6 +58,20 @@ class RecordedLessons(CourseTestCase):
         self.assertNotIn("explanation", text)
         self.assertIn("Intro", text)
 
+    def test_a_lesson_with_no_roadmap_entry_is_reported_until_the_wiki_build_writes_it(self):
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        lesson = "official/Recorded lessons/lesson 9.mp4"
+        self.assertEqual(run_json("study", "changes", "--course", self.course, "--unit", "8")["lessons_without_roadmap"], [lesson])
+        run_json("wiki", "build", "--course", self.course)
+        self.assertEqual(run_json("study", "changes", "--course", self.course, "--unit", "8")["lessons_without_roadmap"], [])
+
+    def test_a_lesson_about_other_units_is_not_reported_and_a_worded_range_counts(self):
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        changes = lambda unit: run_json("study", "changes", "--course", self.course, "--unit", unit)["lessons_without_roadmap"]
+        self.assertEqual(changes("4"), [])
+        write(self.lesson / "summary.md", "Lesson 9: units 7 to 9.\n\nSources: [transcript](transcript.md)\n")
+        self.assertEqual(changes("8"), ["official/Recorded lessons/lesson 9.mp4"])
+
     def test_only_a_recording_can_be_assigned_to_recorded_lessons(self):
         write(self.course / "1-inbox" / "notes.txt", "notes")
         run_json("add", "--course", self.course)
@@ -71,6 +85,15 @@ class RecordedLessons(CourseTestCase):
         self.assertEqual(self.wiki_problems(), ["no-description"])
         write(self.lesson / "summary.md", "## Summary\n\nText.\n\nSources: [transcript](transcript.md)\n")
         self.assertEqual(self.wiki_problems(), ["no-description"])
+
+    def test_a_new_table_of_contents_marks_its_unit_page_stale_once(self):  # ticket 31
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        write(self.lesson / "summary.md", "Lesson 9: a lesson about units 3-4.\n\nSources: [transcript](transcript.md)\n")
+        self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], ["unit-04"])
+        self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], [])
+        write(self.question / "toc.md", "Sources: [transcript](transcript.md)\n\n| Time | Until | Type | What happens | Topic |\n"
+                                        "|---|---|---|---|---|\n| [00:00:00](transcript.md#000000) | 00:05:00 | solution | Q1 | Unit 4 |\n")
+        self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], ["unit-04"])
 
     def wiki_problems(self):
         run_json("wiki", "build", "--course", self.course)

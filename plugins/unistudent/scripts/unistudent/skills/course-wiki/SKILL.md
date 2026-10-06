@@ -7,7 +7,7 @@ disable-model-invocation: true
 The Wiki is everything an answer about the course may rely on. Every page cites its sources; nothing enters it from outside the course material. The Wiki lives in the hidden folder: its path is `wiki` in `us courses current`, and `<wiki>` below means that folder.
 
 <!-- conventions: keep identical in every UniStudent skill -->
-Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); as the Claude plugin, give them to the plugin's subagent of that name, which has the UniStudent tools (in parallel when there are several); in any other app, follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 <!-- /conventions -->
 
 ## 1. Convert
@@ -18,13 +18,13 @@ Done when: the build ran and you have its `units_touched`, `images` and `needs_v
 
 ## 2. Read what has no text
 
-For each file in `images` and `needs_visual`, **delegate** to the `source-reader` worker (one per file). It writes the content as Markdown source pages.
+For each item in `images` and `needs_visual`, **delegate** to the `source-reader` worker (one per item, given the whole item). It writes the content as Markdown source pages. Then run `us wiki build` again, so `coverage.md` counts them as analyzed.
 
-Done when: every listed file has a source page.
+Done when: every listed item has a source page and the second build lists no `images` or `needs_visual`.
 
 ## 3. Write the understanding layer
 
-For each unit in `units_touched` (all units on a first build), **delegate** to one `wiki-unit-writer` worker. Give it the course folder, the unit, and the student's language. Each returns glossary entries and question-bank entries for its unit, and edits only its own unit page.
+For each unit in the `units_touched` of step 1's build, plus any the second build in step 2 adds (all units on a first build), **delegate** to one `wiki-unit-writer` worker. Give it the course folder, the unit, and the student's language. Each returns glossary entries and question-bank entries for its unit, and edits only its own unit page.
 
 Then merge what they returned into `<wiki>/glossary.md` and `<wiki>/question-bank.md` (formats are in the comments at the top of each file). One entry per term: when two units define a term, keep one entry citing both. Remove the `<!-- unistudent:stub -->` line once a file has entries.
 

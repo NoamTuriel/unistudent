@@ -7,7 +7,7 @@ disable-model-invocation: true
 Heavy work starts only after the student says yes to real numbers.
 
 <!-- conventions: keep identical in every UniStudent skill -->
-Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); as the Claude plugin, give them to the plugin's subagent of that name, which has the UniStudent tools (in parallel when there are several); in any other app, follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 <!-- /conventions -->
 
 ## 1. What and how much
@@ -46,8 +46,8 @@ Done when: every class session is assigned to `lessons` or the student deferred 
 
 ## 6. Update
 
-Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, and the Recorded lessons roadmap, with the announcements and exam hints, is written into the student's Study vault), then `us wiki check`.
+Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, and the Recorded lessons roadmap, with the announcements and exam hints, is written into the student's Study vault), then **delegate** each unit in its `units_touched` to one `wiki-unit-writer` worker (a new table of contents lets it fill "Solved in a recording"; update the matching entries of `question-bank.md` in the Wiki, the `wiki` folder in `us courses current`, with the entries it returns), then `us wiki check`.
 
-Done when: `us wiki check` reports 0 problems. If a new recorded lesson covers a unit that has a study pack (read the lesson's first summary line for the units), offer `/unistudent:study-pack N` for that unit; `us study changes` cannot see lessons, since they belong to no unit.
+Done when: every unit in `units_touched` was rewritten and `us wiki check` reports 0 problems. If a new recorded lesson covers a unit that has a study pack (read the lesson's first summary line for the units), offer `/unistudent:study-pack N recordings page`, which names the page so it rebuilds that unit's Recordings index page; `us study changes` cannot see lessons, since they belong to no unit.
 
 Report: which recordings are done (and that each unit's roadmap, and the Recorded lessons roadmap, is in the study vault), and the announcements and "this will be on the exam" moments the summarizers found.

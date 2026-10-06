@@ -7,8 +7,6 @@ from helpers import CourseTestCase, folders, run_json, write
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERIC = ROOT / "plugins" / "unistudent" / "scripts" / "unistudent" / "reference" / "study-pack.md"
-ECONOMICS = ROOT / "plugins" / "economics" / "skills" / "economics" / "SKILL.md"
-MACRO = ROOT / "plugins" / "economics" / "skills" / "macro" / "SKILL.md"
 
 TOPIC = "## Topic 1\n\n### Money — כסף\n\nMoney is 1/r.\n\n"
 
@@ -57,6 +55,16 @@ class PackShape(CourseTestCase):
         self.assertIn("practice-tag", self.kinds("4.3 Practice.md", "## Money\n\n- Q1 #unit-04/t01-money\n"))
         self.assertIn("practice-graph", self.kinds("4.3 Practice.md", "![curve](graphs/a.png)\n"))
 
+    def test_one_link_per_recording_per_section_with_the_times_as_text(self):
+        video = write(folders(self.course).material / "lecture 3.mp4", "").as_uri()
+        single = f"In the recordings: [lecture 3]({video}#t=767) 00:12:47, 00:30:10\n\nFrom: [slides]({self.slides.as_uri()})\n"
+        self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + single), [])
+        per_line = (f"In the recordings: [lecture 3, 00:12:47]({video}#t=767)\n\n"
+                    f"[lecture 3, 00:30:10]({video}#t=1810)\n\nFrom: [slides]({self.slides.as_uri()})\n")
+        self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + per_line), ["repeated-recording-link"])
+        orphan = f"In the recordings: lecture 3, 00:12:47\n\nFrom: [slides]({self.slides.as_uri()})\n"
+        self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + orphan), ["time-without-link"])
+
     def test_a_separate_short_practice_page_fails(self):
         self.assertIn("short-practice-page", self.kinds("4.3b Short practice.md", "- Q1\n"))
 
@@ -77,13 +85,19 @@ class Rules(unittest.TestCase):
             self.assertIn(needle, text)
         self.assertNotRegex(text, r"3b|practice-short|Practice stages")
 
-    def test_economics_skills_follow_the_same_rules(self):
-        economics, macro = ECONOMICS.read_text("utf-8"), MACRO.read_text("utf-8")
-        self.assertNotRegex(economics, r"(?i)always these five parts")
-        self.assertIn("How to answer", economics)
-        self.assertNotRegex(macro, r"3b|practice-short")
-        self.assertNotIn("Accepted reasoning", macro)
+    def test_emphasis_comes_from_the_course_page_and_past_exams(self):
+        roadmap = GENERIC.read_text("utf-8").split("## Roadmap page")[1].split("\n## ")[0]
+        for needle in ("course page", "Exam format", "question bank", "past-exam", "never from the student"):
+            self.assertIn(needle, roadmap)
 
+    def test_the_course_specific_advice_is_one_conditional_section(self):
+        text = GENERIC.read_text("utf-8")
+        self.assertEqual(text.count("## When the course has"), 1)
+        section = text.split("## When the course has")[1].split("\n## ")[0]
+        for needle in ("models that shift", "both equilibria", "which curve moves", "assumptions sheet", "by number",
+                       "formula sheet", "know by heart", "verbal solutions", "Say it", "Prove it",
+                       "explanations of wrong answers", "cross-reference warning"):
+            self.assertIn(needle, section)
 
 if __name__ == "__main__":
     unittest.main()

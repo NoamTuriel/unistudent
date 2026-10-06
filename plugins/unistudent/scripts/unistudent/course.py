@@ -14,11 +14,13 @@ LABELS = {
     "he": {"inbox": "1-קבצים-חדשים", "material": "2-חומרי-הקורס", "study": "3-{course}-ללמוד-מכאן",
            "official": "חומר-רשמי-של-הקורס", "added": "חומר-לא-רשמי", "unit": "יחידה {n}",
            "general": "חומר-כללי-לכל-היחידות", "unsorted": "עוד-לא-שויך-ליחידה", "roadmap": "מפת הקלטות",
-           "lessons": "הקלטות מפגשים", "before_test": "לקראת מבחן", "question_pages": "עמודי שאלות"},
+           "lessons": "הקלטות מפגשים", "before_test": "לקראת מבחן", "question_pages": "עמודי שאלות",
+           "model_answer": "תשובה לדוגמה", "say_it": "ככה אומרים"},
     "en": {"inbox": "1-inbox", "material": "2-course-material", "study": "3-{course}-study-from-here",
            "official": "official", "added": "added", "unit": "Unit {n}", "general": "General", "unsorted": "Unsorted",
            "roadmap": "Recordings roadmap", "lessons": "Recorded lessons",
-           "before_test": "Before the test", "question_pages": "Question pages"},
+           "before_test": "Before the test", "question_pages": "Question pages",
+           "model_answer": "Model answer", "say_it": "Say it"},
 }
 # Hebrew names used before 0.5.0: still recognized (and renamed by `ensure_layout`) in folders made with them.
 OLD_LABELS = [{"official": "רשמי", "added": "נוסף", "unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין"}]
@@ -27,13 +29,11 @@ DEFAULT_SETTINGS = {
     "course_name": "",
     "language": "he",
     "format": "obsidian",          # obsidian | markdown
-    "course_skill": None,          # e.g. "macro"; None → generic rules
     "university": None,            # e.g. "openu"; None → core only
     "recording_level": None,       # None (not asked yet) | 0 skip | 1 download only | 3 transcript + summary
     "frame_analysis": None,        # None (not asked yet) | True | False: per-segment vision calls (opt-in, costly)
     "recordings_dir": None,        # local non-synced folder when the course folder syncs
     "exam_date": None,
-    "tools": {},                   # picture tools offered before the first Study pack: name -> {state: accepted|skipped, date}
     "layout": 1,                   # 2 once the course folder has the three visible folders (LAYOUT)
     "folders": {},                 # the visible folder names chosen at setup: inbox, material, study
 }
@@ -203,7 +203,7 @@ class Course:
         return changed
 
     def pack_folder(self, unit):
-        """Where a unit's study pack lives in the Study vault (the vault itself is made by the first Study pack request)."""
+        """Where a unit's study pack lives in the Study vault (the vault itself is made by the first Study pack)."""
         return self.study / self.unit_folder(unit)
 
     @property
@@ -217,6 +217,7 @@ class Course:
     def settings(self):
         data = dict(DEFAULT_SETTINGS)
         data.update(_read_json(self.state / "settings.json", {}))
+        data.pop("course_skill", None)  # left by versions that had course skills (ADR 0011)
         return data
 
     def save_settings(self, data):
@@ -323,30 +324,34 @@ def _slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", str(text).strip().casefold()).strip("-") or "unknown"
 
 
-# The university-to-plugin and subject-to-plugin mapping, in one place (ticket 12). A university plugin is matched
-# by its own test on the normalized name ("Open University UK" must not match the Israeli one); a subject plugin on a keyword inside the field or course name. One entry per plugin.
+# The university-to-plugin mapping, in one place (ticket 12). A university plugin is matched by its own test on the
+# normalized name ("Open University UK" must not match the Israeli one). One entry per plugin.
 PLUGIN_RECOMMENDATIONS = [
-    {"name": "openu", "kind": "university",
+    {"name": "openu",
      "gives": "downloads new material from your Open University of Israel course site",
      "match": lambda uni: (uni == "oui" or "פתוחה" in uni or "openu" in uni.replace("openuniversity", "")
                            or ("openuniversity" in uni and ("israel" in uni or "ישראל" in uni)))},
-    {"name": "economics", "kind": "subject",
-     "gives": "study-pack rules for economics courses, plus a skill for intro macroeconomics",
-     "keywords": {"economics", "economy", "כלכלה", "כלכלי"}},
 ]
 
+
+# The Tool list (ADR 0012): self-installing kinds and Recommended tools, hardcoded, each proven by one sample call in
+# CI (.github/workflows/tool-list.yml). Empty until a real course shows a picture no existing kind draws. Entry shape:
+#   {"name": "circuit",                      # what the student says in chat; `us tools add <name>`
+#    "label": "circuit drawer",              # the plain name the roadmap sentence uses
+#    "draws": "electric circuits",           # what it draws, in words
+#    "kinds": ["circuit"],                   # the Presentation kind words it serves
+#    "install": {"python": "<package>"} or {"mcp": ["<command>", "<arg>", ...], "node": True},
+#    "sample": "<a short text spec the CI job draws once>"}
+TOOL_LIST = []
 
 def _plain(text: str) -> str:
     """Lowercase, keeping only letters and digits in any script (Hebrew included), so spelling drift still matches."""
     return "".join(c for c in str(text or "").casefold() if c.isalnum())
 
 
-def recommend_plugins(university: str = "", field: str = "", course_name: str = "") -> list:
-    """The plugins that fit this university and course, university plugins first. Never installs anything."""
-    uni, subjects = _plain(university), [_plain(field), _plain(course_name)]  # matched apart: a keyword can't span the join
-    return [p for p in PLUGIN_RECOMMENDATIONS
-            if (p["kind"] == "university" and p["match"](uni))
-            or (p["kind"] == "subject" and any(_plain(k) in t for k in p["keywords"] for t in subjects))]
+def recommend_plugins(university: str) -> list:
+    """The plugins that fit this university. Never installs anything."""
+    return [p for p in PLUGIN_RECOMMENDATIONS if p["match"](_plain(university))]
 
 
 def generated_university_file(university: str) -> Path:
@@ -354,32 +359,13 @@ def generated_university_file(university: str) -> Path:
     return home() / "generated" / _slug(university) / "site.md"
 
 
-def generated_course_skill_file(field: str, course_name: str) -> Path:
-    """A once-interviewed, cached study-pack fallback for a course with no installed course skill (ADR 0005)."""
-    return home() / "generated" / _slug(field) / (_slug(course_name) + ".md")
-
-
-def write_generated_reference(path: Path, heading: str, sections: list) -> None:
-    """One interview-generate-persist mechanism, shared by the university and course/subject fallbacks (ADR 0005).
-
-    `sections` is [(title, words)]; `words` is joined with spaces, matching how the CLI collects free text.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    body = (f"# {heading}\n\n"
-            "Written once from the student's own description, not independently verified — "
-            "a starting point, not gospel.\n\n")
-    for title, words in sections:
-        body += f"## {title}\n\n{' '.join(words)}\n\n"
-    path.write_text(body, "utf-8")
-
-
 def list_generated() -> list:
-    """Every generated fallback on disk (university and course/subject), with a one-line preview."""
+    """Every generated university fallback on disk, with a one-line preview."""
     folder = home() / "generated"
     out = []
-    for path in sorted(folder.rglob("*.md")) if folder.is_dir() else []:
+    for path in sorted(folder.rglob("site.md")) if folder.is_dir() else []:  # other files are course rules from before ADR 0011
         lines = [l.strip() for l in path.read_text("utf-8").splitlines() if l.strip()]
-        out.append({"path": str(path), "kind": "university" if path.name == "site.md" else "course",
+        out.append({"path": str(path),
                     "preview": lines[0].lstrip("# ") if lines else ""})
     return out
 

@@ -1,11 +1,11 @@
 """Commands for the Wiki, the inbox, checks, preferences, study packs, recordings and the course site."""
+import re
 from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
-from .course import (Course, Registry, find_course, SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
+from .course import (Course, Registry, find_course, SETUP_STAGES, clear_setup_progress, generated_university_file,
                      list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, recommend_plugins,
-                     safe_name, unit_dir,
-                     write_generated_reference, write_setup_progress)
+                     safe_name, unit_dir, write_setup_progress)
 
 
 def register(add, with_course):
@@ -13,7 +13,9 @@ def register(add, with_course):
 
     def cmd_wiki(args):
         course = resolve_course(args)
-        if args.action == "check":
+        if args.action == "check":  # every Wiki build ends here: refresh the context's Exam section from course.md
+            from .cli import write_context_files
+            write_context_files(course)
             return wiki.check(course)
         if args.action == "coverage":
             return wiki.coverage(course)
@@ -50,15 +52,19 @@ def register(add, with_course):
 
     def cmd_check(args):
         from . import labels
-        from .links_check import check_links, check_pack_page, check_vault_page
+        from .links_check import check_links, check_pack_against_unit, check_pack_page, check_return, check_vault_page
         course = resolve_course(args)
         report = {"paragraphs": [], "problems": []}
         for name in args.files:
             page = Path(name).resolve()
             pages = sorted(page.rglob("*.md")) if page.is_dir() else [page]
+            ret = course.state / "writer-returns" / f"{page.name}.md"
+            if page.is_dir() and ret.is_file():  # a pack folder
+                report["problems"] += check_return(ret)
             for one in pages:
                 if one.resolve().is_relative_to(course.study.resolve()):
-                    report["problems"] += check_vault_page(one, course.state) + check_pack_page(one)
+                    report["problems"] += (check_vault_page(one, course.state) + check_pack_page(one)
+                                           + check_pack_against_unit(one, course))
                 if args.labels:
                     part = labels.check_page(one, course.root)
                     report["paragraphs"] += part["paragraphs"]
@@ -68,67 +74,25 @@ def register(add, with_course):
         report["summary"] = problems_summary(
             report["problems"],
             lambda p: f"{p['kind']}: {p['page']}:{p.get('line', '')} {p.get('link', p.get('text', ''))[:80]}")
+        if not args.full:  # every paragraph's body, prefix and link targets: most of a unit's output
+            report.pop("paragraphs")
         return report
 
     p = with_course(add("check", cmd_check, "check links (and the grounding rule) in pages"))
     p.add_argument("files", nargs="+", help="Markdown files or folders")
     p.add_argument("--labels", action="store_true", help="also require every paragraph to cite a source or carry the warning")
+    p.add_argument("--full", action="store_true", help="also return paragraph bodies, prefixes and link targets")
 
-    def cmd_draw(args, kind=None):
-        from . import draw
-        result = draw.draw(kind or args.kind, args.spec, force=args.force)
-        result.setdefault("summary", f"Drew {result['png']}" if result["drawn"]
-                          else f"{result['png']} is up to date (the spec has not changed).")
+    def cmd_graph(args):
+        from . import graph
+        result = graph.draw(args.spec, force=args.force)
+        result["summary"] = (f"Drew {result['png']}" if result["drawn"]
+                             else f"{result['png']} is up to date (the spec has not changed).")
         return result
 
-    p = add("draw", cmd_draw, "draw a picture spec (JSON) to a PNG next to it; fetches the drawing tool on first use")
-    p.add_argument("kind", help="the picture kind, e.g. graph")
-    p.add_argument("spec", help="the spec file; the PNG is saved beside it")
-    p.add_argument("--force", action="store_true", help="draw again even if the spec has not changed")
-
-    p = add("graph", lambda args: cmd_draw(args, "graph"), "draw a Graph spec (JSON) to a PNG next to it")
+    p = add("graph", cmd_graph, "draw a Graph spec (JSON) to a PNG next to it")
     p.add_argument("spec", help="the Graph spec file; the PNG is saved beside it")
     p.add_argument("--force", action="store_true", help="draw again even if the spec has not changed")
-
-    def cmd_tools(args):
-        import datetime
-        from . import draw
-        from .cli import write_context_files
-        course = resolve_course(args)
-        answers = dict(course.settings().get("tools") or {})
-        if args.action == "status":
-            return {"tools": answers, "supports": draw.supports(answers),
-                    "summary": "This course can draw: " + ", ".join(draw.supports(answers)) + "."}
-        if args.action == "offer":
-            names = draw.offer(course.wiki, args.field, answers)
-            tools = [{"name": n, "draws": draw.KINDS[n]["draws"], "label": draw.KINDS[n]["label"]} for n in names]
-            summary = ("Nothing more to offer for this course." if not tools else
-                       "Offer the student, in one message: " + "; ".join(f"{t['label']} ({t['draws']})" for t in tools)
-                       + ". Then `us tools accept <name>` or `us tools skip <name>` for each answer.")
-            return {"tools": tools, "summary": summary}
-        names = args.names or []
-        unknown = [n for n in names if n not in draw.KINDS or not draw.KINDS[n].get("offer")]
-        if not names or unknown:
-            raise UserError(f"Name the tools to {args.action}; the ones that can be offered are: "
-                            + ", ".join(sorted(n for n, k in draw.KINDS.items() if k.get("offer")) or ["none yet"]) + ".")
-        failed, today = {}, datetime.date.today().isoformat()
-        for name in names:
-            reason = draw.accept(name) if args.action == "accept" else None
-            if reason:
-                failed[name] = reason
-                continue
-            answers[name] = {"state": "accepted" if args.action == "accept" else "skipped", "date": today}
-        course.update_settings(tools=answers)
-        write_context_files(course)
-        summary = (f"Noted: {', '.join(n for n in names if n not in failed) or 'nothing'}."
-                   + "".join(f" I couldn't get {n} ({why}); the study pack will describe those pictures in words."
-                             for n, why in failed.items()))
-        return {"tools": answers, "failed": list(failed), "summary": summary}
-
-    p = with_course(add("tools", cmd_tools, "offer, accept or skip the picture tools that fit this course; show what it can draw"))
-    p.add_argument("action", choices=["offer", "accept", "skip", "status"])
-    p.add_argument("names", nargs="*", help="accept/skip: the tool names")
-    p.add_argument("--field", help="offer: the course's academic field, used when the Wiki says little")
 
     def cmd_eval_grade(args):
         import json
@@ -170,24 +134,30 @@ def register(add, with_course):
     p.add_argument("--text", nargs="+")
     p.add_argument("--scope", choices=["course", "general"], default="course")
 
-    def fallback(args, path, name, noun, need, heading, sections):
-        """Shared status/save for a generated fallback (ADR 0005): `noun` names it, `need` the missing-option message."""
+    def cmd_university(args):
+        """The once-interviewed, cached fallback for a university with no installed plugin (ADR 0005)."""
+        name = args.university
+        if name.strip().casefold() == "none":  # self-study: no university at all
+            if args.action == "save":
+                raise UserError("No university (self-study): there is no course site, so nothing to save.")
+            return {"generated": False, "path": None, "content": None,
+                    "summary": "No university (self-study): no plugin, no fallback, nothing to interview."}
+        path = generated_university_file(name)
         if args.action == "status":
             exists = path.exists()
             return {"generated": exists, "path": str(path),
                     "content": path.read_text("utf-8") if exists else None,
-                    "summary": (f"Reusing the generated {noun} for {name} ({path})." if exists
-                                else f"No generated {noun} yet for {name}.")}
-        if not all(words for _, words in sections):
-            raise UserError(need)
-        write_generated_reference(path, heading, sections)
-        return {"path": str(path), "summary": f"Saved a generated {noun} for {name} at {path}."}
-
-    def cmd_university(args):
-        return fallback(args, generated_university_file(args.university), args.university, "fallback",
-                        "Give both --url and --organizing.",
-                        f"{args.university}: how the student reaches the course site",
-                        [("Site", args.url), ("How the student organizes and prioritizes material", args.organizing)])
+                    "summary": (f"Reusing the generated fallback for {name} ({path})." if exists
+                                else f"No generated fallback yet for {name}.")}
+        if not (args.url and args.organizing):
+            raise UserError("Give both --url and --organizing.")
+        path.parent.mkdir(parents=True, exist_ok=True)
+        path.write_text(f"# {name}: how the student reaches the course site\n\n"
+                        "Written once from the student's own description, not independently verified — "
+                        "a starting point, not gospel.\n\n"
+                        f"## Site\n\n{' '.join(args.url)}\n\n"
+                        f"## How the student organizes and prioritizes material\n\n{' '.join(args.organizing)}\n\n", "utf-8")
+        return {"path": str(path), "summary": f"Saved a generated fallback for {name} at {path}."}
 
     p = add("university", cmd_university, "check for or save a generated university fallback (no installed plugin)")
     p.add_argument("action", choices=["status", "save"])
@@ -195,38 +165,20 @@ def register(add, with_course):
     p.add_argument("--url", nargs="+")
     p.add_argument("--organizing", nargs="+", help="how the student organizes and prioritizes material")
 
-    def cmd_course_skill(args):
-        return fallback(args, generated_course_skill_file(args.field, args.course_name), args.course_name,
-                        "study-pack fallback", "Give both --emphasis and --summarize.",
-                        f"{args.field} — {args.course_name}: generated study-pack rules",
-                        [("What to emphasize", args.emphasis), ("How to summarize", args.summarize)])
-
-    p = add("course-skill", cmd_course_skill,
-            "check for or save a generated course/subject study-pack fallback (no installed course skill)")
-    p.add_argument("action", choices=["status", "save"])
-    p.add_argument("--field", required=True, help="broad academic field, e.g. economics")
-    p.add_argument("--course-name", required=True)
-    p.add_argument("--emphasis", nargs="+", help="what to emphasize in this course's study packs")
-    p.add_argument("--summarize", nargs="+", help="how this course wants material summarized")
-
     def cmd_plugins(args):
-        if not (args.university or args.field or args.course_name):
-            raise UserError("Give at least one of --university, --field or --course-name.")
-        found = [{"name": p["name"], "kind": p["kind"], "gives": p["gives"],
+        found = [{"name": p["name"], "gives": p["gives"],
                   "install": f"/plugin install {p['name']}@unistudent"}
-                 for p in recommend_plugins(args.university or "", args.field or "", " ".join(args.course_name or []))]
+                 for p in recommend_plugins(args.university)]
         other = ("In another app (Cursor, Codex, Gemini CLI...), add the skills with "
                  "`npx skills@latest add NoamTuriel/unistudent`.")
         summary = ("\n".join(f"{p['name']}: {p['gives']}. To add it: {p['install']}" for p in found) if found
-                   else "No plugin for this university or course yet: carry on with the generic rules (they work for any "
+                   else "No plugin for this university yet: carry on with the generic rules (they work for any "
                         "course). If you are not using Claude, the same skills are available too.") + "\n" + other
         return {"plugins": found, "other_apps": other, "summary": summary}
 
-    p = add("plugins", cmd_plugins, "recommend the plugins to install for a university and course (never installs)")
+    p = add("plugins", cmd_plugins, "recommend the plugins to install for a university (never installs)")
     p.add_argument("action", choices=["recommend"])
-    p.add_argument("--university")
-    p.add_argument("--field", help="broad academic field, e.g. economics")
-    p.add_argument("--course-name", nargs="+")
+    p.add_argument("--university", required=True)
 
     def cmd_course_context(args):
         """The course rules for the AI: from --course, else the folder it runs in, else the active course."""
@@ -256,7 +208,7 @@ def register(add, with_course):
         return {"generated": entries,
                 "summary": "\n".join(f"{e['preview']} ({e['path']})" for e in entries) or "Nothing generated yet."}
 
-    p = add("generated", cmd_generated, "list the generated university and course fallbacks saved for reuse")
+    p = add("generated", cmd_generated, "list the generated university fallbacks saved for reuse")
     p.add_argument("action", nargs="?", choices=["list"], default="list")
 
     def cmd_setup_progress(args):
@@ -310,18 +262,30 @@ def register(add, with_course):
                 current[info["folder"] + "/summary.md"] = "processed"
         packs = course.read_state("studypacks.json", {})
         pack = str(course.pack_folder(args.unit))
-        course.study.mkdir(exist_ok=True)  # the first Study pack request makes the Study vault (ADR 0008)
         if args.action == "mark-built":
+            course.study.mkdir(exist_ok=True)  # the first Study pack makes the Study vault (ADR 0008)
             packs[folder] = {"built": datetime.now().isoformat(timespec="seconds"), "sources": current}
             course.write_state("studypacks.json", packs)
             return {"pack_folder": pack, "summary": f"Recorded the sources of the {folder} study pack ({len(current)})."}
+        keys = {"1": "roadmap", "2": "walkthrough", "3": "practice", "4": "recordings"}  # page titles "N.k ..."
+        found = [re.match(r"[^.\s]+\.([1-4]) ", page.name) for page in sorted(Path(pack).glob("*.md"))]
+        pages_present = [keys[m.group(1)] for m in found if m]
+        lessons_page = course.pack_folder("lessons") / f"{course.label('roadmap')}.md"
+        entries = lessons_page.read_text("utf-8") if lessons_page.is_file() else ""
+        lessons_without_roadmap = sorted(  # the lessons whose one-line description names this unit
+            rel for rel, info in wiki.recording_pages(course).items()
+            if info["unit"] == "lessons" and info["processed"] and f"## {Path(rel).name}\n" not in entries
+            and folder in {unit_dir(n) for n in wiki._units_named(wiki.description_line(
+                (course.wiki / info["folder"] / "summary.md").read_text("utf-8")) or "")})
         base = packs.get(folder)
         if base is None:
-            return {"has_study_pack": False, "pack_folder": pack, "new": [], "changed": [], "removed": [],
+            return {"has_study_pack": False, "pack_folder": pack, "pages_present": pages_present,
+                    "lessons_without_roadmap": lessons_without_roadmap, "new": [], "changed": [], "removed": [],
                     "summary": f"No study pack recorded for {folder}."}
         old = base["sources"]
         result = {
-            "has_study_pack": True, "pack_folder": pack, "built": base["built"],
+            "has_study_pack": True, "pack_folder": pack, "built": base["built"], "pages_present": pages_present,
+            "lessons_without_roadmap": lessons_without_roadmap,
             "new": sorted(p for p in current if p not in old),
             "changed": sorted(p for p in current if p in old and old[p] != current[p]),
             "removed": sorted(p for p in old if p not in current),

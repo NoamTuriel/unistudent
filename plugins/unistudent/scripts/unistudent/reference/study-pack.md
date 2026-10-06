@@ -1,6 +1,6 @@
 # Study pack: generic rules
 
-The generic rules for building a study pack, used when no field skill, course skill or preference says otherwise. Later layers override earlier ones: generic → field skill → course skill → general preferences → course preferences.
+The generic rules for building a study pack, used when no preference says otherwise. Later layers override earlier ones: generic → General preferences → Course preferences.
 
 ## The student's flow (every format decision serves it)
 
@@ -8,7 +8,7 @@ The generic rules for building a study pack, used when no field skill, course sk
 2. **Walkthrough:** learn one whole topic at a time. When something is unclear, ask Claude or jump to the recording.
 3. **Practice:** solve that topic's questions.
 4. After the unit: the whole Practice page in order.
-5. Before the exam: the roadmap topic by topic, then the Short version to find weak spots.
+5. Before the exam (or the course's end, when it has no exam): the roadmap topic by topic, then the Short version to find weak spots.
 
 ## Topics: the backbone
 
@@ -37,14 +37,14 @@ A formula, an arrow chain or any run of Latin letters or symbols (`r↑`, `Y↑ 
 
 The text of a topic has no links and no source names: nothing breaks the reading. At the end of each topic, one **folded** block holds the sources, closed by default (a good summary means the student rarely opens it). In Obsidian format it is a foldable callout (`> [!note]- <Sources, in the course language>`); in plain Markdown a `<details>` block. Inside it two lines:
 
-- **In the recordings:** the recording and the time it is taught or solved, linked once (`#t=<seconds>`, the time in the text). A topic no recording covered has no such line. A recording without a transcript is shown by its file name alone, with no time.
+- **In the recordings:** each recording linked once, then the times it is taught or solved as plain text after the link (Links, below). A topic no recording covered has no such line. A recording without a transcript is shown by its file name alone, with no time.
 - **From:** the source files the topic rests on. Link text is the file's plain name ("the slides of lectures 8–9"), never a page or slide number. A file with no link is named by its file name.
 
 Chat answers keep a link on every claim.
 
 ## How to answer (inside each topic of the walkthrough)
 
-A verbal answered question is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the exam accepts; the solved answers show what is. A topic that has verbal answered questions gets a short **How to answer** block (its name, and the labels **Model answer**, **Say it**, **Prove it** below, are in the course language), after its concepts. Done when every verbal answered question of the topic has been read and the block gives:
+A verbal answered question is a question whose solution justifies the answer in words; Q&A files, assignment solutions and past-exam solutions often have them. The student's own wording of a justification is often not what the course accepts; the solved answers show what is. A topic that has verbal answered questions gets a short **How to answer** block (its name, and the labels **Model answer**, **Say it**, **Prove it** below, are in the course language), after its concepts. Done when every verbal answered question of the topic has been read and the block gives:
 
 - **Model answer:** one short justification as a chain, in the solutions' own wording.
 - **Say it:** the steps a solution spells out, quoted.
@@ -52,27 +52,31 @@ A verbal answered question is a question whose solution justifies the answer in 
 
 A pattern seen across several solutions is stated with the solutions it comes from. A topic with no verbal answered question gets no block, and nothing is invented for it. The roadmap only points to each topic's block.
 
+A quote in a Model answer or Say it is copied word for word from the solution: `us check` fails a quote the unit's source pages do not contain (`quote`). It finds the two labels written in English or, in Hebrew, as **תשובה לדוגמה** and **ככה אומרים**.
+
 ## Roadmap page
 
 The page the student reads first, in this order, each part only when it has something to say:
 
-1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. Close the list with one line, "The plugin now supports: X, Y, Z" (from `us tools status`, in the course language), so the student knows they can ask for the same kind of picture in chat.
+1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. End with this fixed sentence, written in the course language, its example request built from one of this unit's own concepts: "UniStudent draws graphs and flowcharts on request: ask in chat, for example \"draw the graph of <concept>\"." The study-pack skill adds the Recommended tools sentences after the pack is written (Recommended tools, below).
 2. **The idea** of the unit, one or two lines.
 3. **What to know by heart and what to understand:** one list for the whole unit, not one per topic.
 4. **A table of the unit's topics**, the same names and order as the walkthrough: per topic its tool, the question that recurs, the common mistake, and a pointer to the topic's "How to answer" block (only when it has one).
 5. **The solving order**, a few short steps.
-6. **What the lecturer said** (the section below).
-7. **A checklist** before the exam.
+6. **What the lecturer said**, only when a recorded lesson covers the unit: its announcements and exam hints are on the Recordings index page (below), so point there.
+7. **A checklist** before the exam (or the course's end, when it has no exam).
 8. **All the unit's sources:** one folded block (closed by default, a foldable callout in Obsidian format, `<details>` in plain Markdown) listing every source file and recording of the unit as links, plain names only. The roadmap is where a student looks for where things are, so this is the one place the whole unit's sources are together.
+
+What to know by heart and each topic's recurring question come from the Wiki course page's Exam format section and from the past-exam questions in the question bank, never from the student.
 
 Formulas and Latin symbols follow the right-to-left rule above.
 
 ## Concepts (walkthrough)
 
-`### <concept> — <English name>` (only concepts use `###`; the big idea and the closing sections do not). Draw only the parts the concept has, from this menu, in this order:
+`### <concept> — <English name>` (only concepts use `###`; the big idea and the closing sections do not). A concept is presented in the form its source uses: a ledger or a two-column comparison is a table, a procedure is numbered steps, a cause chain of three or more steps is a flowchart, a curve is a Graph (both below); prose only where the source is prose. The topic's Presentation line on the unit's Wiki page names the form and the page that shows it. Whatever the form, the concept passes this coverage checklist, each item only when the concept has it:
 
-- **In plain words:** one sentence.
-- **Explanation:** why it is so, with a concrete example, in your own words, resting on the Wiki.
+- **What it is:** one sentence in plain words.
+- **Why it is so:** with a concrete example, in your own words, resting on the Wiki.
 - **Formula:** on its own line, each symbol explained.
 - **Memory tip:** one line, only when a real one exists.
 
@@ -80,7 +84,7 @@ Formulas and Latin symbols follow the right-to-left rule above.
 
 1. A table of the unit's topics with how many questions each has.
 2. Under each topic, every suited question from the course material, easy to hard, as one checklist bullet (`- [ ]`, so the student ticks what is solved): the question's number and source page (`שאלה 3, עמוד 4`, in the course language), a link to the question, a link to its solution right beside it, and one line saying what it exercises. Nothing else per question: no stage, no tag, no recording time.
-   - **Links:** full `file:` links to the student's own file with `#page=N`. The solution link is the solution's page (same file or the solutions file); a question with no solution in the files says so in words instead of a link. Check the layout before linking: render the page and look, never assume the solution is on the next page.
+   - **Links:** full `file:` links to the student's own file with `#page=N`. The solution link is the solution's page (same file or the solutions file); a question with no solution in the files says so in words instead of a link. A question with no page anchor (a `.doc`, a scan) links the file by its plain name and says in words where in it to look. Check the layout before linking: render the page and look, never assume the solution is on the next page.
    - **Hide the answer:** when the question's page also shows the solution (handwritten answer on the same page, or the solution on the page right after in the same PDF), make a single-page copy of the question page (`pdfseparate -f N -l N`) in the unit's folder in the Study vault and link the question to it. Never modify the original. A page whose answer can't be hidden says so in the link text.
    - **Groups:** inside a topic, put similar questions together, 3-8 from different sources, easy to hard, so a student who fails one and understands its solution meets the same idea next. Each group opens with one line on what to master. Questions that fit no group stand alone.
 3. Ends with the **Short version**, introduced by one line saying what it is: the must-do questions, one per distinct way of solving, past-exam questions first.
@@ -91,7 +95,7 @@ No graphs on the Practice page.
 
 For a student short on time: every topic still appears, but with the fewest questions that cover everything worth practicing.
 
-- Two questions are **the same** when solving them takes the same method and the same steps, even with different numbers or a different scenario. They are **different** when the method or steps differ, even if one is much easier than the other. When unsure, read both solutions before deciding: surface wording never decides it alone.
+- Two questions are **the same** when solving them takes the same method and the same steps, even with different numbers or a different scenario. They are **different** when the method or steps differ, even if one is much easier than the other. Decide it after you read both solutions: surface wording never decides it alone.
 - Group each topic's questions by that test. From each group of "the same" questions keep only the **hardest** one (the most steps, the most combined concepts, or an explicit challenge or combined-unit question).
 - Every group of "different" questions keeps its one question, regardless of difficulty.
 - Every topic has at least one question. Past-exam questions come first.
@@ -100,28 +104,59 @@ For a student short on time: every topic still appears, but with the fewest ques
 
 Only **recorded lessons**: recordings of a whole class session, which belong to no unit (the Recorded lessons folder of the Study vault). The first line of each lesson's summary says which units it covers; use it to decide which lessons cover this unit. A recording that solves one question is never pointed to here; the other pages still cite it. A unit no recorded lesson covers gets no Recordings page at all, not an empty one.
 
-One line per covering lesson, in lesson order: the lesson (its summary line), where in it the unit's part starts (linked at that time), and roughly how long that part is, with a link to the lesson's entry in the Recorded lessons roadmap. Under each lesson's line, the lesson's `Announcements` and `This will be on the exam` sections from its summary, in full: every line with its recording and time link, in their own two headings. Leave a heading out only when the summary has none. These are first-class: never summarise them away, a student must never miss what the lecturer said out loud. Nothing else: the full timeline lives only in the roadmap.
+One line per covering lesson, in lesson order: the lesson (its summary line), where in it the unit's part starts (linked at that time), and roughly how long that part is, with a link to the lesson's entry in the Recorded lessons roadmap. Under each lesson's line, the lesson's `Announcements` and `This will be on the exam` sections from its summary, in full: every line with its time, in their own two headings. Leave a heading out only when the summary has none. These are first-class: never summarise them away, a student must never miss what the lecturer said out loud. Nothing else: the full timeline lives only in the roadmap.
 
-## Pictures and graphs
-
-**Before the first Study pack of a course** (the context file's "Picture tools" line shows nothing offered yet), run `us tools offer --field <the course's field>` (call the UniStudent MCP tool `tools` first) and, if it lists tools, ask the student once, in one message with no package names: for each tool what it will draw in this course, then "all", "none" or a pick. For each answer run `us tools accept <name>` (it installs the tool itself; say plainly if it could not, and that the pack will describe those pictures in words) or `us tools skip <name>`. A declined or failed tool never blocks the pack. Graphs need no question: their tool installs itself on first use. A field with no tool in the list gets no offer: its pictures are a slide link plus one line in words. Later, when the student asks in chat to add a skipped tool, run `us tools accept <name>`. Done when every offered tool is marked accepted or skipped (`us tools status`) and the student has been told plainly about any that failed.
+## Graphs
 
 Where the course material explains a concept with a graph (X and Y axes with lines or curves), or a question or its solution explicitly needs one, show it in that topic on the walkthrough page. Never on the roadmap, the Practice page, the recordings index or the navigation line, and never a graph that decorates a page the course didn't illustrate. A student preference such as "no graphs" or "only the key ones" overrides this.
 
 1. **Find it:** the Wiki text only hints at a slide's graph (axis labels, words like "curve" or "shifts"), so open that slide page and read it visually, including image-only pages.
 2. **Write a Graph spec** into `<pack folder>/graphs/<name>.json`. Keep it short: the axes' labels and every curve with the course's own names. Label each axis with the name in the course language plus the course's symbol in brackets, e.g. `כמות הכסף (M)`, and name a curve by its name plus its symbol when the course gives one. A curve is two points, a vertical or horizontal value, a formula in `x`, or a sketch of a few rough points on a 0–10 grid (for conceptual "what would happen if" graphs; the tool draws it as a smooth curve with no numbers). A shifted curve names the curve it moves from (`shift_of`). Points of interest give two curve names (the tool finds the crossing) or coordinates.
-3. **Draw it:** `us draw graph "<pack folder>/graphs/<name>.json"` (call the UniStudent MCP tool `draw` first; use the `unistudent` command only when no such tool is available). The first picture of a kind downloads its tool once; that is expected. Fix the spec and draw again when it reports a problem. Open the PNG next to the slide page once and fix every difference: the graph must be as close to the course's own as possible (the same curves with the same slopes and shapes, the same labels, the same crossings and points, the same relative positions), because the student will compare the two.
+3. **Draw it:** `us graph "<pack folder>/graphs/<name>.json"` (call the UniStudent MCP tool `graph` first; use the `unistudent` command only when no such tool is available). Fix the spec and draw again when it reports a problem. Open the PNG next to the slide page once and fix every difference: the graph must be as close to the course's own as possible (the same curves with the same slopes and shapes, the same labels, the same crossings and points, the same relative positions), because the student will compare the two.
 4. **Embed it** with a standard image link, alt text saying in words what the graph shows (which curve shifts, which way, what happens to each variable), and on the next line a one-line caption, with a link to the slide page when it reproduces the course's graph.
-5. **Without drawing** (the tool reports it could not be fetched): write no image link; write the slide page link and one line describing the graph, and tell the student once what the tool said. Never ask the student to install anything by hand before the MCP tool has been tried.
-
-Other picture kinds the course shows (the ones `us tools status` lists as supported) follow the same five steps with `us draw <kind>`; a picture the course shows that no supported kind can draw is a slide link plus one line in words.
+5. **Without drawing** (the MCP `graph` tool itself says it could not draw): write no image link; write the slide page link and one line describing the graph in words. The student is never told to install anything. A spec mistake is not this case: fix the spec and draw again.
 
 A cause-and-effect chain of three or more steps (`G↑ → AD↑ → Y↑ → …`) is drawn as a Mermaid flowchart in the topic that explains it (a plain Mermaid block, no tool; `flowchart RL` in a right-to-left language, short Hebrew labels), instead of an arrow line. Horizontal over vertical: a chain longer than about five steps is split into several short horizontal flowcharts, each its own `flowchart RL` of up to five steps, never one cramped row and never a tall column. Write each step's direction as a word (עולה / יורד) next to the symbol, not as an arrow glued to it, so a right-to-left box cannot flip it. One or two steps stay a formula line. Other flow pictures are Mermaid too; never a graph drawn with the tool for a flow.
+
+A picture the course shows that is not a graph or a flow is a slide link plus one line in words.
+
+## Recommended tools
+
+A picture the course shows that UniStudent cannot draw gets a tool only from the Tool list: a hardcoded list in the plugin, never an online search. The Tool list is empty until a real course needs its first entry; while it is empty, no unit gets a Recommended tools sentence.
+
+- **Tool bar.** Every entry is free, needs no account or key, runs offline on Windows, macOS and Linux, installs in one step, is driven by a short text spec through an MCP stdio server or a command line, and is proven by one sample call in CI.
+- **Boundary.** A Python library runnable through `uv run --with` is a self-installing kind: a drawer in the repo, no student action, as graphs are. Anything else is a Recommended tool, set up in chat (the harness table).
+- **Harness table.** You know which app you run in; find its row. Course-scoped first: write the tool into the course folder's own MCP config file; user-scoped only for an app with no project-level file, by naming the tool and giving the exact steps. A newly configured server needs a restart, so the pack is built without it and the roadmap says so.
+
+| App | Where a Recommended tool goes |
+|---|---|
+| Claude Code | `.mcp.json` in the course folder (`mcpServers`) |
+| Cursor | `.cursor/mcp.json` in the course folder (`mcpServers`) |
+| Codex | `.codex/config.toml` in the course folder (`[mcp_servers.<name>]`) |
+| Gemini CLI | `.gemini/settings.json` in the course folder (`mcpServers`) |
+| VS Code | `.vscode/mcp.json` in the course folder (`servers`) |
+| Claude Desktop | name it and give the steps (Settings, Developer, Edit Config) |
+| Cowork | name it and give the steps |
+| Any other app | name it and give the steps |
+
+- **Entry rule.** An entry joins the Tool list only when a real course shows a picture no existing kind draws. A dispatcher for Python kinds comes at the third real kind.
+- **Unattended surface.** The roadmap's How to start line is the only place a tool is named: per missing kind with an entry, one sentence saying what this unit shows and what to say in chat to add it. The study-pack skill adds it after the pack is written, from the unit page's Presentation kind words and the writer's Known gaps `picture` lines; no keyword pre-scan. The build installs nothing and waits on no one. In chat, on the student's request, `us tools add <name>` writes the course folder's config or returns the steps, and says whether a restart is needed; it lands with the first entry.
+
+## When the course has …
+
+Each item applies only when the course material has it.
+
+- **models that shift:** draw a shift as the original curve, the moved curve (`shift_of`) and both equilibria, labelled as the course labels them. Give each change the material covers as a chain: which curve moves, which way, what happens to each variable.
+- **an assumptions sheet:** quote the assumptions a model relies on by number.
+- **a formula sheet:** everything not on it is "know by heart" on the roadmap; check it line by line for what applies to the unit.
+- **verbal solutions:** the Model answer is a chain in the solutions' own words (which curve or variable moves, which way, what happens to each variable, ending in the answer). Say it quotes how the solutions name each curve and each direction of change, and the assumption they state aloud. Prove it lists the steps a solution gives that look obvious (an assumption holding, why a curve shifts, why a variable stays fixed).
+- **explanations of wrong answers** (Q&A files, assignment solutions): the roadmap's common mistakes come from them.
+- **two units using one name for two concepts:** a cross-reference warning at the end of the concept, in both units.
 
 ## Links
 
 - In a Study pack, citations are the folded sources block of each topic, not a link on every paragraph. A citation points at the student's own file in the Material folder, never at the Wiki (the student does not read it): a full disk link, a `file:` URL with the path percent-encoded (`file:///…/<material folder>/official/<unit folder>/slides.pdf`). Link text is the file's plain name; a recording's time goes in the text ("lecture 3, 00:12:47"), never a page or slide number. Read the Wiki page's `source:` line to find the file. A file that failed, was skipped or is not analyzed yet (`coverage.md`) is named as such, not cited as read.
-- Recordings: link the video file the same way; for a time add `#t=<seconds>` and write the time in the text. The transcript is in the Wiki, so it is not linked.
+- Recordings: one `file:` link per recording per section (heading to heading), to the video file the same way, with `#t=<seconds>` of its first time; every time follows it as plain text (`[lecture 3](file:///…/lecture%203.mp4#t=767) 00:12:47, 00:30:10`). `us check` fails a recording linked twice in one section and a time with no recording link before it in its section. The transcript is in the Wiki, so it is not linked.
 - `us check` fails a vault page that links into the hidden folder or at a missing file; the Wiki build repairs links after the course folder or a file moves.
 - Wikilinks are only for moving between pages of the vault, never for a citation (a citation is the `file:` link above).
 - Obsidian format: wikilinks and callouts (`> [!tip]`) are fine. Plain Markdown: standard links and blockquotes only.
@@ -130,3 +165,5 @@ A cause-and-effect chain of three or more steps (`G↑ → AD↑ → Y↑ → �
 ## Grounding
 
 A Study pack carries no per-paragraph sources or warnings: the Wiki is the student's knowledge base and the packs rest on it. Say only what the Wiki supports and bring in nothing from outside; if the student wants a line's source, they ask in chat, where answers follow the grounding rule in the course context (`.unistudent/context.md`).
+
+Every Latin symbol and assumption number a page uses is listed in the unit page's Notation or Assumptions sections: `us check` fails one that is not (`notation`; in an English course it reads symbols inside `$…$` math only). The check is reliable for formulas and Latin symbols and weak for course-language terms: those are checked only against the glossary, by the verifier.

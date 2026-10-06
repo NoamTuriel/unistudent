@@ -7,11 +7,13 @@ from the current folder, then from the Registry's active course.
 import argparse
 import json
 import os
+import re
 import sys
 from pathlib import Path
 
 from . import material
 from .common import UserError, resolve_course
+from .links_check import MD_LINK
 from .course import Course, Registry, find_course, general_preferences_file, safe_name
 from .recordings import is_synced_folder, recordings_root
 
@@ -30,21 +32,21 @@ def _rel(course: Course, folder: Path) -> str:
     return folder.relative_to(course.root).as_posix()
 
 
-def _tools_section(answers):
-    from . import draw
-    lines = [f"- {name}: {a['state']} ({a['date']})" for name, a in sorted(answers.items())]
-    return ("- Picture tools the student answered about (offered once, before the first Study pack; `us tools`):\n"
-            + ("\n".join("  " + l for l in lines) if lines else "  - none offered yet")
-            + "\n- This course can draw: " + ", ".join(draw.supports(answers)) + ".")
+def _course_page_has_exam_information(course: Course) -> bool:
+    """True once the Wiki's course page says something real: a line that cites its source (an unknown, in any
+    language, cites nothing)."""
+    page = course.wiki / "course.md"
+    text = re.sub(r"<!--.*?-->", "", page.read_text("utf-8"), flags=re.S) if page.exists() else ""
+    return any(not line.startswith("#") and MD_LINK.search(line) for line in text.splitlines())
 
 
 def write_context_files(course: Course):
     settings = course.settings()
-    exam = []
+    exam = []  # written only when the course has an exam to speak of (a self-learner's may not)
     if settings.get("exam_date"):
         exam.append(f"- Exam date: {settings['exam_date']}")
-    exam.append(f"- Exam format, formula sheet and lecturer emphasis: see `{_rel(course, course.wiki)}/course.md` "
-                "(filled when the Wiki is built).")
+    if _course_page_has_exam_information(course):
+        exam.append(f"- Exam format, formula sheet and lecturer emphasis: see `{_rel(course, course.wiki)}/course.md`.")
     others = [c for c in Registry().courses() if c["path"] != str(course.root)]
     other_lines = [f"- {c['name']}: `{Course(c['path']).wiki}`" for c in others] or ["- None."]
     context = render("context.md",
@@ -55,8 +57,7 @@ def write_context_files(course: Course):
                      study=_rel(course, course.study), material=_rel(course, course.material),
                      general_preferences=general_preferences_file(),
                      other_courses="\n".join(other_lines),
-                     exam_section="\n".join(exam),
-                     tools_section=_tools_section(settings.get("tools") or {}))
+                     exam_section="\n## Exam\n\n" + "\n".join(exam) + "\n" if exam else "")
     # The full context lives in .unistudent/context.md. AGENTS.md (read by Codex, Cursor, Gemini
     # and others) carries it in full; CLAUDE.md and GEMINI.md import it. A student's own file is kept and gets
     # one pointer line instead.
@@ -104,7 +105,6 @@ def cmd_setup(args):
         "course_name": args.name or settings["course_name"] or course.root.name,
         "language": args.language,
         "format": args.format,
-        "course_skill": args.course_skill,
         "university": args.university,
     }.items() if v is not None})
     synced = is_synced_folder(course.root)
@@ -228,7 +228,6 @@ def build_parser():
     p.add_argument("--name")
     p.add_argument("--language")
     p.add_argument("--format", choices=["obsidian", "markdown"])
-    p.add_argument("--course-skill")
     p.add_argument("--university")
     p.add_argument("--import", dest="import_dir")
     p.add_argument("--tier", choices=["official", "added"], default="added")

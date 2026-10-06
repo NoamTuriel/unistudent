@@ -46,7 +46,7 @@ Works with Claude (Code, Desktop, Cowork), Cursor, VS Code, Codex, Gemini CLI an
 
 There are three pieces. The **MCP server** (`unistudent-mcp`) holds the tools: set up a course, add material, build and check the Wiki, keep track of study packs, process recordings. It works in any MCP app. The **skills** (Agent Skills format) are the step-by-step instructions that use those tools; apps with skill support load them directly, and other MCP apps show the core skills as prompts. The **Claude plugins** bundle both with some subagents and install in one step in Claude Code and Cowork.
 
-The skills are split across three plugins. `unistudent` is the core and works for any university. `openu` is for the Open University of Israel and downloads new material from your course site. `economics` holds study-pack rules for economics courses, plus a skill for the intro macroeconomics course.
+The skills are split across two plugins. `unistudent` is the core and works for any university and any course. `openu` is for the Open University of Israel and downloads new material from your course site.
 
 | Skill | Plugin | What it does |
 |---|---|---|
@@ -59,7 +59,6 @@ The skills are split across three plugins. `unistudent` is the core and works fo
 | course-recordings | `unistudent` | Transcribe and summarise recordings (heavy; always asks first) |
 | courses | `unistudent` | List and switch courses |
 | openu-sync | `openu` | Download what's new on your OpenU course site |
-| economics, macro | `economics` | Study-pack rules for economics courses; the intro macroeconomics course skill |
 
 ## Install
 
@@ -71,8 +70,9 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
 /plugin marketplace add NoamTuriel/unistudent
 /plugin install unistudent@unistudent
 /plugin install openu@unistudent        # Open University students
-/plugin install economics@unistudent    # economics courses
 ```
+
+Installed the `economics` plugin earlier? It is no longer needed (the core's study-pack rules now cover what it added) and can be uninstalled: `/plugin uninstall economics@unistudent`.
 
 **Claude Desktop, Cursor, VS Code, Windsurf**: add the MCP server to the app's MCP settings:
 
@@ -81,7 +81,7 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
   "mcpServers": {
     "unistudent": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "--with", "matplotlib", "unistudent-mcp"]
     }
   }
 }
@@ -89,21 +89,21 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
 
 (VS Code calls the top-level key `servers` and wants `"type": "stdio"`. Desktop apps on a Mac often can't see `uvx`: if the server doesn't start, put the full path from `which uvx` in `"command"`, e.g. `/Users/you/.local/bin/uvx`.)
 
-**Codex CLI**: `codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" unistudent-mcp`, or in `~/.codex/config.toml`:
+**Codex CLI**: `codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" --with matplotlib unistudent-mcp`, or in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.unistudent]
 command = "uvx"
-args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "--with", "matplotlib", "unistudent-mcp"]
 ```
 
 **Gemini CLI**: the same `mcpServers` block as above, in `~/.gemini/settings.json`.
 
 **Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add NoamTuriel/unistudent` (it reads the skills declared in this repo's Claude plugin files). The skills do their work through the UniStudent MCP server, so add the server too; alternatively, for advanced users, `uv tool install` below gives them the `unistudent` command.
 
-Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It first asks your university, and once it knows your university and course it tells you which of the plugins above to install, with the exact command (so you only need `unistudent` to start). If there's no installed plugin for it (like `openu` above), it interviews you once — course site URL, how you organize material — and remembers the answer, so the next course at the same university skips that question. Setup can be stopped and resumed at any point; running it again picks up where you left off.
+Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It first asks your university, and once it knows your university it tells you which of the plugins above to install, with the exact command (so you only need `unistudent` to start). If there's no installed plugin for it (like `openu` above), it interviews you once — course site URL, how you organize material — and remembers the answer, so the next course at the same university skips that question. Setup can be stopped and resumed at any point; running it again picks up where you left off. No university? Answer "none": you get the same course folder, Wiki and study packs from your own files, with no plugin and no interview.
 
-For advanced users, optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx), Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon) and matplotlib for the graphs in study packs. (The plugin and the `uvx` setups above need none of this: the drawing tools, matplotlib for graphs first, download by themselves the first time a picture is drawn.)
+For advanced users, optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx), Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon) and matplotlib for the graphs in study packs. (The plugin and the `uvx` setups above already include matplotlib.)
 
 ## Works well with
 

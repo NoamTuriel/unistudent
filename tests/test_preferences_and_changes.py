@@ -1,7 +1,7 @@
 """Student preferences (course folder, seam 1) and study-pack change detection (Wiki, seam 2)."""
 import unittest
 
-from helpers import CourseTestCase, folders, make_pdf, run, run_json
+from helpers import CourseTestCase, folders, make_pdf, run, run_json, write
 
 
 class Preferences(CourseTestCase):
@@ -48,6 +48,19 @@ class StudyPackChanges(CourseTestCase):
         course = self.tmp / "Macro"
         run("setup", course, "--name", "Macro")
         self.assertFalse(run_json("study", "changes", "--course", course, "--unit", "1")["has_study_pack"])
+
+    def test_a_partial_pack_reports_the_pages_present_and_asking_creates_no_study_vault(self):
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en")
+        vault = folders(course).study
+        self.assertEqual(run_json("study", "changes", "--course", course, "--unit", "4")["pages_present"], [])
+        self.assertFalse(vault.exists())
+        write(vault / "Unit 4" / "4.1 Roadmap.md", "# Roadmap\n")
+        write(vault / "Unit 4" / "4.3 Practice.md", "# Practice\n")
+        write(vault / "Unit 4" / "Recordings roadmap.md", "# Recordings roadmap\n")
+        write(vault / "Unit 5" / "5.2 Walkthrough.md", "# Walkthrough\n")
+        self.assertEqual(run_json("study", "changes", "--course", course, "--unit", "4")["pages_present"],
+                         ["roadmap", "practice"])
 
 
 if __name__ == "__main__":
