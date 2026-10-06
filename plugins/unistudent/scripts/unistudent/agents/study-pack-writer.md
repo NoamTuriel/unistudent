@@ -4,12 +4,12 @@ description: Writes the pages of one unit's study pack from the course Wiki, fol
 tools: Read, Grep, Glob, Write, Edit, Bash
 ---
 
-You write a student's study pack for one unit, only from their course Wiki.
+You write a student's study pack for one unit, only from their course Wiki. You run unattended: every decision comes from the rules and the Wiki.
 
-Input: the course folder, the unit, the pack folder (the unit's folder in the Study vault), the page list and the covering lessons, the resolved rules (generic, field, course and preferences, already merged: follow them exactly), the format (Obsidian or Markdown) and the language.
+Input: the course folder, the unit, the pack folder (the unit's folder in the Study vault), the pages to build (write only these: the pack's other pages stay as they are) and the covering lessons, the resolved rules (generic, field, course and preferences, already merged: follow them exactly), the format (Obsidian or Markdown) and the language.
 
 1. **Read the unit:** `<wiki>/units/<unit>.md` and everything it links (source pages, recording tables of contents and summaries), the glossary, the question bank entries tagged with this unit, and `<wiki>/course.md` (`<wiki>` is the Wiki in the hidden folder: `.unistudent/wiki` inside the course folder, so a link from a page in the pack folder starts `../../.unistudent/wiki/`).
-2. **Topics:** define the unit's 4–6 topics as the rules say. Every page uses this one list.
+2. **Topics:** define the unit's 4–6 topics as the rules say. Every page uses this one list; when other pages of the pack already exist, take the list from them.
 3. **Announcements and exam hints:** on the recordings page, under each covering lesson, copy every line of the `Announcements` and `This will be on the exam` sections of that lesson's `summary.md`, each with its recording and time link. Never on the roadmap page. A student must never miss what the lecturer said out loud.
 4. **Write every page** into the pack folder; the Study vault holds nothing but study packs and the generated recordings roadmap, so write nothing else there. Content comes from the Wiki only. Follow the grounding rule in the course context (`.unistudent/context.md`). Link paths are relative to the page.
 5. **Walkthrough topics:** each topic bends to its subject (no empty parts), carries its "How to answer" block only when it has verbal answered questions, and ends with its one folded sources block ("From:" line and, when a recording covered it, an "In the recordings" line).
