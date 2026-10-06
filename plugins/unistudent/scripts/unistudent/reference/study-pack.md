@@ -71,10 +71,10 @@ Formulas and Latin symbols follow the right-to-left rule above.
 
 ## Concepts (walkthrough)
 
-`### <concept> — <English name>` (only concepts use `###`; the big idea and the closing sections do not). Draw only the parts the concept has, from this menu, in this order:
+`### <concept> — <English name>` (only concepts use `###`; the big idea and the closing sections do not). A concept is presented in the form its source uses: a ledger or a two-column comparison is a table, a procedure is numbered steps, a cause chain of three or more steps is a flowchart, a curve is a Graph (both below); prose only where the source is prose. The topic's Presentation line on the unit's Wiki page names the form and the page that shows it. Whatever the form, the concept passes this coverage checklist, each item only when the concept has it:
 
-- **In plain words:** one sentence.
-- **Explanation:** why it is so, with a concrete example, in your own words, resting on the Wiki.
+- **What it is:** one sentence in plain words.
+- **Why it is so:** with a concrete example, in your own words, resting on the Wiki.
 - **Formula:** on its own line, each symbol explained.
 - **Memory tip:** one line, only when a real one exists.
 

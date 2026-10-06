@@ -78,6 +78,29 @@ class TranscriptionAndGraphRules(unittest.TestCase):
                 self.assertNotIn(gone, text, doc)
 
 
+class FormFollowsTheCourse(unittest.TestCase):
+    """Ticket 26: a concept takes the form its source uses, recorded per topic as the unit's Presentation."""
+    AGENTS = CORE.parent / "agents"
+
+    def test_the_unit_writer_writes_the_presentation_section_with_the_kind_words(self):
+        text = (self.AGENTS / "wiki-unit-writer.md").read_text("utf-8")
+        self.assertIn("`## Presentation`", text)
+        for kind in ("table", "steps", "flowchart", "graph", "picture", "circuit", "molecule", "3D model"):
+            self.assertIn(f"`{kind}`", text)
+
+    def test_the_rules_hold_the_form_sentence_and_the_checklist(self):
+        concepts = TranscriptionAndGraphRules.RULES.split("## Concepts (walkthrough)")[1].split("\n## ")[0]
+        self.assertIn("A concept is presented in the form its source uses", concepts)
+        self.assertIn("coverage checklist", concepts)
+        for part in ("what it is", "why it is so", "formula", "memory tip"):
+            self.assertIn(part, concepts.lower())
+
+    def test_the_pack_writer_opens_the_page_the_presentation_line_names(self):
+        text = (self.AGENTS / "study-pack-writer.md").read_text("utf-8")
+        self.assertIn("Presentation", text)
+        self.assertIn("copy its form", text)
+
+
 class UnattendedBuild(unittest.TestCase):
     """Ticket 28: a build the student starts and walks away from: it never asks, and it resumes."""
     SKILL = (CORE / "study-pack" / "SKILL.md").read_text("utf-8")

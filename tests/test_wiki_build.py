@@ -112,6 +112,15 @@ class WikiBuild(CourseTestCase):
         self.assertIn("The five steps", text)
         self.assertIn("../sources/unit-04/more.md", text)
 
+    def test_the_presentation_section_survives_a_rebuild(self):
+        self.build()
+        unit4 = self.wiki / "units" / "unit-04.md"
+        unit4.write_text(unit4.read_text("utf-8") + "\n## Presentation\n\n- table, page 2: reserve ratio example\n", "utf-8")
+        make_pdf(self.own / "Unit 4 - money" / "more.pdf", ["Extra example"])
+        run("import", "--course", self.course, self.own, "--tier", "official")
+        self.build()
+        self.assertIn("## Presentation\n\n- table, page 2: reserve ratio example", unit4.read_text("utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
