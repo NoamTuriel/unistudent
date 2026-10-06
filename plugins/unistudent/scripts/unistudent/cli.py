@@ -95,7 +95,6 @@ def cmd_setup(args):
         "course_name": args.name or settings["course_name"] or course.root.name,
         "language": args.language,
         "format": args.format,
-        "course_skill": args.course_skill,
         "university": args.university,
     }.items() if v is not None})
     synced = is_synced_folder(course.root)
@@ -219,7 +218,6 @@ def build_parser():
     p.add_argument("--name")
     p.add_argument("--language")
     p.add_argument("--format", choices=["obsidian", "markdown"])
-    p.add_argument("--course-skill")
     p.add_argument("--university")
     p.add_argument("--import", dest="import_dir")
     p.add_argument("--tier", choices=["official", "added"], default="added")

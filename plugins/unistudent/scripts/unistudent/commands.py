@@ -3,7 +3,7 @@ import re
 from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
-from .course import (Course, Registry, find_course, SETUP_STAGES, clear_setup_progress, generated_course_skill_file, generated_university_file,
+from .course import (Course, Registry, find_course, SETUP_STAGES, clear_setup_progress, generated_university_file,
                      list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, recommend_plugins,
                      safe_name, unit_dir,
                      write_generated_reference, write_setup_progress)
@@ -151,38 +151,22 @@ def register(add, with_course):
     p.add_argument("--url", nargs="+")
     p.add_argument("--organizing", nargs="+", help="how the student organizes and prioritizes material")
 
-    def cmd_course_skill(args):
-        return fallback(args, generated_course_skill_file(args.field, args.course_name), args.course_name,
-                        "study-pack fallback", "Give both --emphasis and --summarize.",
-                        f"{args.field} — {args.course_name}: generated study-pack rules",
-                        [("What to emphasize", args.emphasis), ("How to summarize", args.summarize)])
-
-    p = add("course-skill", cmd_course_skill,
-            "check for or save a generated course/subject study-pack fallback (no installed course skill)")
-    p.add_argument("action", choices=["status", "save"])
-    p.add_argument("--field", required=True, help="broad academic field, e.g. economics")
-    p.add_argument("--course-name", required=True)
-    p.add_argument("--emphasis", nargs="+", help="what to emphasize in this course's study packs")
-    p.add_argument("--summarize", nargs="+", help="how this course wants material summarized")
-
     def cmd_plugins(args):
-        if not (args.university or args.field or args.course_name):
-            raise UserError("Give at least one of --university, --field or --course-name.")
+        if not args.university:
+            raise UserError("Give --university.")
         found = [{"name": p["name"], "kind": p["kind"], "gives": p["gives"],
                   "install": f"/plugin install {p['name']}@unistudent"}
-                 for p in recommend_plugins(args.university or "", args.field or "", " ".join(args.course_name or []))]
+                 for p in recommend_plugins(args.university)]
         other = ("In another app (Cursor, Codex, Gemini CLI...), add the skills with "
                  "`npx skills@latest add NoamTuriel/unistudent`.")
         summary = ("\n".join(f"{p['name']}: {p['gives']}. To add it: {p['install']}" for p in found) if found
-                   else "No plugin for this university or course yet: carry on with the generic rules (they work for any "
+                   else "No plugin for this university yet: carry on with the generic rules (they work for any "
                         "course). If you are not using Claude, the same skills are available too.") + "\n" + other
         return {"plugins": found, "other_apps": other, "summary": summary}
 
-    p = add("plugins", cmd_plugins, "recommend the plugins to install for a university and course (never installs)")
+    p = add("plugins", cmd_plugins, "recommend the plugins to install for a university (never installs)")
     p.add_argument("action", choices=["recommend"])
     p.add_argument("--university")
-    p.add_argument("--field", help="broad academic field, e.g. economics")
-    p.add_argument("--course-name", nargs="+")
 
     def cmd_course_context(args):
         """The course rules for the AI: from --course, else the folder it runs in, else the active course."""
@@ -212,7 +196,7 @@ def register(add, with_course):
         return {"generated": entries,
                 "summary": "\n".join(f"{e['preview']} ({e['path']})" for e in entries) or "Nothing generated yet."}
 
-    p = add("generated", cmd_generated, "list the generated university and course fallbacks saved for reuse")
+    p = add("generated", cmd_generated, "list the generated university fallbacks saved for reuse")
     p.add_argument("action", nargs="?", choices=["list"], default="list")
 
     def cmd_setup_progress(args):

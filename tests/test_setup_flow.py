@@ -4,6 +4,7 @@ Deterministic only. What the AI says and asks is not testable here (see evals/);
 commands the skill tells it to run real, and the stage bookkeeping complete.
 """
 import argparse
+import json
 import re
 import unittest
 from pathlib import Path
@@ -44,7 +45,7 @@ class SetupFlow(CourseTestCase):
         run_json("university", "save", "--university", "Test U", "--url", "https://example.invalid", "--organizing", "by unit")
         self.assertTrue(run_json("university", "status", "--university", "Test U")["generated"])
         run_json("setup-progress", "advance", *name, "--stage", "university", "--answer", "university=Test U")
-        self.assertEqual(run_json("plugins", "recommend", "--university", "Test U", "--course-name", "Macro")["plugins"], [])
+        self.assertEqual(run_json("plugins", "recommend", "--university", "Test U")["plugins"], [])
         run_json("setup-progress", "advance", *name, "--stage", "course")
         run_json("setup-progress", "advance", *name, "--stage", "language", "--answer", "language=en")
         run_json("setup-progress", "advance", *name, "--stage", "path", "--answer", f"path={folder}")
@@ -65,6 +66,15 @@ class SetupFlow(CourseTestCase):
         self.assertTrue(folders(folder).inbox.is_dir())
         self.assertTrue((folder / "README.md").is_file())
         self.assertEqual(run("wiki", "check", *course)[0], 0)
+
+    def test_a_leftover_course_skill_setting_is_accepted_and_ignored(self):
+        folder = self.tmp / "Course"
+        run_json("setup", folder, "--name", "Course", "--language", "en")
+        settings = folder / ".unistudent" / "settings.json"
+        settings.write_text(json.dumps({**json.loads(settings.read_text("utf-8")), "course_skill": "old"}), "utf-8")
+        run_json("setup", folder, "--name", "Course", "--language", "en")
+        self.assertNotIn("course_skill", settings.read_text("utf-8"))
+        self.assertNotIn("course_skill", run_json("course-context", "--course", folder)["summary"])
 
 
 class SetupSkillStatic(unittest.TestCase):
