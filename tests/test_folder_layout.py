@@ -82,9 +82,9 @@ class LazyStudyVault(CourseTestCase):
         run_json("setup", self.course, "--name", "Macro", "--language", "en")  # setting up again keeps it absent
         self.assertFalse(self.vault.exists())
 
-    def test_the_first_study_pack_request_creates_it(self):
+    def test_asking_what_changed_does_not_create_it(self):
         result = run_json("study", "changes", "--course", self.course, "--unit", "1")
-        self.assertTrue(self.vault.is_dir())
+        self.assertFalse(self.vault.exists())
         self.assertEqual(Path(result["pack_folder"]).parent.resolve(), self.vault.resolve())
 
     def test_an_existing_study_vault_is_left_as_it_is(self):

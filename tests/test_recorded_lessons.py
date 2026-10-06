@@ -58,6 +58,13 @@ class RecordedLessons(CourseTestCase):
         self.assertNotIn("explanation", text)
         self.assertIn("Intro", text)
 
+    def test_a_lesson_with_no_roadmap_entry_is_reported_until_the_wiki_build_writes_it(self):
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        lesson = "official/Recorded lessons/lesson 9.mp4"
+        self.assertEqual(run_json("study", "changes", "--course", self.course, "--unit", "8")["lessons_without_roadmap"], [lesson])
+        run_json("wiki", "build", "--course", self.course)
+        self.assertEqual(run_json("study", "changes", "--course", self.course, "--unit", "8")["lessons_without_roadmap"], [])
+
     def test_only_a_recording_can_be_assigned_to_recorded_lessons(self):
         write(self.course / "1-inbox" / "notes.txt", "notes")
         run_json("add", "--course", self.course)
