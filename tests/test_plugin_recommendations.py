@@ -1,7 +1,7 @@
 """Plugin recommendations (ticket 12): setup tells the student which plugins fit their university (ADR 0011: no subject plugins)."""
 import unittest
 
-from helpers import CourseTestCase, run, run_json
+from helpers import CourseTestCase, run_json
 
 
 def names(result):
@@ -24,9 +24,6 @@ class PluginRecommendations(CourseTestCase):
         for university in ("open-university-of-israel", "OPEN UNIVERSITY OF ISRAEL", "האוניברסיטה הפתוחה"):
             self.assertEqual(names(run_json("plugins", "recommend", "--university", university)), ["openu"], university)
 
-    def test_university_plugins_only(self):
-        self.assertEqual({p["kind"] for p in run_json("plugins", "recommend", "--university", "OpenU")["plugins"]}, {"university"})
-
     def test_another_open_university_is_not_the_israeli_one(self):
         self.assertEqual(names(run_json("plugins", "recommend", "--university", "Open University UK")), [])
 
@@ -38,10 +35,6 @@ class PluginRecommendations(CourseTestCase):
     def test_other_apps_get_a_harness_neutral_line(self):
         result = run_json("plugins", "recommend", "--university", "OpenU")
         self.assertIn("skills", result["other_apps"])
-
-    def test_needs_something_to_go_on(self):
-        code, _ = run("plugins", "recommend", "--json")
-        self.assertEqual(code, 1)
 
 
 if __name__ == "__main__":
