@@ -1,9 +1,0 @@
-{
-  "name": "economics",
-  "version": "0.3.2",
-  "description": "Economics field skill and course skills (intro macroeconomics) for study packs.",
-  "author": {
-    "name": "Noam Turiel"
-  },
-  "license": "MIT"
-}

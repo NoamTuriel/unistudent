@@ -46,7 +46,7 @@ Works with Claude (Code, Desktop, Cowork), Cursor, VS Code, Codex, Gemini CLI an
 
 There are three pieces. The **MCP server** (`unistudent-mcp`) holds the tools: set up a course, add material, build and check the Wiki, keep track of study packs, process recordings. It works in any MCP app. The **skills** (Agent Skills format) are the step-by-step instructions that use those tools; apps with skill support load them directly, and other MCP apps show the core skills as prompts. The **Claude plugins** bundle both with some subagents and install in one step in Claude Code and Cowork.
 
-The skills are split across three plugins. `unistudent` is the core and works for any university. `openu` is for the Open University of Israel and downloads new material from your course site. `economics` holds study-pack rules for economics courses, plus a skill for the intro macroeconomics course.
+The skills are split across two plugins. `unistudent` is the core and works for any university and any course. `openu` is for the Open University of Israel and downloads new material from your course site.
 
 | Skill | Plugin | What it does |
 |---|---|---|
@@ -59,7 +59,6 @@ The skills are split across three plugins. `unistudent` is the core and works fo
 | course-recordings | `unistudent` | Transcribe and summarise recordings (heavy; always asks first) |
 | courses | `unistudent` | List and switch courses |
 | openu-sync | `openu` | Download what's new on your OpenU course site |
-| economics, macro | `economics` | Study-pack rules for economics courses; the intro macroeconomics course skill |
 
 ## Install
 
@@ -71,8 +70,9 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
 /plugin marketplace add NoamTuriel/unistudent
 /plugin install unistudent@unistudent
 /plugin install openu@unistudent        # Open University students
-/plugin install economics@unistudent    # economics courses
 ```
+
+Installed the `economics` plugin earlier? It is no longer needed (the core's study-pack rules now cover what it added) and can be uninstalled: `/plugin uninstall economics@unistudent`.
 
 **Claude Desktop, Cursor, VS Code, Windsurf**: add the MCP server to the app's MCP settings:
 

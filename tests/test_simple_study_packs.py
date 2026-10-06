@@ -7,8 +7,6 @@ from helpers import CourseTestCase, folders, run_json, write
 
 ROOT = Path(__file__).resolve().parents[1]
 GENERIC = ROOT / "plugins" / "unistudent" / "scripts" / "unistudent" / "reference" / "study-pack.md"
-ECONOMICS = ROOT / "plugins" / "economics" / "skills" / "economics" / "SKILL.md"
-MACRO = ROOT / "plugins" / "economics" / "skills" / "macro" / "SKILL.md"
 
 TOPIC = "## Topic 1\n\n### Money — כסף\n\nMoney is 1/r.\n\n"
 
@@ -77,13 +75,19 @@ class Rules(unittest.TestCase):
             self.assertIn(needle, text)
         self.assertNotRegex(text, r"3b|practice-short|Practice stages")
 
-    def test_economics_skills_follow_the_same_rules(self):
-        economics, macro = ECONOMICS.read_text("utf-8"), MACRO.read_text("utf-8")
-        self.assertNotRegex(economics, r"(?i)always these five parts")
-        self.assertIn("How to answer", economics)
-        self.assertNotRegex(macro, r"3b|practice-short")
-        self.assertNotIn("Accepted reasoning", macro)
+    def test_emphasis_comes_from_the_course_page_and_past_exams(self):
+        roadmap = GENERIC.read_text("utf-8").split("## Roadmap page")[1].split("\n## ")[0]
+        for needle in ("course page", "Exam format", "question bank", "past-exam", "never from the student"):
+            self.assertIn(needle, roadmap)
 
+    def test_the_course_specific_advice_is_one_conditional_section(self):
+        text = GENERIC.read_text("utf-8")
+        self.assertEqual(text.count("## When the course has"), 1)
+        section = text.split("## When the course has")[1].split("\n## ")[0]
+        for needle in ("models that shift", "both equilibria", "which curve moves", "assumptions sheet", "by number",
+                       "formula sheet", "know by heart", "verbal solutions", "Say it", "Prove it",
+                       "explanations of wrong answers", "cross-reference warning"):
+            self.assertIn(needle, section)
 
 if __name__ == "__main__":
     unittest.main()

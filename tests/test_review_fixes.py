@@ -322,7 +322,7 @@ class SetupSkill(CourseTestCase):
         self.assertIn("a vault is just a folder", (ROOT / "README.md").read_text("utf-8"))
 
     def test_no_plugin_found_still_tells_a_non_claude_student_what_to_do(self):  # S6
-        out = run_json("plugins", "recommend", "--university", "Nowhere U", "--course-name", "Basket weaving")
+        out = run_json("plugins", "recommend", "--university", "Nowhere U")
         self.assertEqual(out["plugins"], [])
         self.assertIn("npx skills", out["summary"])
 
