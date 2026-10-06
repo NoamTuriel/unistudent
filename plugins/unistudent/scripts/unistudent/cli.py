@@ -13,6 +13,7 @@ from pathlib import Path
 
 from . import material
 from .common import UserError, resolve_course
+from .links_check import MD_LINK
 from .course import Course, Registry, find_course, general_preferences_file, safe_name
 from .recordings import is_synced_folder, recordings_root
 
@@ -32,12 +33,11 @@ def _rel(course: Course, folder: Path) -> str:
 
 
 def _course_page_has_exam_information(course: Course) -> bool:
-    """True once the Wiki's course page says something real: a line that is not a heading, a comment or
-    the course-wiki skill's "not in the course material yet"."""
+    """True once the Wiki's course page says something real: a line that cites its source (an unknown, in any
+    language, cites nothing)."""
     page = course.wiki / "course.md"
     text = re.sub(r"<!--.*?-->", "", page.read_text("utf-8"), flags=re.S) if page.exists() else ""
-    return any(line.strip() and not line.startswith("#") and "not in the course material yet" not in line
-               for line in text.splitlines())
+    return any(not line.startswith("#") and MD_LINK.search(line) for line in text.splitlines())
 
 
 def write_context_files(course: Course):

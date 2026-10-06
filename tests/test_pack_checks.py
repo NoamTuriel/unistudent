@@ -4,7 +4,7 @@ from pathlib import Path
 
 from helpers import CourseTestCase, folders, run_json, write
 
-UNIT_PAGE = ("\n## Notation\n\n- Y: output\n- $Y_d$: disposable income\n- C: consumption\n"
+UNIT_PAGE = ("\n## Notation\n\n- Y: output\n- $Y_d$: disposable income\n- C: consumption. Sources: [slides](../sources/unit-04/solutions.md#page-7)\n"
              "\n## Assumptions\n\n1. Prices are fixed.\n2. No foreign trade.\n")
 SOLUTION = "Answer: income rises,\nso consumption rises too (assumption 1)."
 
@@ -40,6 +40,19 @@ class PackAgainstTheUnit(CourseTestCase):
     def test_an_assumption_number_the_unit_page_does_not_list_is_a_notation_problem(self):
         self.assertEqual(self.problems("4.2 Walkthrough.md", "By assumption 7, $Y = C$.\n"),
                          [("notation", "assumption 7")])
+
+    def test_assumption_words_without_a_numbered_reference_are_not_checked(self):
+        self.assertEqual(self.problems("4.2 Walkthrough.md", "Under these assumptions, in 2008 $Y = C$.\n"), [])
+
+    def test_an_obsidian_sources_callout_closes_a_topic(self):
+        page = "## Topic\n\n### Sub\n\nText.\n\n> [!note]- Sources\n> - **From:** the slides\n"
+        self.assertEqual(self.problems("4.2 Walkthrough.md", page), [])
+
+    def test_in_a_hebrew_pack_a_concept_headings_english_name_and_the_roadmap_are_not_checked(self):
+        self.assertEqual(self.problems("4.2 Walkthrough.md", "### מכפיל — Rate of interest\n\nבהנחה ש-Y עולה.\n", "he"), [])
+        pack = folders(self.course).study / "יחידה 4"
+        write(pack / "מפת הקלטות.md", "## Zoom lesson.mp4\n\n- IS-LM\n")
+        self.assertEqual([p["kind"] for p in run_json("check", pack, "--course", self.course)["problems"]], [])
 
     def test_in_a_hebrew_pack_a_latin_symbol_in_the_prose_is_checked(self):
         self.assertEqual(self.problems("4.2 Walkthrough.md", "כאשר Y עולה גם C עולה, ו-MPC קבוע.\n", "he"),

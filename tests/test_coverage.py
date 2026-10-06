@@ -117,6 +117,11 @@ class PagesReadVisually(CourseTestCase):
         self.assertIn("## Analyzed (2)", (self.wiki / "coverage.md").read_text("utf-8"))
         self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
 
+    def test_an_image_named_like_a_document_gets_its_own_page(self):  # graph.png beside scan.pdf's page
+        write(folders(self.course).material / "official" / "Unit 1" / "scan.png")
+        pages = {i["source"]: i["page"] for i in self.build()["images"]}
+        self.assertEqual(pages["official/Unit 1/scan.png"], "sources/unit-01/scan (2).md")
+
     def test_an_image_without_a_source_page_is_still_not_analyzed(self):
         self.build()
         files = {r["path"]: r for r in run_json("wiki", "coverage", "--course", self.course)["files"]}
