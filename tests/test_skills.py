@@ -11,7 +11,7 @@ BLOCK = re.compile(r"<!-- conventions:.*?<!-- /conventions -->", re.S)
 
 class Skills(unittest.TestCase):
     def test_every_skill_has_the_open_standard_frontmatter(self):
-        self.assertGreaterEqual(len(ALL), 10)
+        self.assertGreaterEqual(len(ALL), 9)
         for skill in ALL:
             text = skill.read_text("utf-8")
             front = text.split("---")[1]
@@ -93,3 +93,19 @@ class UnattendedBuild(unittest.TestCase):
                      "us wiki build"):
             self.assertIn(rule, self.SKILL)
         self.assertLess(self.SKILL.index("lessons_without_roadmap"), self.SKILL.index("study-pack-writer"))
+
+
+class NoSubjectLayer(unittest.TestCase):
+    """Ticket 25 (ADR 0011): rules come from three layers, and nothing names a course skill or a field skill."""
+
+    def test_no_skill_template_agent_or_rule_names_a_course_or_field_skill(self):
+        texts = ALL + sorted((CORE.parent).glob("*/*.md"))
+        for path in texts:
+            self.assertIsNone(re.search(r"(?i)course[ _-]skill|field[ _-]skill", path.read_text("utf-8")), path)
+
+    def test_the_study_pack_skill_names_exactly_three_rule_layers(self):
+        skill = (CORE / "study-pack" / "SKILL.md").read_text("utf-8")
+        rules = skill[skill.index("## 3."):skill.index("## 4.")]
+        self.assertEqual(re.findall(r"(?m)^\d+\. ", rules), ["1. ", "2. ", "3. "])
+        for layer in ("generic rules", "General preferences", "Course preferences"):
+            self.assertIn(layer, rules)

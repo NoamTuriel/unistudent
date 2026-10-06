@@ -74,17 +74,11 @@ A chapter of the course as the course itself numbers it (יחידה).
 One of the 4–6 sub-parts of a unit that every page of its study pack is organised by.
 _Avoid_: subject, section
 
-### Skill layers
-
-**Course skill**:
-A published skill holding the rules for one course's study packs that stay true across semesters.
-
-**Field skill**:
-A published skill holding study-pack rules shared by all courses in one academic field.
+### Rule layers
 
 **Student preferences**:
 The study-pack and material-handling rules a student set, in two levels: course preferences and general preferences.
-_Avoid_: own rules, local course skill, custom skill
+_Avoid_: own rules, course skill, field skill, custom skill
 
 **Course preferences**:
 Student preferences for one course, stored in its course folder; they win over general preferences.
@@ -101,9 +95,6 @@ _Avoid_: generic skill
 **University plugin**:
 A plugin holding everything specific to one university: site access, site structure and unit sorting.
 _Avoid_: adapter, connector
-
-**Subject plugin**:
-A plugin holding field skills and course skills; it never depends on a university.
 
 ### Grounding
 

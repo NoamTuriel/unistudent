@@ -14,12 +14,6 @@
       "source": "./plugins/openu",
       "description": "Open University of Israel: downloading from the course site and sorting into OpenU units.",
       "category": "education"
-    },
-    {
-      "name": "economics",
-      "source": "./plugins/economics",
-      "description": "Economics field skill and course skills (intro macroeconomics) for study packs.",
-      "category": "education"
     }
   ]
 }

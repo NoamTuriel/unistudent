@@ -44,19 +44,17 @@ Ask which university. Say why in a sentence: the university decides where your o
 
 Record the answer right now, before anything else (an install in the next paragraph stops setup): `us setup-progress advance --course-name "<university name>" --stage university --answer university=<name>` (the placeholder name step 0 explains).
 
-Then run `us plugins recommend --university "<name>" --json`. If it returns a plugin you don't already have (you can tell from the course skills and sync skills you can see; if you can't tell, say what the plugin is for and how to add it, and don't claim it's missing), say in one plain sentence what it gives them and give its `install` command. Always recommend it, and ask them to install it now, before going on. Say why: a plugin teaches the AI your university's course site (so it can fetch your material for you, from the source, instead of you downloading it by hand) and your subject's study rules (so your study packs match how your course is taught). Tell them what happens next in these words: after installing a plugin, **close and reopen (reload) the app**, because plugins are only picked up when it starts, then run setup again; it continues from the university you just gave. Setup resumes right where it stopped. Only if they can't or won't, carry on with the generic rules or the generated fallback, and say plainly what they'll be missing. Nothing returned → say in one sentence that no plugin exists for this yet and the generic rules work for any course; if they aren't using Claude, also give the `other_apps` line.
+Then run `us plugins recommend --university "<name>" --json`. If it returns a plugin you don't already have (you can tell from the sync skills you can see; if you can't tell, say what the plugin is for and how to add it, and don't claim it's missing), say in one plain sentence what it gives them and give its `install` command. Always recommend it, and ask them to install it now, before going on. Say why: a plugin teaches the AI your university's course site (so it can fetch your material for you, from the source, instead of you downloading it by hand). Tell them what happens next in these words: after installing a plugin, **close and reopen (reload) the app**, because plugins are only picked up when it starts, then run setup again; it continues from the university you just gave. Setup resumes right where it stopped. Only if they can't or won't, carry on with the generic rules or the generated fallback, and say plainly what they'll be missing. Nothing returned → say in one sentence that no plugin exists for this yet and the generic rules work for any course; if they aren't using Claude, also give the `other_apps` line.
 
 Done when: `university` is recorded, you know the university and, if relevant, how to reach its site (installed plugin, generated fallback, or "own folder only for now"), and every plugin the command recommended has been recommended, and installed or knowingly declined.
 
 ## 2. Course
 
-Ask which course. Say why in a sentence: each course gets its own folder and Wiki, so nothing from another course leaks into your answers. Offer the installed course skills by name (skills whose description starts with "Course skill:", e.g. `economics:macro`), plus "My course isn't listed". Not listed → generic rules; record no course skill.
+Ask which course. Say why in a sentence: each course gets its own folder and Wiki, so nothing from another course leaks into your answers.
 
-Once you have the course name, run `us plugins recommend --university "<name>" --course-name "<course>" --field "<field, if you know it>" --json` and give the student one combined list of every recommended plugin they don't already have, each with what it gives them and its `install` command, plus the `other_apps` line if they aren't using Claude. Repeat any from step 1 they haven't installed yet. Always recommend installing them now, before going on (then setup resumes here); only if they can't or won't, carry on with the generic rules and say what they'll be missing.
+Record both stages now under the course's name: `us setup-progress advance --course-name "<course>" --stage university --answer university=<name>`, then `--stage course --answer course_name=<course>`; then drop the placeholder from step 1 with `us setup-progress clear --course-name "<university name>"`.
 
-Record both stages now under the course's name: `us setup-progress advance --course-name "<course>" --stage university --answer university=<name>`, then `--stage course --answer course_name=<course> [--answer course_skill=<skill>]`; then drop the placeholder from step 1 with `us setup-progress clear --course-name "<university name>"`.
-
-Done when: you have the course name and the course skill (or none), the student has been told which plugins fit their university and course (or that none do), and `university` and `course` are recorded.
+Done when: you have the course name, and `university` and `course` are recorded.
 
 ## 3. Language
 
@@ -90,7 +88,7 @@ Then ask: download from the course website, use a folder they already have, or b
 - Neither a plugin nor a fallback: offer their own folder and the inbox only.
 - Own folder: ask for it, and ask whether it is the lecturer's material (official) or other material (added). Tell them it is copied in once and their original files are left exactly where they are; nothing of theirs is moved or changed.
 
-Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <the language from step 3> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`. Setup creates the three folders the student will see: its result names them (`inbox`, `material`, `study`). Tell the student where the **inbox** is (its name), and that new files go in there later.
+Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <the language from step 3> [--university <plugin>] [--import "<own folder>" --tier <official|added>]`. Setup creates the three folders the student will see: its result names them (`inbox`, `material`, `study`). Tell the student where the **inbox** is (its name), and that new files go in there later.
 
 If downloading from the site: run the university plugin's sync skill (e.g. `openu:openu-sync`) or, with a generated fallback, fetch using its saved notes. Fetching can be slow: say so up front, and confirm what came in when it's done.
 
