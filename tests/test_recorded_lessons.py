@@ -79,6 +79,15 @@ class RecordedLessons(CourseTestCase):
         write(self.lesson / "summary.md", "## Summary\n\nText.\n\nSources: [transcript](transcript.md)\n")
         self.assertEqual(self.wiki_problems(), ["no-description"])
 
+    def test_a_new_table_of_contents_marks_its_unit_page_stale_once(self):  # ticket 31
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        write(self.lesson / "summary.md", "Lesson 9: a lesson about units 3-4.\n\nSources: [transcript](transcript.md)\n")
+        self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], ["unit-04"])
+        self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], [])
+        write(self.question / "toc.md", "Sources: [transcript](transcript.md)\n\n| Time | Until | Type | What happens | Topic |\n"
+                                        "|---|---|---|---|---|\n| [00:00:00](transcript.md#000000) | 00:05:00 | solution | Q1 | Unit 4 |\n")
+        self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], ["unit-04"])
+
     def wiki_problems(self):
         run_json("wiki", "build", "--course", self.course)
         return [p["kind"] for p in run_json("wiki", "check", "--course", self.course)["problems"]]

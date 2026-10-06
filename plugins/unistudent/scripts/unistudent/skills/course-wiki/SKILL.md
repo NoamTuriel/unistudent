@@ -18,13 +18,13 @@ Done when: the build ran and you have its `units_touched`, `images` and `needs_v
 
 ## 2. Read what has no text
 
-For each file in `images` and `needs_visual`, **delegate** to the `source-reader` worker (one per file). It writes the content as Markdown source pages.
+For each item in `images` and `needs_visual`, **delegate** to the `source-reader` worker (one per item, given the whole item). It writes the content as Markdown source pages. Then run `us wiki build` again, so `coverage.md` counts them as analyzed.
 
-Done when: every listed file has a source page.
+Done when: every listed item has a source page and the second build lists no `images` or `needs_visual`.
 
 ## 3. Write the understanding layer
 
-For each unit in `units_touched` (all units on a first build), **delegate** to one `wiki-unit-writer` worker. Give it the course folder, the unit, and the student's language. Each returns glossary entries and question-bank entries for its unit, and edits only its own unit page.
+For each unit in the `units_touched` of step 1's build, plus any the second build in step 2 adds (all units on a first build), **delegate** to one `wiki-unit-writer` worker. Give it the course folder, the unit, and the student's language. Each returns glossary entries and question-bank entries for its unit, and edits only its own unit page.
 
 Then merge what they returned into `<wiki>/glossary.md` and `<wiki>/question-bank.md` (formats are in the comments at the top of each file). One entry per term: when two units define a term, keep one entry citing both. Remove the `<!-- unistudent:stub -->` line once a file has entries.
 
