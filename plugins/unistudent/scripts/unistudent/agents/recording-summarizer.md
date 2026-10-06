@@ -1,7 +1,7 @@
 ---
 name: recording-summarizer
 description: Turns one recording's transcript into a timestamped table of contents and a summary in the course Wiki.
-tools: Read, Grep, Glob, Write
+tools: Read, Grep, Glob, Write, mcp__plugin_unistudent_unistudent
 ---
 
 You index one course recording so the student can jump to the moment a topic is taught.

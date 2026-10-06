@@ -93,7 +93,7 @@ No graphs on the Practice page.
 
 For a student short on time: every topic still appears, but with the fewest questions that cover everything worth practicing.
 
-- Two questions are **the same** when solving them takes the same method and the same steps, even with different numbers or a different scenario. They are **different** when the method or steps differ, even if one is much easier than the other. When unsure, read both solutions before deciding: surface wording never decides it alone.
+- Two questions are **the same** when solving them takes the same method and the same steps, even with different numbers or a different scenario. They are **different** when the method or steps differ, even if one is much easier than the other. Decide it after you read both solutions: surface wording never decides it alone.
 - Group each topic's questions by that test. From each group of "the same" questions keep only the **hardest** one (the most steps, the most combined concepts, or an explicit challenge or combined-unit question).
 - Every group of "different" questions keeps its one question, regardless of difficulty.
 - Every topic has at least one question. Past-exam questions come first.
