@@ -4,7 +4,8 @@ from pathlib import Path
 
 from helpers import CourseTestCase, folders, run_json, write
 
-UNIT_PAGE = "\n## Notation\n\n- Y: output\n- C: consumption\n\n## Assumptions\n\n1. Prices are fixed.\n2. No foreign trade.\n"
+UNIT_PAGE = ("\n## Notation\n\n- Y: output\n- $Y_d$: disposable income\n- C: consumption\n"
+             "\n## Assumptions\n\n1. Prices are fixed.\n2. No foreign trade.\n")
 SOLUTION = "Answer: income rises,\nso consumption rises too (assumption 1)."
 
 
@@ -31,6 +32,10 @@ class PackAgainstTheUnit(CourseTestCase):
     def test_a_symbol_missing_from_the_notation_is_a_notation_problem(self):
         self.assertEqual(self.problems("4.2 Walkthrough.md", "Spending is $Y = C + Z$ (assumption 2).\n"),
                          [("notation", "Z")])
+
+    def test_latex_commands_and_braced_subscripts_are_not_symbols(self):
+        page = "$\\Delta Y = \\frac{1}{1-C} \\cdot Y_{d}$, $\\text{GDP}$, $Y \\to Z$\n"
+        self.assertEqual(self.problems("4.2 Walkthrough.md", page), [("notation", "Z")])
 
     def test_an_assumption_number_the_unit_page_does_not_list_is_a_notation_problem(self):
         self.assertEqual(self.problems("4.2 Walkthrough.md", "By assumption 7, $Y = C$.\n"),

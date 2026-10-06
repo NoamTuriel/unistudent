@@ -160,6 +160,13 @@ SECTION = re.compile(r"(?ms)^## (Notation|Assumptions)\s*$(.*?)(?=^## |\Z)")
 SYMBOL = re.compile(r"(?<![A-Za-z0-9_./#])[A-Za-z]{1,4}(?:_[A-Za-z0-9]+|[0-9]+)?(?!\.?[A-Za-z0-9])")
 ASSUMPTION = re.compile(r"(?i)(?:assumption|הנחה)\D{0,8}?(\d+)")
 MATH = re.compile(r"\$\$?(.+?)\$\$?", re.S)
+
+
+def _latex(text):
+    """LaTeX ready for SYMBOL: \\text{...} prose and control words (\\frac, \\cdot) gone, X_{d} written X_d."""
+    text = re.sub(r"\\(?:text|mbox)\{[^}]*\}|\\[A-Za-z]+", " ", text)
+    return re.sub(r"_\{([A-Za-z0-9]+)\}", r"_\1", text)
+
 NOT_PROSE = re.compile(r"!?\[\[[^\]]*\]\]|!?\[[^\]]*\]\([^)]*\)|https?://\S+|<[^>]+>|\[![^\]]*\]|\A---\n.*?\n---\n", re.S)
 QUOTE = re.compile(r'(?<!\w)["“„](.+?)["”“](?!\w)', re.S)
 LABEL_LINE = re.compile(r"^\s*(?:>\s*)*(?:[-*+]\s+)?\*\*")
@@ -189,7 +196,8 @@ def check_pack_against_unit(page: Path, course):
     if listed:  # a unit page with neither section is not written yet: nothing to check against
         language = course.settings()["language"]
         prose = " ".join(MATH.findall(text)) if language == "en" else text  # in English every short word looks Latin
-        symbols, numbers = set(SYMBOL.findall(listed)), set(re.findall(r"\d+", listed))
+        prose = _latex(prose)
+        symbols, numbers = set(SYMBOL.findall(_latex(listed))), set(re.findall(r"\d+", listed))
         for symbol in dict.fromkeys(SYMBOL.findall(prose)):
             if symbol not in symbols:
                 problem("notation", symbol)
