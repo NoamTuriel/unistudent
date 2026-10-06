@@ -334,6 +334,16 @@ PLUGIN_RECOMMENDATIONS = [
 ]
 
 
+# The Tool list (ADR 0012): self-installing kinds and Recommended tools, hardcoded, each proven by one sample call in
+# CI (.github/workflows/tool-list.yml). Empty until a real course shows a picture no existing kind draws. Entry shape:
+#   {"name": "circuit",                      # what the student says in chat; `us tools add <name>`
+#    "label": "circuit drawer",              # the plain name the roadmap sentence uses
+#    "draws": "electric circuits",           # what it draws, in words
+#    "kinds": ["circuit"],                   # the Presentation kind words it serves
+#    "install": {"python": "<package>"} or {"mcp": ["<command>", "<arg>", ...], "node": True},
+#    "sample": "<a short text spec the CI job draws once>"}
+TOOL_LIST = []
+
 def _plain(text: str) -> str:
     """Lowercase, keeping only letters and digits in any script (Hebrew included), so spelling drift still matches."""
     return "".join(c for c in str(text or "").casefold() if c.isalnum())
