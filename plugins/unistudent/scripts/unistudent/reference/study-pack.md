@@ -52,6 +52,8 @@ A verbal answered question is a question whose solution justifies the answer in 
 
 A pattern seen across several solutions is stated with the solutions it comes from. A topic with no verbal answered question gets no block, and nothing is invented for it. The roadmap only points to each topic's block.
 
+A quote in a Model answer or Say it is copied word for word from the solution: `us check` fails a quote the unit's source pages do not contain (`quote`). It finds the two labels written in English or, in Hebrew, as **תשובה לדוגמה** and **ככה אומרים**.
+
 ## Roadmap page
 
 The page the student reads first, in this order, each part only when it has something to say:
@@ -141,3 +143,5 @@ Each item applies only when the course material has it.
 ## Grounding
 
 A Study pack carries no per-paragraph sources or warnings: the Wiki is the student's knowledge base and the packs rest on it. Say only what the Wiki supports and bring in nothing from outside; if the student wants a line's source, they ask in chat, where answers follow the grounding rule in the course context (`.unistudent/context.md`).
+
+Every Latin symbol and assumption number a page uses is listed in the unit page's Notation or Assumptions sections: `us check` fails one that is not (`notation`; in an English course it reads symbols inside `$…$` math only). The check is reliable for formulas and Latin symbols and weak for course-language terms: those are checked only against the glossary, by the verifier.

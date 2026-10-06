@@ -67,6 +67,10 @@ _Avoid_: short practice, summary list
 The form (table, steps, flowchart, graph, picture kind) a course uses to teach one topic, as recorded on the unit's Wiki page.
 _Avoid_: layout, format
 
+**Known gaps**:
+The fixed closing part of a worker's return listing what it could not do, one line per item as kind, page, what's missing.
+_Avoid_: notes, warnings
+
 **Graph**:
 A picture in a study pack with X and Y axes and the lines or curves drawn on them, reproducing one the course material shows.
 _Avoid_: diagram, plot, chart, figure (a figure is the picture inside the course material itself)
