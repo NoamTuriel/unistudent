@@ -132,3 +132,34 @@ class NoSubjectLayer(unittest.TestCase):
         self.assertEqual(re.findall(r"(?m)^\d+\. ", rules), ["1. ", "2. ", "3. "])
         for layer in ("generic rules", "General preferences", "Course preferences"):
             self.assertIn(layer, rules)
+
+
+class WorkersGetTheTools(unittest.TestCase):
+    """Ticket 27: every worker can call the UniStudent tools; the verifier checks graphs; Short version from solutions."""
+    AGENTS = CORE.parent / "agents"
+
+    def test_every_registered_worker_lists_the_unistudent_tools(self):
+        manifest = (ROOT / "plugins" / "unistudent" / ".claude-plugin" / "plugin.json").read_text("utf-8")
+        workers = sorted(self.AGENTS.glob("*.md"))
+        self.assertEqual(len(workers), 7)
+        for worker in workers:
+            self.assertIn(f"./scripts/unistudent/agents/{worker.name}", manifest)
+            tools = re.search(r"(?m)^tools:(.*)$", worker.read_text("utf-8")).group(1)
+            self.assertIn("mcp__plugin_unistudent_unistudent", tools, worker)
+
+    def test_the_conventions_block_has_other_apps_run_the_worker_steps_in_the_main_agent(self):
+        block = BLOCK.search((CORE / "study-pack" / "SKILL.md").read_text("utf-8")).group(0)
+        self.assertIn("in any other app, follow them yourself", block)
+
+    def test_the_verifier_opens_every_graph_beside_its_slide(self):
+        text = (self.AGENTS / "verifier.md").read_text("utf-8")
+        steps = text.split("Done when")[0]
+        for words in ("every embedded Graph", "PNG", "slide page its caption cites", "curves", "labels",
+                      "crossings", "relative positions", "independently of the writer"):
+            self.assertIn(words, steps)
+
+    def test_the_short_version_is_grouped_from_both_solutions_always(self):
+        rules = (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
+        short = rules.split("### Short version")[1].split("\n#")[0]
+        self.assertNotIn("when unsure", short.lower())
+        self.assertIn("read both solutions", short)
