@@ -1,4 +1,5 @@
 """Commands for the Wiki, the inbox, checks, preferences, study packs, recordings and the course site."""
+import re
 from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
@@ -265,18 +266,29 @@ def register(add, with_course):
                 current[info["folder"] + "/summary.md"] = "processed"
         packs = course.read_state("studypacks.json", {})
         pack = str(course.pack_folder(args.unit))
-        course.study.mkdir(exist_ok=True)  # the first Study pack request makes the Study vault (ADR 0008)
         if args.action == "mark-built":
+            course.study.mkdir(exist_ok=True)  # the first Study pack makes the Study vault (ADR 0008)
             packs[folder] = {"built": datetime.now().isoformat(timespec="seconds"), "sources": current}
             course.write_state("studypacks.json", packs)
             return {"pack_folder": pack, "summary": f"Recorded the sources of the {folder} study pack ({len(current)})."}
+        keys = {"1": "roadmap", "2": "walkthrough", "3": "practice", "4": "recordings"}  # page titles "N.k ..."
+        found = [re.match(r"[^.\s]+\.([1-4]) ", page.name) for page in sorted(Path(pack).glob("*.md"))]
+        pages_present = [keys[m.group(1)] for m in found if m]
+        lessons_page = course.pack_folder("lessons") / f"{course.label('roadmap')}.md"
+        entries = lessons_page.read_text("utf-8") if lessons_page.is_file() else ""
+        # ponytail: every processed Recorded lesson counts as covering, until covered units are machine-readable
+        lessons_without_roadmap = sorted(rel for rel, info in wiki.recording_pages(course).items()
+                                         if info["unit"] == "lessons" and info["processed"]
+                                         and f"## {Path(rel).name}\n" not in entries)
         base = packs.get(folder)
         if base is None:
-            return {"has_study_pack": False, "pack_folder": pack, "new": [], "changed": [], "removed": [],
+            return {"has_study_pack": False, "pack_folder": pack, "pages_present": pages_present,
+                    "lessons_without_roadmap": lessons_without_roadmap, "new": [], "changed": [], "removed": [],
                     "summary": f"No study pack recorded for {folder}."}
         old = base["sources"]
         result = {
-            "has_study_pack": True, "pack_folder": pack, "built": base["built"],
+            "has_study_pack": True, "pack_folder": pack, "built": base["built"], "pages_present": pages_present,
+            "lessons_without_roadmap": lessons_without_roadmap,
             "new": sorted(p for p in current if p not in old),
             "changed": sorted(p for p in current if p in old and old[p] != current[p]),
             "removed": sorted(p for p in old if p not in current),

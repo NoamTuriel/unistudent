@@ -76,3 +76,20 @@ class TranscriptionAndGraphRules(unittest.TestCase):
             text = doc.read_text("utf-8")
             for gone in ("us tools", "us draw", "tools status"):
                 self.assertNotIn(gone, text, doc)
+
+
+class UnattendedBuild(unittest.TestCase):
+    """Ticket 28: a build the student starts and walks away from: it never asks, and it resumes."""
+    SKILL = (CORE / "study-pack" / "SKILL.md").read_text("utf-8")
+
+    def test_no_step_asks_the_student_during_a_build(self):
+        build = self.SKILL[self.SKILL.index("## 3."):self.SKILL.index("## 7.")]
+        writer = (CORE.parent / "agents" / "study-pack-writer.md").read_text("utf-8")
+        for text in (build, writer):
+            self.assertIsNone(re.search(r"(?i)\bask|interview|\bconfirm", text))
+
+    def test_the_skill_names_the_resume_rules(self):
+        for rule in ("pages_present", "only when the request named it", "one line", "lessons_without_roadmap",
+                     "us wiki build"):
+            self.assertIn(rule, self.SKILL)
+        self.assertLess(self.SKILL.index("lessons_without_roadmap"), self.SKILL.index("study-pack-writer"))
