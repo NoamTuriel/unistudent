@@ -14,7 +14,9 @@ def register(add, with_course):
 
     def cmd_wiki(args):
         course = resolve_course(args)
-        if args.action == "check":
+        if args.action == "check":  # every Wiki build ends here: refresh the context's Exam section from course.md
+            from .cli import write_context_files
+            write_context_files(course)
             return wiki.check(course)
         if args.action == "coverage":
             return wiki.coverage(course)
