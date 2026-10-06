@@ -38,6 +38,7 @@ Run `us setup-progress status --course-name "<course, if you already know it>"` 
 
 Ask which university. Say why in a sentence: the university decides where your official material lives and how it's organized, so the AI knows where to get it and how to sort it.
 
+- None, "I'm learning on my own, no university" (offer this answer in plain words): record `university=none` below, then skip the plugin recommendation and the interview: there is no course site to reach. Everything else works the same.
 - A plugin for it is installed (e.g. `openu`): use it; it knows how to reach the course site.
 - None installed, but a generated fallback already exists (`us university status --university "<name>" --json` says `generated: true`): reuse it silently — no re-interview.
 - Neither: interview them once — ask for the course site's URL and how they organize and prioritize material (by week? by topic? exams and solutions kept separately?). Show back what you're about to save, and on confirmation run `us university save --university "<name>" --url "<url>" --organizing "<summary>"`. Say plainly: this is remembered, so next course at the same university skips this question.
@@ -88,6 +89,7 @@ Then ask: download from the course website, use a folder they already have, or b
 - A generated fallback only (step 1): its notes only record how the university organizes its material (where it lives, what matters); it is not a downloader. Offer to try fetching from the site by following those notes, and the other two.
 - **If you can't log in or can't fetch** (no access from this app, a login that needs the student, a site that changed): say so in plain words, say it is not an error and nothing is lost, and move on to the student's own folder or the inbox. Never loop on a failing login.
 - Neither a plugin nor a fallback: offer their own folder and the inbox only.
+- No university (`none`, step 1): offer "my own folder" and "nothing yet" only (nothing yet → the inbox, later), and pass `--university none` to `us setup`.
 - Own folder: ask for it, and ask whether it is the lecturer's material (official) or other material (added). Tell them it is copied in once and their original files are left exactly where they are; nothing of theirs is moved or changed.
 
 Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <the language from step 3> [--course-skill <skill>] [--university <plugin>] [--import "<own folder>" --tier <official|added>]`. Setup creates the three folders the student will see: its result names them (`inbox`, `material`, `study`). Tell the student where the **inbox** is (its name), and that new files go in there later.
