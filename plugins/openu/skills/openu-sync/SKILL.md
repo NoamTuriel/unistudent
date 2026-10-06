@@ -49,6 +49,7 @@ Run `us ingest --json "<Downloads>/<listing file>" "<Downloads>"`. The core move
 
 - `unsorted`: ask one grouped question and record answers with `us assign`.
 - `missing`: retry those downloads once, then report them.
+- `wiki.units_touched`: give each unit to the unistudent `wiki-unit-writer` worker (`us doc wiki-unit-writer` gives its instructions) and update the matching `question-bank.md` entries with the ones it returns.
 
 Done when: the ingest ran and unsorted files are answered or deferred.
 
