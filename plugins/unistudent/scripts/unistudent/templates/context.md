@@ -53,11 +53,8 @@ A change to one paragraph or explanation: just make it. A change to a whole unit
 Two folders are visible to the student from setup and a third once the first Study pack is made; everything else is in the hidden `.unistudent` folder.
 
 - `{inbox}/`: where the student drops new material. `/unistudent:course-add` moves it into the Material folder and empties the inbox.
-- `{material}/`: the real files of the course, in `{official}/` (the lecturer's and the university's) and `{added}/` (everything else), then by unit. The student may move, rename or delete files there; where a file sits is the truth.
+- `{material}/`: the real files of the course, in `{official}/` (the course's own: the lecturer's and the university's, when there are any) and `{added}/` (everything else), then by unit. The student may move, rename or delete files there; where a file sits is the truth.
 - `{study}/`: the Study vault, created by the first Study pack (it may not exist yet: never treat that as a problem), holding only what was made for the student to study from (Markdown for a human: study packs and recording roadmaps, by unit); it never links into the hidden folder. Study packs belong to the student: propose changes, never overwrite.
 - Hidden: settings `.unistudent/settings.json`, Manifest of every file `.unistudent/manifest.json`, and the Wiki at `{wiki}/` (never shown to the student).
 - Student preferences: `course-preferences.md` here, and general preferences at `{general_preferences}`. Course preferences win.
-
-## Exam
-
 {exam_section}

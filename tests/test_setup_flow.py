@@ -76,6 +76,32 @@ class SetupFlow(CourseTestCase):
         self.assertNotIn("course_skill", settings.read_text("utf-8"))
         self.assertNotIn("course_skill", run_json("course-context", "--course", folder)["summary"])
 
+    def test_a_self_learner_answers_none_and_gets_a_course_with_no_exam_section(self):
+        folder = self.tmp / "Linear algebra"
+        own = self.tmp / "mine"
+        write(own / "Unit 1 - vectors" / "notes.txt", "A vector has a length.")
+        status = run_json("university", "status", "--university", "none")
+        self.assertFalse(status["generated"])
+        self.assertIn("nothing to interview", status["summary"])
+        self.assertEqual(run("university", "save", "--university", "none", "--url", "x", "--organizing", "y")[0], 1)
+        self.assertFalse((self.home / "generated").exists())
+        self.assertEqual(run_json("plugins", "recommend", "--university", "none")["plugins"], [])
+        run_json("setup", folder, "--name", "Linear algebra", "--language", "en", "--university", "none",
+                 "--import", own, "--tier", "added")
+        self.assertEqual(json.loads((folder / ".unistudent" / "settings.json").read_text("utf-8"))["university"], "none")
+        course = ["--course", folder]
+        context = run_json("course-context", *course)["summary"]
+        self.assertNotIn("## Exam", context)
+        run_json("wiki", "build", *course)
+        write(folders(folder).wiki / "course.md", "# The course\n\n## Exam format\n\nnot in the course material yet\n")
+        run("wiki", "check", *course)
+        self.assertNotIn("## Exam", run_json("course-context", *course)["summary"])
+        # The exam section comes back as soon as the course page has exam information.
+        write(folders(folder).wiki / "course.md", "# The course\n\n## Exam format\n\nThree hours, closed book. "
+                                                  "Sources: [exam info](sources/general/exam.md)\n")
+        run("wiki", "check", *course)
+        self.assertIn("## Exam", run_json("course-context", *course)["summary"])
+
 
 class SetupSkillStatic(unittest.TestCase):
     text = SETUP.read_text("utf-8")
@@ -95,6 +121,15 @@ class SetupSkillStatic(unittest.TestCase):
             if step.startswith("0."):  # bookkeeping, not a student-facing step
                 continue
             self.assertIn("Done when", step, step.splitlines()[0])
+
+    def test_step_1_names_the_none_answer_and_what_it_skips(self):
+        step1 = self.text.split("## 1. University")[1].split("## 2.")[0]
+        self.assertIn("university=none", step1)
+        self.assertRegex(step1, r"(?i)learning on my own")
+        self.assertRegex(step1, r"(?i)skip the plugin recommendation and the interview")
+        step5 = self.text.split("## 5.")[1].split("## 6.")[0]
+        self.assertIn("No university (`none`", step5)
+        self.assertIn("\"nothing yet\" only", step5)
 
     def test_stage_names_in_the_skill_exist_in_the_cli(self):
         for stage in set(re.findall(r"--stage ([a-z-]+)", self.text)):
