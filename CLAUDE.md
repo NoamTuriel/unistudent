@@ -17,8 +17,8 @@ against these, not just against "does it pass tests":
    getting it into the Wiki is not enough if the student doesn't know that's the move — `course-add` and
    the inbox exist for this, and every setup/help flow must actually tell the student about them, not
    assume they'll find `README.md`.
-3. **Works for every course and every university, not just OpenU and economics out of the box.**
-   `openu` and `economics` are the first, most-polished plugins, not the ceiling — a student anywhere
+3. **Works for every course and every university, not just OpenU out of the box.**
+   `openu` is the first, most-polished university plugin, not the ceiling — a student anywhere
    else must still get a working (if less tailored) experience: a generated, once-interviewed fallback
    (ADR 0005) instead of a dead end. Treat "no plugin for this" as a case to design for, always, not an
    edge case to skip.
@@ -38,15 +38,15 @@ against these, not just against "does it pass tests":
    that speaks MCP or Agent Skills. CI runs the test matrix across OSes and Python versions for exactly
    this reason.
 
-Three Claude plugins from one Python codebase: `unistudent` (core: course folders, the Wiki, recordings,
+Two Claude plugins from one Python codebase: `unistudent` (core: course folders, the Wiki, recordings,
 study packs, grounding — works for any university via point 3 above), `openu` (Open University of Israel:
-downloads new material from the course site), `economics` (study-pack rules for economics courses). The
+downloads new material from the course site). Study-pack rules are generic; a course's own rules are its preferences file (ADR 0011). The
 MCP server and skills are auto-generated from the same command line, so the same code also works in any
 MCP client — not just Claude — per point 7.
 
 **Start here, in this order:** `README.md` (what it is, how to install, the folder layout) →
 `CONTEXT.md` (vocabulary — use these exact words in code, tests, skills and docs, nowhere else) →
-`docs/spec/v1.md` then `docs/spec/v2.md` (design, in order shipped) → `docs/adr/` (why specific decisions
+`docs/spec/v1.md`, `docs/spec/v2.md`, then `docs/spec/v3.md` (design, in order shipped) → `docs/adr/` (why specific decisions
 were made) → the newest `docs/review-*.md` (an honest, dated audit of what's actually solid vs. still
 weak — read the most recent one, not this file, for current known gaps) → `.scratch/unistudent-*/issues/`
 (ticket history; anything `ready-for-agent` there is open work, not yet done).
@@ -68,5 +68,5 @@ use only, not meant to be public. If in doubt about whether something is persona
 - The CLI (`cli.py`, `commands.py`) is the single source of truth: the MCP server generates its tools from the argument parser, so a new command or option is automatically a tool.
 - Core skills share one conventions block (`us` / delegate / ask); `tests/test_skills.py` keeps it identical. Use existing tools before writing new ones (markitdown, ffmpeg, faster-whisper / mlx-whisper, mcp-video-analyzer).
 - Skills and agents follow `writing-for-agents`: steps with "Done when" criteria, one source of truth per rule. The grounding rule's single source is `plugins/unistudent/scripts/unistudent/templates/context.md`; study-pack generic rules live in `plugins/unistudent/scripts/unistudent/reference/study-pack.md`.
-- Subject plugins never depend on a university plugin; university plugins never hold study-pack rules.
+- University plugins never hold study-pack rules; per-course rules are the student's preferences file (ADR 0011).
 - Never commit course material.
