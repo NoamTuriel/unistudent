@@ -64,7 +64,7 @@ The closing list of the Practice page of a Study pack: the must-do questions of 
 _Avoid_: short practice, summary list
 
 **Presentation**:
-The form (table, steps, flowchart, graph, picture kind) a course uses to teach one topic, as recorded on the unit's Wiki page.
+The form (table, steps, flowchart, or a picture named by its Kind) a course uses to teach one topic, as recorded on the unit's Wiki page.
 _Avoid_: layout, format
 
 **Known gaps**:
@@ -74,6 +74,10 @@ _Avoid_: notes, warnings
 **Graph**:
 A picture in a study pack with X and Y axes and the lines or curves drawn on them, reproducing one the course material shows.
 _Avoid_: diagram, plot, chart, figure (a figure is the picture inside the course material itself)
+
+**Kind**:
+The one word naming a sort of picture a course shows (graph, circuit, …), used by the Presentation line, the Known gaps `picture` lines and the Tool list. A self-installing kind is one UniStudent draws itself with a Python library run through `uv run --with`, as graphs are.
+_Avoid_: picture type, picture kind
 
 **Recommended tool**:
 A tool outside the plugin that draws a kind of picture the course shows, named in the Tool list, set up for the student on request.
