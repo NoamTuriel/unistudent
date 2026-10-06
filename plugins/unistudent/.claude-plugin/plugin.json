@@ -7,6 +7,7 @@
   },
   "license": "MIT",
   "skills": [
+    "./scripts/unistudent/skills/before-test",
     "./scripts/unistudent/skills/course-add",
     "./scripts/unistudent/skills/course-help",
     "./scripts/unistudent/skills/course-recordings",
