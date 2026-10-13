@@ -162,6 +162,21 @@ class FetchPlanApply(CourseTestCase):
         approved = json.loads(Path(result["listing"]).read_text("utf-8"))
         self.assertNotIn("transcribe", approved["items"][0])
 
+    def test_a_later_sync_plans_only_what_is_new_and_says_when_nothing_is(self):
+        path, _ = self.plan(SLIDES)
+        result = run_json("fetch-plan", "apply", "--course", self.course, path)
+        approved = json.loads(Path(result["listing"]).read_text("utf-8"))
+        approved["items"][0]["file"] = "Unit 2 slides.pdf"
+        write(result["listing"], json.dumps(approved))
+        make_pdf(self.staged / "Unit 2 slides.pdf", ["slides"])
+        run_json("ingest", "--course", self.course, result["listing"], self.staged)
+        again = self.plan(SLIDES, EXAM)[0]  # the next scan lists the slides again, next to a new exam
+        plan = run_json("fetch-plan", "show", "--course", self.course, again)
+        self.assertEqual(ticked_names(Path(plan["checklist"]).read_text("utf-8")), ["Past exam 2024.pdf"])
+        nothing = run_json("fetch-plan", "show", "--course", self.course, self.plan(SLIDES)[0])
+        self.assertTrue(nothing["nothing_new"])
+        self.assertIn("Nothing new on the site since", nothing["summary"])
+
     def test_apply_needs_a_shown_plan(self):
         path = write(self.tmp / "listing.json", json.dumps(listing(SLIDES)))
         code, out = run("fetch-plan", "apply", "--course", self.course, path)

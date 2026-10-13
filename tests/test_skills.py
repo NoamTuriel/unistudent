@@ -251,7 +251,8 @@ class OpenUSync(unittest.TestCase):
             self.assertIn(choice, plan)
         self.assertIn("explicit OK", plan)
         self.assertLess(self.TEXT.index("fetch-plan show"), self.TEXT.index("download every document item"))
-        self.assertIn('"Nothing new on the site since <last_sync>"', self.TEXT)
+        self.assertIn("`nothing_new`", plan)  # the Fetch plan itself leaves out what is already downloaded
+        self.assertIn('"Nothing new on the site since <date>"', plan)
 
     def test_sorting_is_asked_before_the_download_inside_setup_and_after_it_outside(self):
         self.assertIn("I don't know", self.step("The Fetch plan"))
