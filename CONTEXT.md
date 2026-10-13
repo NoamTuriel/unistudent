@@ -41,6 +41,10 @@ _Avoid_: source (reserved for citations)
 **Inbox**:
 The drop zone in a course folder for material the student adds by hand.
 
+**Fetch plan**:
+The list of files a fetch from the course site will download, with their sizes, that the student approves before anything downloads.
+_Avoid_: download list, listing, manifest
+
 **Recording**:
 The video file of one course session (מפגש).
 _Avoid_: video, lecture
