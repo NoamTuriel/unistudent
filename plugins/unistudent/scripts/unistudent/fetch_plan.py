@@ -97,17 +97,23 @@ def realtime_factor():
         return ROUGH_REALTIME_FACTOR.get(backend_name(), 0.5), False
 
 
-def time_left(download_bytes, transcribe_seconds):
-    """(hours, rough): rough whenever a part of it comes from a fixed constant rather than a measurement."""
+def time_left(download_bytes, lengths):
+    """(hours, rough) to download `download_bytes` and transcribe recordings of these `lengths` in seconds (None: not
+    known yet). Rough whenever a part of it comes from a fixed constant rather than a measurement, or is unknown."""
     factor, measured = realtime_factor()
-    seconds = download_bytes / ROUGH_DOWNLOAD_BYTES_PER_SECOND + transcribe_seconds * factor
-    rough = download_bytes > 0 or (transcribe_seconds > 0 and not measured)
+    known = sum(s for s in lengths if s is not None)
+    seconds = download_bytes / ROUGH_DOWNLOAD_BYTES_PER_SECOND + known * factor
+    rough = download_bytes > 0 or None in lengths or (known > 0 and not measured)
     return round(seconds / 3600, 2), rough
 
 
 def about(hours, rough, after=""):
-    text = f"about {max(1, round(hours * 60))} minutes" if hours < 1 else f"about {hours:.1f} hours"
+    text = f"about {plural(max(1, round(hours * 60)), 'minute')}" if hours < 1 else f"about {hours:.1f} hours"
     return text + after + (" (rough estimate)" if rough else "")
+
+
+def _length(item):
+    return float(item["seconds"]) if item.get("seconds") else None
 
 
 def _transcribes(course):
@@ -119,7 +125,8 @@ def show(course, listing_path):
     plan_id = _plan_id(items)
     ticks = _ticks(course, plan_id)
     totals, lines, needs_unit = {}, [], []
-    total = unknown = transcribe_seconds = 0
+    total = unknown = 0
+    lengths = []
     for number, item in enumerate(items, 1):
         ticked = True if ticks is None else ticks.get(number, False)  # a new listing starts all ticked
         size, estimated = size_of(item)
@@ -137,7 +144,7 @@ def show(course, listing_path):
         total += size or 0
         unknown += size is None
         if is_recording(item) and _transcribes(course):
-            transcribe_seconds += float(item.get("seconds") or 0)
+            lengths.append(_length(item))
         if not is_recording(item) and item.get("unit_hint") is None:
             name = safe_name(item.get("name") or "file")  # the same evidence ingest will sort by
             if detect_unit(f"{safe_name(item.get('section') or 'General')}/{name}")[0] is None:
@@ -152,7 +159,7 @@ def show(course, listing_path):
                     "(change [x] to [ ]) to skip that file. Sizes with ~ are estimates.\n\n"
                     f"<!-- fetch-plan {plan_id} -->\n" + "\n".join(lines) + f"\n\n{total_line}\n", "utf-8")
     free = shutil.disk_usage(course.root).free
-    hours, rough = time_left(total, transcribe_seconds)
+    hours, rough = time_left(total, lengths)
     fits = total <= free
     by_ext = ", ".join(f"{ext} " + ("size unknown" if t["files"] == t["unknown_size"]
                                     else ("~" if t["estimated"] else "") + human(t["bytes"]))
@@ -198,27 +205,28 @@ def apply(course, listing_path, unit_answers):
 
 
 def _bar(done, total, width=20):
-    filled = width * done // total if total else width
+    filled = min(width, width * done // total) if total else width
     return "[" + "#" * filled + "-" * (width - filled) + "]"
 
 
 def status(course):
-    from .material import path_of
-    from .recordings import approved, duration
+    from .recordings import approved, recording_seconds
     from .wiki import recording_pages
     path = approved_file(course)
     files = course.manifest()["files"]
     own = [rel for rel, e in files.items() if not e.get("site_url")]  # the student's folder or the inbox: already in
-    if not path.is_file() and not own:
-        raise UserError("No Fetch plan approved yet: run `us fetch-plan show`, then `us fetch-plan apply`.")
+    if not path.is_file() and not own:  # no site plan and no files of the student's own: a short run, no box
+        return {"documents": {"done": 0, "total": 0},
+                "recordings": {"downloaded": 0, "transcribed": 0, "summarised": 0, "total": 0},
+                "hours": 0, "rough": False, "box": None,
+                "summary": "Nothing to download: no Fetch plan was approved and no files were copied in."}
     items = _read_listing(path).get("items", []) if path.is_file() else []
     by_url = {e.get("site_url"): rel for rel, e in files.items() if e.get("site_url")}
     pages = recording_pages(course)
     chosen = set(approved(course))
     for rel in own:
         by_url[rel] = rel
-        items.append({"url": rel, "kind": "recording", "transcribe": rel in chosen,
-                      "seconds": duration(path_of(course, rel))} if rel in pages else {"url": rel})
+        items.append({"url": rel, "kind": "recording", "transcribe": rel in chosen} if rel in pages else {"url": rel})
     docs = [i for i in items if not is_recording(i)]
     recs = [i for i in items if is_recording(i)]
     docs_done = sum(1 for i in docs if i.get("url") in by_url)
@@ -228,13 +236,15 @@ def status(course):
                    and (course.wiki / pages_of[i.get("url")]["folder"] / "transcript.md").exists()]
     summarised = [i for i in downloaded if pages_of[i.get("url")] and pages_of[i.get("url")]["processed"]]
     to_download = sum(size_of(i)[0] or 0 for i in items if i.get("url") not in by_url)
-    to_transcribe = sum(float(i.get("seconds") or 0) for i in recs if i.get("transcribe") and i not in transcribed)
-    hours, rough = time_left(to_download, to_transcribe)
+    lengths = [(i in downloaded and recording_seconds(course, by_url[i.get("url")])) or _length(i)  # the real length
+               for i in recs if i.get("transcribe") and i not in transcribed]                      # once it is here
+    hours, rough = time_left(to_download, lengths)
     wanted = sum(1 for i in recs if i.get("transcribe"))
-    steps = len(recs) + 2 * wanted
+    steps = len(recs) + 2 * wanted  # a transcript or summary nobody ticked for is not a step of this run
+    done = len(downloaded) + sum(1 for i in transcribed + summarised if i.get("transcribe"))
     rows = WARNING + [about(hours, rough, " left").upper() + ".", "",
                       f"Documents   {_bar(docs_done, len(docs))}  {docs_done} of {len(docs)} downloaded",
-                      f"Recordings  {_bar(len(downloaded) + len(transcribed) + len(summarised), steps)}  "
+                      f"Recordings  {_bar(done, steps)}  "
                       f"{len(downloaded)} of {len(recs)} downloaded, {len(transcribed)} transcribed, "
                       f"{len(summarised)} summarised"]
     width = max(len(row) for row in rows) + 2

@@ -57,6 +57,18 @@ class SetupProgress(CourseTestCase):
             self.assertEqual(status["next_stage"], resume, old)
             self.assertEqual(status["answers"]["university"], "openu")
 
+    def test_an_older_setup_names_the_answers_step_7_still_needs(self):
+        progress = self.home / "setup-progress" / "Macro.json"
+        progress.parent.mkdir(parents=True, exist_ok=True)
+        for old, missing in [("fetch-and-organize", ["source", "transcribe", "frame_analysis", "keep_video"]),
+                             ("fetch", ["source"]), ("analyze", [])]:  # analyze: step 7 is long done
+            progress.write_text(json.dumps({"stage": old, "answers": {"university": "openu"}}), "utf-8")
+            self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["missing_answers"],
+                             missing, old)
+        run_json("setup-progress", "advance", "--course-name", "Macro", "--stage", "recordings",
+                 "--answer", "source=own", "transcribe=no", "frame_analysis=no", "keep_video=no")
+        self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["missing_answers"], [])
+
     def test_an_old_stage_name_is_still_accepted_and_recorded_as_the_new_one(self):
         run_json("setup-progress", "advance", "--course-name", "Macro", "--stage", "analyze")
         status = run_json("setup-progress", "status", "--course-name", "Macro")

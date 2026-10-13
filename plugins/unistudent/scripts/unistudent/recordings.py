@@ -64,6 +64,19 @@ def duration(path: Path):
         return None
 
 
+def recording_seconds(course, rel):
+    """A recording's length, measured once and kept in its Manifest entry while the file's content stays the same."""
+    entry = course.manifest()["files"].get(rel, {})
+    if entry.get("seconds") is not None and entry.get("seconds_of") == entry.get("fingerprint"):
+        return entry["seconds"]
+    seconds = duration(material.path_of(course, rel))
+    if seconds is not None:
+        with course.edit_manifest() as manifest:
+            if rel in manifest["files"]:
+                manifest["files"][rel].update(seconds=seconds, seconds_of=manifest["files"][rel].get("fingerprint"))
+    return seconds
+
+
 def install_run(name):
     """The command that installs the engine into the Python that actually runs UniStudent (not whichever pip is first
     on PATH). An environment made by `uvx` has no pip, but `uv pip install --python` can fill it."""
@@ -217,7 +230,7 @@ def listing(course, unit=None):
         path = material.path_of(course, rel)
         rows.append({"path": rel, "unit": info["unit"], "processed": info["processed"],
                      "has_transcript": (course.wiki / info["folder"] / "transcript.md").exists(),
-                     "wiki_folder": info["folder"], "seconds": duration(path),
+                     "wiki_folder": info["folder"], "seconds": recording_seconds(course, rel),
                      "bytes": path.stat().st_size if path.exists() else None})
     return rows
 

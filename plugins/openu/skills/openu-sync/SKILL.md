@@ -13,11 +13,11 @@ The sync runs in three parts: scan the site without downloading (steps 1-3), sho
 
 ## 1. Course and what's already here
 
-Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded, and `last_sync`, the date of the last sync). Read the course's Recording choices from `.unistudent/settings.json` in the course folder: `recording_level` (0 skip, 1 download only, 3 transcript and summary), `frame_analysis`, `keep_video`. You need access to the student's Downloads folder: that's where the browser saves files.
+Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded, and `last_sync`, the date of the last sync). Read the course's Recording choice from `.unistudent/settings.json` in the course folder: `recording_level` (0 skip, 1 download only, 3 transcript and summary). You need access to the student's Downloads folder: that's where the browser saves files.
 
 Ask the recordings question only when `recording_level` is `null` (an older course synced outside setup): transcribe and summarise them (recommended: the AI can then answer from what the lecturer said and link to the minute), download them only, or skip them. Record it with `us context --recording-level <3|1|0>`; it holds for every later sync.
 
-Done when: you know the course folder, the Downloads folder path, what's already downloaded, `last_sync`, and the Recording choices.
+Done when: you know the course folder, the Downloads folder path, what's already downloaded, `last_sync`, and the Recording choice.
 
 ## 2. Find the course on the site
 
@@ -30,7 +30,7 @@ Done when: you have the course id and number.
 Nothing downloads in this step, and no stream links are collected: they expire within hours.
 
 - **Documents:** run the listing snippet from `site.md` for the course id, then add folder contents (open each folder, list its file links). One item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, `file: "unistudent-<course number>-<date>__<name>"` (the name it will be downloaded under), and `unit_hint: "general"` for past exams, exam information and file stores. Then run the size snippet: it adds `size` where the site gives one without downloading the file.
-- **Recordings:** skip them when `recording_level` is 0 and neither `frame_analysis` nor `keep_video` is `true` (count them for the report). Otherwise run the recordings snippet in each video collection (links on the course page and in the "וידאו" section). One item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` when a length is shown next to it.
+- **Recordings:** skip them when `recording_level` is 0 (the student chose to skip recordings; count them for the report). Otherwise run the recordings snippet in each video collection (links on the course page and in the "וידאו" section). One item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` when a length is shown next to it.
 
 Drop every item whose `url` is in `site-status`. If nothing is left, say "Nothing new on the site since <last_sync>" in one line and stop: no empty plan. Otherwise download the listing `{"course_site": ..., "items": [...]}` from the course tab with the in-page method, as `unistudent-<course number>-<date>__listing.json`.
 
@@ -63,11 +63,13 @@ Done when: every approved document is ingested or listed as failed.
 For each recording item of the approved listing, in order, and only now:
 
 1. In its collection tab, run the stream snippet from `site.md` with the item: it collects that one recording's link and downloads a one-recording listing, `unistudent-<course number>-<date>__rec-<n>.json`.
-2. Run `us recordings fetch --json "<Downloads>/<that file>" "<Downloads>"`. Add `--audio-only` when `frame_analysis` is not `true` and `keep_video` is `false` (the video itself is not needed).
+2. Run `us recordings fetch --json "<Downloads>/<that file>" "<Downloads>"` (it keeps the sound only when the Settings say so).
 3. If it failed (an expired link, usually), collect its link again once (`__rec-<n>-again.json`) and fetch again; if that fails too, skip the recording and add it to the report.
-4. Run `us ingest --json "<Downloads>/<that file>" "<Downloads>"`. A recording ticked for transcripts is approved for transcription as it lands.
+4. Run `us ingest --json --no-wiki "<Downloads>/<that file>" "<Downloads>"`. A recording ticked for transcripts is approved for transcription as it lands.
 
-Done when: every approved recording is ingested or listed as failed.
+After the last recording, run `us wiki build` once.
+
+Done when: every approved recording is ingested or listed as failed, and the Wiki was built once after them.
 
 ## 7. Report
 

@@ -115,6 +115,13 @@ class VideoReplacedAfterFrameAnalysis(CourseTestCase):
         self.assertEqual([r["path"] for r in run_json("recordings", "list", "--course", self.course)["recordings"]],
                          [self.recording["path"]])
 
+    def test_a_video_replaced_by_its_sound_is_still_imported_once(self):
+        self.analysis_done()
+        run_json("recordings", "audio-only", "--course", self.course, self.recording["path"])
+        self.assertEqual(run_json("import", "--course", self.course, self.tmp / "own", "--dry-run")["files"], 0)
+        self.assertEqual(run_json("import", "--course", self.course, self.tmp / "own")["imported"], [])
+        self.assertEqual(streams(self.file), ["audio"])
+
     def test_nothing_is_replaced_before_the_analysis_is_done(self):
         self.assertEqual(run("recordings", "audio-only", "--course", self.course, self.recording["path"])[0], 1)
         self.assertIn("video", streams(self.file))

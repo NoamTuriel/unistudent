@@ -1,10 +1,13 @@
 """Course folder, Settings, Manifest and Registry (see CONTEXT.md)."""
+import contextlib
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 STATE_DIR = ".unistudent"
+MANIFEST_LOCK_STALE = 120  # seconds; the lock is held only while the Manifest is read, changed and saved
 
 LAYOUT = 2
 
@@ -107,7 +110,7 @@ def _read_json(path: Path, default):
 
 def _write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")  # two commands at once never share one
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True), "utf-8")
     os.replace(tmp, path)  # atomic, so an interrupted run never leaves half a file
 
@@ -235,6 +238,30 @@ class Course:
 
     def save_manifest(self, data):
         _write_json(self.state / "manifest.json", data)
+
+    @contextlib.contextmanager
+    def edit_manifest(self):
+        """Read, change and save the Manifest holding a lock file, so two commands running at once (a recording
+        ingested during a document ingest) never lose each other's entries. Saved only when the block ends without an
+        error. A lock older than MANIFEST_LOCK_STALE was left by a run that died, and is taken over."""
+        lock = self.state / "manifest.lock"
+        while True:
+            try:
+                os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+                break
+            except (FileExistsError, PermissionError):  # Windows says PermissionError while a lock is being deleted
+                try:
+                    if time.time() - lock.stat().st_mtime > MANIFEST_LOCK_STALE:
+                        lock.unlink()  # ponytail: two waiters may both take over a stale lock; only after a crash
+                except OSError:
+                    pass
+                time.sleep(0.05)
+        try:
+            manifest = self.manifest()
+            yield manifest
+            self.save_manifest(manifest)
+        finally:
+            lock.unlink(missing_ok=True)
 
     def read_state(self, name, default):
         return _read_json(self.state / name, default)
@@ -377,6 +404,21 @@ SETUP_STAGES = ["university", "course", "language", "path", "format", "material"
 # Stages recorded by older versions, read as the new stage they finished: fetch-and-organize was one step for fetch,
 # sort and the recordings question; fetch and sort brought the material in; analyze built the Wiki (the run's end).
 RENAMED_STAGES = {"fetch-and-organize": "recordings", "fetch": "material", "sort": "material", "analyze": "run"}
+
+
+# The answers step 7 applies, by the stage that asks them. A setup started on an older version may have passed the
+# stage without them: they are asked again before step 7, never guessed.
+STAGE_ANSWERS = {"material": ["source"], "recordings": ["transcribe", "frame_analysis", "keep_video"]}
+
+
+def missing_setup_answers(data) -> list:
+    """The answers of stages already done that step 7 (`installs`) still needs; none once it is done."""
+    if data["stage"] is None:
+        return []
+    done = SETUP_STAGES[:SETUP_STAGES.index(RENAMED_STAGES.get(data["stage"], data["stage"])) + 1]
+    if "installs" in done:
+        return []
+    return [k for stage in done for k in STAGE_ANSWERS.get(stage, []) if k not in data["answers"]]
 
 
 def _setup_progress_dir() -> Path:

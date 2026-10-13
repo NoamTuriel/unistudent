@@ -95,6 +95,10 @@ class McpServer(CourseTestCase):
         self.assertEqual(tools["courses_switch"]["required"], ["target"])
         self.assertNotIn("force", tools["wiki_check"]["properties"])
         self.assertIn("text", tools["prefs_add"]["required"])
+        self.assertEqual(tools["fetch_plan_show"]["required"], ["listing"])
+        self.assertEqual(sorted(tools["fetch_plan_apply"]["properties"]), ["course", "listing", "unit"])
+        self.assertEqual(tools["fetch_plan_apply"]["required"], ["listing"])
+        self.assertEqual(list(tools["fetch_plan_status"]["properties"]), ["course"])
 
     def test_a_student_error_comes_back_as_a_tool_error(self):
         result = self.call("study_changes", {"course": str(self.tmp / "nowhere"), "unit": "4"})
