@@ -142,6 +142,12 @@ def cmd_setup(args):
 
 def cmd_import(args):
     course = resolve_course(args)
+    if args.dry_run:
+        from .fetch_plan import human, plural
+        paths = material.import_folder(course, args.folder, tier=args.tier, dry_run=True)
+        size = sum(p.stat().st_size for p in paths)
+        return {"files": len(paths), "bytes": size,
+                "summary": f"{plural(len(paths), 'file')}, {human(size)}, will be copied in from {args.folder}."}
     added = material.import_folder(course, args.folder, tier=args.tier)
     return {"imported": added, "unsorted": material.unsorted(course),
             "summary": f"{len(added)} new or changed files copied in; {len(material.unsorted(course))} unsorted."}
@@ -235,6 +241,7 @@ def build_parser():
     p = with_course(add("import", cmd_import, "copy a folder's files into the Material folder (the originals stay where they are)"))
     p.add_argument("folder")
     p.add_argument("--tier", choices=["official", "added"], default="added")
+    p.add_argument("--dry-run", action="store_true", help="only count the files and their size; copy nothing")
 
     with_course(add("manifest", cmd_manifest, "print the Manifest"))
     with_course(add("unsorted", cmd_unsorted, "list files with no unit"))

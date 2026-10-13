@@ -174,9 +174,9 @@ def add_file(course, path, tier="added", origin="inbox", hint=None, replace_rel=
     return rel
 
 
-def import_folder(course, folder, tier="added"):
+def import_folder(course, folder, tier="added", dry_run=False):
     """Copy every file of the student's own `folder` into the Material folder, once; the originals stay.
-    Returns the new or changed files' paths."""
+    Returns the new or changed files' paths (dry_run: the files that would be copied, copying nothing)."""
     require_new_layout(course)
     folder = Path(folder).resolve()
     scan(course)  # the student may have moved or renamed what was copied before: know where it is now
@@ -187,6 +187,9 @@ def import_folder(course, folder, tier="added"):
         before = next((r for r, e in files.items() if e.get("imported_from") == origin_path), None)
         if before and files[before].get("fingerprint") == fingerprint(path):
             continue  # copied once already: never again
+        if dry_run:
+            added.append(path)
+            continue
         rel = add_file(course, path, tier=tier, origin="student-folder", hint=path.relative_to(folder).as_posix(),
                        replace_rel=before, copy=True, extra={"imported_from": origin_path})
         added.append(rel)

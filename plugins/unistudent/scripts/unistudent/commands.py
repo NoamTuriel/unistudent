@@ -395,6 +395,9 @@ def register(add, with_course):
                                     site_unit=parse_unit(hint) if hint is not None else None,
                                     extra={"site_url": url, "site_modified": item.get("modified")})
             (changed if before else new).append(rel)
+            if item.get("transcribe"):  # ticked in the Fetch plan by a student who wants transcripts
+                from .recordings import approve
+                approve(course, [rel])
         built = wiki.build(course) if (new or changed) else None
         return {"new": new, "changed": changed, "missing": missing, "recordings_available": recordings,
                 "unsorted": [r for r in material.unsorted(course) if r in new or r in changed], "wiki": built,
@@ -404,6 +407,25 @@ def register(add, with_course):
     p = with_course(add("ingest", cmd_ingest, "take a university plugin's listing and downloaded files into the Material folder"))
     p.add_argument("listing", help="listing JSON written by the university plugin")
     p.add_argument("folder", help="folder with the downloaded files")
+
+    def cmd_fetch_plan(args):
+        from . import fetch_plan
+        course = resolve_course(args)
+        if args.action == "status":
+            return fetch_plan.status(course)
+        if not args.listing:
+            raise UserError("Give the listing JSON written by the university plugin.")
+        if args.action == "show":
+            return fetch_plan.show(course, args.listing)
+        return fetch_plan.apply(course, args.listing, args.unit)
+
+    p = with_course(add("fetch-plan", cmd_fetch_plan,
+                        "the Fetch plan: show what a fetch will download (checklist, sizes, free disk, time), apply the "
+                        "student's ticks and unit answers, or show the run's progress box"))
+    p.add_argument("action", choices=["show", "apply", "status"])
+    p.add_argument("listing", nargs="?", help="show/apply: listing JSON written by the university plugin")
+    p.add_argument("--unit", nargs="+", metavar="NUMBER=UNIT",
+                   help="apply: the student's answer for a checklist line, e.g. 4=3, 5=general, 6=unknown (I don't know)")
 
     def cmd_site_status(args):
         course = resolve_course(args)
