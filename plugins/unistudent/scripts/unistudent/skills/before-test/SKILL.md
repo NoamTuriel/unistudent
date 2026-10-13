@@ -28,7 +28,7 @@ Read `<this skill's base directory>/../../reference/before-test.md` (or `us doc 
 
 ## 4. Index
 
-**Delegate** the exams to `exam-indexer` workers, one per two exams, in parallel. Output files `<hidden>/before-test/part-<k>.json` (`<hidden>` is `.unistudent` in the course folder). Re-run any worker whose file is missing or invalid. Then run `us before-test merge <the part files>`.
+**Delegate** the exams to `exam-indexer` workers, one per two exams, in parallel, each exam with its solution file when the solution is a separate file. Output files `<hidden>/before-test/part-<k>.json` (`<hidden>` is `.unistudent` in the course folder; create the `before-test` folder first). Re-run any worker whose file is missing or invalid. Then run `us before-test merge <the part files>`.
 
 Done when: `us before-test merge` reports the question count and it matches the exams' questions.
 
