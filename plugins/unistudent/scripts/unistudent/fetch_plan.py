@@ -20,6 +20,7 @@ ROUGH_DOWNLOAD_BYTES_PER_SECOND = 2_500_000  # ponytail: a fixed rough network s
 ROUGH_REALTIME_FACTOR = {"mlx": 0.15, "faster": 0.5}  # hours of work per hour of audio, before a benchmark
 TICK = re.compile(r"^\s*[-*]\s*\[([ xX])\]\s*(\d+)\.", re.M)
 WARNING = ["KEEP THE COMPUTER ON, PLUGGED IN AND AWAKE.", "KEEP THIS APP AND CHROME OPEN."]
+NO_SITE_WARNING = [WARNING[0], "KEEP THIS APP OPEN."]  # no course site: Chrome isn't needed
 
 
 def _folder(course):
@@ -108,7 +109,8 @@ def time_left(download_bytes, lengths):
 
 
 def about(hours, rough, after=""):
-    text = f"about {plural(max(1, round(hours * 60)), 'minute')}" if hours < 1 else f"about {hours:.1f} hours"
+    text = ("less than a minute" if hours <= 0 else f"about {plural(max(1, round(hours * 60)), 'minute')}"
+            if hours < 1 else f"about {hours:.1f} hours")
     return text + after + (" (rough estimate)" if rough else "")
 
 
@@ -248,7 +250,7 @@ def status(course):
     wanted = sum(1 for i in recs if i.get("transcribe"))
     steps = len(recs) + 2 * wanted  # a transcript or summary nobody ticked for is not a step of this run
     done = len(downloaded) + sum(1 for i in transcribed + summarised if i.get("transcribe"))
-    rows = WARNING + [about(hours, rough, " left" + unknown_lengths(lengths)).upper() + ".", "",
+    rows = (WARNING if path.is_file() else NO_SITE_WARNING) + [about(hours, rough, " left" + unknown_lengths(lengths)).upper() + ".", "",
                       f"Documents   {_bar(docs_done, len(docs))}  {docs_done} of {len(docs)} downloaded",
                       f"Recordings  {_bar(done, steps)}  "
                       f"{len(downloaded)} of {len(recs)} downloaded, {len(transcribed)} transcribed, "
