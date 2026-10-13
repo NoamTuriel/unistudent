@@ -221,7 +221,7 @@ class RoadmapsAndAnnouncements(CourseTestCase):
             run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
         self.rec = self.f.wiki / "recordings" / "session 5"
         write(self.rec / "toc.md", "Sources: [transcript](transcript.md)\n\n| 00:01:00 | exam question | [00:01:00](transcript.md#000100) |\n")
-        write(self.rec / "summary.md", "Session 5: a lesson about unit 4.\n\nSources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n\n"
+        write(self.rec / "recording-summary.md", "Session 5: a lesson about unit 4.\n\nSources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n\n"
                                        '## "This will be on the exam"\n\n- The multiplier, at 00:12:47.\n\n## Topics\n\nMoney.\n')
         self.roadmap = self.f.study / "Unit 4" / "Recordings roadmap.md"
 
@@ -242,7 +242,7 @@ class RoadmapsAndAnnouncements(CourseTestCase):
     def test_a_roadmap_goes_when_its_recording_loses_its_summary_or_is_deleted(self):  # T3
         run_json("wiki", "build", "--course", self.course)
         self.assertTrue(self.roadmap.exists())
-        (self.rec / "summary.md").unlink()
+        (self.rec / "recording-summary.md").unlink()
         run_json("wiki", "build", "--course", self.course)
         self.assertFalse(self.roadmap.exists())
 

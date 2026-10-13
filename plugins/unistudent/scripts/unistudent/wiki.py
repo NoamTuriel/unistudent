@@ -125,11 +125,32 @@ def _link(label, target):
     return f"[{label}](<{target}>)" if " " in target else f"[{label}]({target})"
 
 
+SUMMARY = "recording-summary.md"  # not summary.md: Claude Code refuses a subagent's new file by that name
+
+
+def summary_file(course, folder):
+    """A recording's summary page (summary.md from an older version until the next Wiki build renames it)."""
+    path = course.wiki / folder / SUMMARY
+    legacy = path.with_name("summary.md")
+    return legacy if legacy.is_file() and not path.exists() else path
+
+
+def _rename_old_summaries(course):
+    """{old page: new page} for the summaries an older version wrote as summary.md, renamed now."""
+    renamed = {}
+    for folder in material.wiki_folders(course.manifest()["files"]).values():
+        old = course.wiki / folder / "summary.md"
+        if old.is_file() and not (course.wiki / folder / SUMMARY).exists():
+            old.rename(course.wiki / folder / SUMMARY)
+            renamed[f"{folder}/summary.md"] = f"{folder}/{SUMMARY}"
+    return renamed
+
+
 def recording_pages(course):
     """Recordings and their Wiki folders (filled by the recordings pipeline). The folder is kept in the Manifest entry."""
     files = course.manifest()["files"]
     return {rel: {"folder": folder, "unit": files[rel].get("unit"),
-                  "processed": (course.wiki / folder / "summary.md").exists()}
+                  "processed": summary_file(course, folder).exists()}
             for rel, folder in material.wiki_folders(files).items()}
 
 
@@ -216,7 +237,8 @@ def build(course, force=False):
         if conversion.empty_pages:
             needs_visual.append(_visual_item(course, rel, conversion.empty_pages, page, entry))
     course.write_state("wiki.json", state)
-    _relink_pages(wiki, {old: new for old, new in moved_pages.items() if (wiki / new).exists()})
+    _relink_pages(wiki, {**{old: new for old, new in moved_pages.items() if (wiki / new).exists()},
+                         **_rename_old_summaries(course)})
 
     images = [{"source": rel, "page": page, "fingerprint": manifest[rel].get("fingerprint"),
                "origin": manifest[rel].get("origin"), "tier": manifest[rel].get("tier"),  # the image page's frontmatter
@@ -239,7 +261,7 @@ def build(course, force=False):
     for rel, info in recordings.items():
         if info["processed"] and (wiki / info["folder"] / "toc.md").exists() and info["folder"] not in seen:
             seen.add(info["folder"])
-            line = description_line((wiki / info["folder"] / "summary.md").read_text("utf-8")) or ""
+            line = description_line((wiki / info["folder"] / SUMMARY).read_text("utf-8")) or ""
             touched |= ({unit_dir(n) for n in _units_named(line)} & set(by_unit) if info["unit"] == "lessons"
                         else {unit_dir(info["unit"])})
     course.write_state("tocs.json", sorted(seen))
@@ -253,17 +275,17 @@ def build(course, force=False):
         if recs:
             lines += ["", "Recordings:", ""]
             for r, i in recs:
-                status = _link("summary", f"../{i['folder']}/summary.md") if i["processed"] else "not processed yet"
+                status = _link("summary", f"../{i['folder']}/" + SUMMARY) if i["processed"] else "not processed yet"
                 lines.append(f"- {Path(r).name}: {status}")
             for title, heading in (("Announcements", "Announcements"), ("This will be on the exam", "This will be on the exam")):
-                found_in = [(r, i, _section((wiki / i["folder"] / "summary.md").read_text("utf-8"), heading))
+                found_in = [(r, i, _section((wiki / i["folder"] / SUMMARY).read_text("utf-8"), heading))
                             for r, i in recs if i["processed"]]
                 if any(items for _, _, items in found_in):
                     lines += ["", f"{title} (the lecturer said, in a recording):", ""]
                     for r, i, items in found_in:
                         # the summary's links are relative to its own folder; the unit page is one level over
                         here = lambda m, f=i["folder"]: f"](<../{f}/transcript.md{m.group(1)}>)"
-                        lines += [f"- {Path(r).name} ({_link('summary', '../' + i['folder'] + '/summary.md')}): "
+                        lines += [f"- {Path(r).name} ({_link('summary', '../' + i['folder'] + '/' + SUMMARY)}): "
                                   + re.sub(r"\]\(<?transcript\.md(#\d+)>?\)", here, item)
                                   for item in items]
         lines += ["", f"Questions: {_link('question bank', '../question-bank.md')} (tag #{folder})"]
@@ -280,7 +302,7 @@ def build(course, force=False):
     if recordings:
         index += ["", "## Recordings", ""]
         for rel, info in recordings.items():
-            status = _link("summary", info["folder"] + "/summary.md") if info["processed"] else "not processed"
+            status = _link("summary", info["folder"] + "/" + SUMMARY) if info["processed"] else "not processed"
             index.append(f"- {Path(rel).name} ({course.unit_label(info['unit'])}): {status}")
     index += ["", "## What was and wasn't analyzed", "", f"- {_link('Coverage of every file', 'coverage.md')}"]
     (wiki / "index.md").write_text("\n".join(index) + "\n", "utf-8")
@@ -329,17 +351,26 @@ def _section(text, title):
     return [re.sub(r"^\s*[-*]\s+", "", l).strip() for l in match.group(1).splitlines() if l.strip()] if match else []
 
 
+def _video_seconds(label, anchor):
+    """Where a time link opens the video: the exact time it shows ("[00:12:47](transcript.md#001230)" opens at
+    12:47), else the transcript heading it links (headings come about once a minute)."""
+    shown = re.fullmatch(r"\s*(?:(\d{1,2}):)?(\d{1,2}):(\d\d)\s*", label)
+    stamp = shown or re.fullmatch(r"(\d\d)(\d\d)(\d\d)", anchor)
+    if not stamp:
+        return None
+    return int(stamp[1] or 0) * 3600 + int(stamp[2]) * 60 + int(stamp[3])
+
+
 def _for_the_vault(text: str, video=None) -> str:
     """Wiki page text as the student reads it in the Study vault: no frontmatter, no links into the hidden Wiki,
     headings two levels down."""
     text = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)
 
     def keep(match):  # a time in the transcript becomes a time in the video; other links into the hidden Wiki go
-        stamp = re.fullmatch(r"(?:.*transcript\.md)?#(\d\d)(\d\d)(\d\d)", match.group(2).strip("<>"))
+        stamp = re.fullmatch(r"(?:.*transcript\.md)?#(\d{6})", match.group(2).strip("<>"))
         if not (video and stamp):
             return match.group(1)
-        seconds = int(stamp[1]) * 3600 + int(stamp[2]) * 60 + int(stamp[3])
-        return _link(match.group(1), f"{video}#t={seconds}")
+        return _link(match.group(1), f"{video}#t={_video_seconds(match.group(1), stamp[1])}")
 
     return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(keep, text)).strip()
 
@@ -390,7 +421,7 @@ def write_roadmaps(course, recordings):
         for rel, info in recs:
             video = material.path_of(course, rel).as_uri()
             where = course.wiki / info["folder"]
-            summary = (where / "summary.md").read_text("utf-8") if (where / "summary.md").exists() else ""
+            summary = (where / SUMMARY).read_text("utf-8") if (where / SUMMARY).exists() else ""
             toc = (where / "toc.md").read_text("utf-8") if (where / "toc.md").exists() else ""
             lines += [f"## {Path(rel).name}", "", _link("recording", video), ""]
             if description_line(summary):
@@ -441,8 +472,7 @@ def relink_vault(course):
                     return f"[{label}{', page ' + where[1] if where else ''}]({material.path_of(course, rel).as_uri()})"
                 folder = inner.rsplit("/", 1)[0]
                 if folder in recording_source:
-                    stamp = re.fullmatch(r"(\d\d)(\d\d)(\d\d)", anchor)
-                    secs = int(stamp[1]) * 3600 + int(stamp[2]) * 60 + int(stamp[3]) if stamp else None
+                    secs = _video_seconds(label, anchor)
                     video = material.path_of(course, recording_source[folder]).as_uri()
                     return f"[{label}]({video}{'#t=' + str(secs) if secs is not None else ''})"
                 return label  # nothing of the student's to point at
@@ -550,7 +580,7 @@ def check(course):
         problems += check_links(page, course.wiki)
         if page.name not in ("index.md", "coverage.md") and not has_sources(page):
             problems.append({"kind": "no-sources", "page": str(page)})
-        if page.name == "summary.md" and page.parent.parent.name == "recordings" \
+        if page.name == SUMMARY and page.parent.parent.name == "recordings" \
                 and not description_line(page.read_text("utf-8")):
             problems.append({"kind": "no-description", "page": str(page)})
     return {"problems": problems,

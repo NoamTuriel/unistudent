@@ -16,17 +16,17 @@ Frontmatter `source:` as in the transcript. Then a table, one row per segment:
 
 The student's roadmap shows a short timeline of this table, so merge neighbouring rows that teach the same thing: a lesson of about three hours has roughly 8 to 15 rows, a few-minute solution video one to three.
 
-- Time: show the exact time, and link the transcript heading at or before it (headings come every minute or so); the anchor is that heading's time without colons (`## 00:12:30` → `#001230`), e.g. `[00:12:47](transcript.md#001230)`. Every time link in `summary.md` is built the same way. Put a link target that has spaces in `<...>`.
+- Time: show the exact time, and link the transcript heading at or before it (headings come every minute or so); the anchor is that heading's time without colons (`## 00:12:30` → `#001230`), e.g. `[00:12:47](transcript.md#001230)`. Every time link in `recording-summary.md` is built the same way. Put a link target that has spaces in `<...>`.
 - Type, one of: explanation · example · practice · exam question (a question from a past exam) · exam hint (the lecturer stresses something for the exam) · review · announcements · lecturer to camera.
 - An example that matches one in the material names it and links its source page ("Example 3 in [slides](../../sources/unit-04/slides.md#page-7)").
 
 End with `## Solved in this recording` (this exact heading, in English): each question from the material that is solved here (a worked example that is a question from the material counts), with its time.
 
-## summary.md
+## recording-summary.md
 
-The next Wiki build copies `toc.md` and `summary.md` into the student's Study vault as that unit's recordings roadmap, with their links removed. Write both for the student to read. The roadmap shows the one-line description, then the `Announcements` and `This will be on the exam` sections in full, then the timeline from `toc.md`; the `Summary` section stays in the Wiki.
+The next Wiki build copies `toc.md` and `recording-summary.md` into the student's Study vault as that unit's recordings roadmap, with their links removed. Write both for the student to read. The roadmap shows the one-line description, then the `Announcements` and `This will be on the exam` sections in full, then the timeline from `toc.md`; the `Summary` section stays in the Wiki.
 
-The first line of `summary.md` is one plain sentence saying what this recording is, in the course language. It is text for the student and for study-pack to read, not a field: no frontmatter, no tag. For a whole class session say which units it covers ("Lesson 9: a lesson about units 7-9"); for a recording that solves one question say which question and unit ("Solution of question 3 from the 2019 exam, unit 8"); for anything else say in a few words what it is. Judge it from the transcript and the unit pages. `us wiki check` fails a summary that opens with a heading or with the Sources line instead.
+The first line of `recording-summary.md` is one plain sentence saying what this recording is, in the course language. It is text for the student and for study-pack to read, not a field: no frontmatter, no tag. For a whole class session say which units it covers ("Lesson 9: a lesson about units 7-9"); for a recording that solves one question say which question and unit ("Solution of question 3 from the 2019 exam, unit 8"); for anything else say in a few words what it is. Judge it from the transcript and the unit pages. `us wiki check` fails a summary that opens with a heading or with the Sources line instead.
 
 Then `Sources: [transcript](transcript.md)`, then:
 
