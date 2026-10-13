@@ -39,6 +39,10 @@ class McpServer(CourseTestCase):
         init = self.rpc(self.proc, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
                                                   "clientInfo": {"name": "t", "version": "0"}}, id_=9)
         self.assertIn("course_context", init["result"]["instructions"])
+        plugin = json.loads((SCRIPTS.parent / ".claude-plugin" / "plugin.json").read_text("utf-8"))
+        self.assertEqual(init["result"]["serverInfo"]["version"], plugin["version"])  # one version everywhere
+        pyproject = (SCRIPTS.parent / "pyproject.toml").read_text("utf-8")
+        self.assertIn(f'\nversion = "{plugin["version"]}"\n', pyproject)
         names = [t["name"] for t in self.rpc(self.proc, "tools/list", id_=10)["result"]["tools"]]
         self.assertIn("course_context", names)
 
