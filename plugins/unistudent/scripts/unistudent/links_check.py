@@ -190,7 +190,8 @@ def _latex(text):
     text = re.sub(r"\\(?:text|mbox)\{[^}]*\}|\\[A-Za-z]+", " ", text)
     return re.sub(r"_\{([A-Za-z0-9]+)\}", r"_\1", text)
 
-NOT_PROSE = re.compile(r"!?\[\[[^\]]*\]\]|!?\[[^\]]*\]\([^)]*\)|https?://\S+|<[^>]+>|\[![^\]]*\]|\A---\n.*?\n---\n", re.S)
+NOT_PROSE = re.compile(r"!?\[\[[^\]]*\]\]|!?\[[^\]]*\]\([^)]*\)|https?://\S+|<!--.*?-->|</?[A-Za-z][^>\n]*>"  # a tag, not $a < b$
+                       r"|\[![^\]]*\]|\A---\n.*?\n---\n", re.S)
 QUOTE = re.compile(r'(?<!\w)["“„](.+?)["”“](?!\w)', re.S)
 LABEL_LINE = re.compile(r"^\s*(?:>\s*)*(?:[-*+]\s+)?\*\*([^*]+)\*\*")
 
@@ -212,6 +213,9 @@ def check_pack_against_unit(page: Path, course):
     sections = {m.group(1): NOT_PROSE.sub(" ", m.group(2))  # no links: their page anchors are not assumption numbers
                 for m in SECTION.finditer(unit_page.read_text("utf-8") if unit_page.is_file() else "")}
     listed = " ".join(sections.values())
+    earlier = [m.group(2) for k in range(1, unit) for f in [course.wiki / "units" / f"{unit_dir(k)}.md"] if f.is_file()
+               for m in SECTION.finditer(f.read_text("utf-8"))]  # a later unit may use what an earlier one taught
+    allowed = listed + " " + NOT_PROSE.sub(" ", " ".join(earlier))
     text = NOT_PROSE.sub(" ", CODE_BLOCK.sub("", page.read_text("utf-8")))
     problems = []
 
@@ -223,9 +227,9 @@ def check_pack_against_unit(page: Path, course):
         # In English every short word looks Latin: only math counts. Elsewhere a concept heading's English name goes.
         prose = _latex(" ".join(MATH.findall(text)) if language == "en"
                        else re.sub(r"(?m)^(###\s.*?)\s+—\s.*$", r"\1", text))
-        symbols = set(SYMBOL.findall(_latex(listed)))
+        symbols = set(SYMBOL.findall(_latex(allowed)))
         numbers = (set(re.findall(r"(?m)^\s*(\d+)[.)]", sections.get("Assumptions", "")))
-                   | {hit.group(1) for hit in ASSUMPTION.finditer(listed)})
+                   | {hit.group(1) for hit in ASSUMPTION.finditer(allowed)})
         for symbol in dict.fromkeys(SYMBOL.findall(prose)):
             if symbol not in symbols:
                 problem("notation", symbol)
