@@ -262,7 +262,7 @@ def register(add, with_course):
                    if info["page"].startswith(f"sources/{folder}/")}
         for rel, info in wiki.recording_pages(course).items():
             if unit_dir(info["unit"]) == folder and info["processed"]:
-                current[info["folder"] + "/summary.md"] = "processed"
+                current[info["folder"] + "/summary.md"] = "processed"  # a key, kept as built packs recorded it
         packs = course.read_state("studypacks.json", {})
         pack = str(course.pack_folder(args.unit))
         if args.action == "mark-built":
@@ -279,7 +279,7 @@ def register(add, with_course):
             rel for rel, info in wiki.recording_pages(course).items()
             if info["unit"] == "lessons" and info["processed"] and f"## {Path(rel).name}\n" not in entries
             and folder in {unit_dir(n) for n in wiki._units_named(wiki.description_line(
-                (course.wiki / info["folder"] / "summary.md").read_text("utf-8")) or "")})
+                wiki.summary_file(course, info["folder"]).read_text("utf-8")) or "")})
         base = packs.get(folder)
         if base is None:
             return {"has_study_pack": False, "pack_folder": pack, "pages_present": pages_present,

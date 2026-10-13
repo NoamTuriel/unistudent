@@ -88,10 +88,25 @@ class Recordings(CourseTestCase):
         run_json("recordings", "approve", "--course", self.course, "official/Unit 4/session 5.mp4")
         run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
         folder = folders(self.course).wiki / "recordings" / "session 5"
-        write(folder / "summary.md", "# Summary\n\nSources: [transcript](transcript.md)\n")
+        write(folder / "recording-summary.md", "# Summary\n\nSources: [transcript](transcript.md)\n")
         run_json("wiki", "build", "--course", self.course)
         unit4 = (folders(self.course).wiki / "units" / "unit-04.md").read_text("utf-8")
-        self.assertIn("../recordings/session 5/summary.md", unit4)
+        self.assertIn("../recordings/session 5/recording-summary.md", unit4)
+
+    def test_a_summary_an_older_version_wrote_as_summary_md_is_renamed_and_links_follow(self):
+        # Claude Code refuses a subagent's new file named summary.md, so summaries are recording-summary.md now.
+        run_json("recordings", "approve", "--course", self.course, "official/Unit 4/session 5.mp4")
+        run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
+        wiki = folders(self.course).wiki
+        write(wiki / "recordings" / "session 5" / "summary.md", "Session 5.\n\nSources: [transcript](transcript.md)\n")
+        bank = wiki / "question-bank.md"
+        write(bank, bank.read_text("utf-8") + "\n- Q1: [solved](<recordings/session 5/summary.md>)\n")
+        self.assertTrue(run_json("recordings", "list", "--course", self.course)["recordings"][0]["processed"])
+        run_json("wiki", "build", "--course", self.course)
+        self.assertFalse((wiki / "recordings" / "session 5" / "summary.md").exists())
+        self.assertTrue((wiki / "recordings" / "session 5" / "recording-summary.md").exists())
+        self.assertIn("(<recordings/session 5/recording-summary.md>)", bank.read_text("utf-8"))
+        self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
 
     def test_a_moved_recording_takes_its_transcript_sidecar_along_and_the_transcript_follows(self):
         rec = "official/Unit 4/session 5.mp4"

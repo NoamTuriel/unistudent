@@ -112,7 +112,7 @@ class VideoReplacedAfterFrameAnalysis(CourseTestCase):
         run_json("context", "--course", self.course, "--frame-analysis", "1", "--keep-video", "0")
 
     def analysis_done(self):  # what the recording-summarizer writes once its frame analysis is done
-        write(folders(self.course).wiki / self.recording["wiki_folder"] / "summary.md", "# Summary")
+        write(folders(self.course).wiki / self.recording["wiki_folder"] / "recording-summary.md", "# Summary")
 
     def test_the_video_becomes_an_audio_only_copy_at_the_same_path_once_analysed(self):
         self.analysis_done()

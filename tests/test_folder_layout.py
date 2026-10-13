@@ -220,7 +220,7 @@ class RecordingRoadmap(CourseTestCase):
             run_json("recordings", "transcribe", "--course", course, "official/Unit 4/session 5.mp4")
         rec = f.wiki / "recordings" / "session 5"
         write(rec / "toc.md", "| 00:12:47 | exam question | [00:12:47](transcript.md#001230) |\n")
-        write(rec / "summary.md", "Sources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n")
+        write(rec / "recording-summary.md", "Sources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n")
         run_json("wiki", "build", "--course", course)
         roadmap = (f.study / "Unit 4" / "Recordings roadmap.md").read_text("utf-8")
         self.assertIn("Homework due Sunday.", roadmap)

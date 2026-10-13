@@ -24,9 +24,9 @@ class RecordedLessons(CourseTestCase):
         write(self.lesson / "toc.md", "Sources: [transcript](transcript.md)\n\n| Time | Until | Type | What happens | Topic |\n|---|---|---|---|---|\n"
                                       "| [00:00:00](transcript.md#000000) | 00:01:41 | explanation | Intro | Unit 7 |\n\n"
                                       "## Solved in this recording\n\n- question 3 (00:40:00)\n")
-        write(self.lesson / "summary.md", "Lesson 9: a lesson about units 7-9.\n\nSources: [transcript](transcript.md)\n\n"
+        write(self.lesson / "recording-summary.md", "Lesson 9: a lesson about units 7-9.\n\nSources: [transcript](transcript.md)\n\n"
                                           "## Announcements\n\nHomework due Sunday.\n\n## Summary\n\nLong paragraph.\n")
-        write(self.question / "summary.md", "Solution of question 1, unit 4.\n\nSources: [transcript](transcript.md)\n")
+        write(self.question / "recording-summary.md", "Solution of question 1, unit 4.\n\nSources: [transcript](transcript.md)\n")
 
     def test_a_lesson_goes_to_recorded_lessons_and_is_no_longer_unsorted(self):
         self.assertIn(LESSON, run_json("unsorted", "--course", self.course)["files"])
@@ -69,7 +69,7 @@ class RecordedLessons(CourseTestCase):
         run_json("assign", LESSON, "lessons", "--course", self.course)
         changes = lambda unit: run_json("study", "changes", "--course", self.course, "--unit", unit)["lessons_without_roadmap"]
         self.assertEqual(changes("4"), [])
-        write(self.lesson / "summary.md", "Lesson 9: units 7 to 9.\n\nSources: [transcript](transcript.md)\n")
+        write(self.lesson / "recording-summary.md", "Lesson 9: units 7 to 9.\n\nSources: [transcript](transcript.md)\n")
         self.assertEqual(changes("8"), ["official/Recorded lessons/lesson 9.mp4"])
 
     def test_only_a_recording_can_be_assigned_to_recorded_lessons(self):
@@ -81,14 +81,14 @@ class RecordedLessons(CourseTestCase):
 
     def test_the_wiki_check_wants_a_summary_to_open_with_its_one_line_description(self):
         self.assertEqual(self.wiki_problems(), [])
-        write(self.lesson / "summary.md", "Sources: [transcript](transcript.md)\n\n## Announcements\n\nNone.\n")
+        write(self.lesson / "recording-summary.md", "Sources: [transcript](transcript.md)\n\n## Announcements\n\nNone.\n")
         self.assertEqual(self.wiki_problems(), ["no-description"])
-        write(self.lesson / "summary.md", "## Summary\n\nText.\n\nSources: [transcript](transcript.md)\n")
+        write(self.lesson / "recording-summary.md", "## Summary\n\nText.\n\nSources: [transcript](transcript.md)\n")
         self.assertEqual(self.wiki_problems(), ["no-description"])
 
     def test_a_new_table_of_contents_marks_its_unit_page_stale_once(self):  # ticket 31
         run_json("assign", LESSON, "lessons", "--course", self.course)
-        write(self.lesson / "summary.md", "Lesson 9: a lesson about units 3-4.\n\nSources: [transcript](transcript.md)\n")
+        write(self.lesson / "recording-summary.md", "Lesson 9: a lesson about units 3-4.\n\nSources: [transcript](transcript.md)\n")
         self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], ["unit-04"])
         self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], [])
         write(self.question / "toc.md", "Sources: [transcript](transcript.md)\n\n| Time | Until | Type | What happens | Topic |\n"
