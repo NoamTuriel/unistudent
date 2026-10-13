@@ -294,7 +294,7 @@ def register(add, with_course):
             "removed": sorted(p for p in old if p not in current),
         }
         n = len(result["new"]) + len(result["changed"]) + len(result["removed"])
-        result["summary"] = f"{n} changes since the study pack was built ({base['built']})."
+        result["summary"] = f"{n} change{'' if n == 1 else 's'} since the study pack was built ({base['built']})."
         return result
 
     p = with_course(add("study", cmd_study, "track which sources a study pack was built from"))

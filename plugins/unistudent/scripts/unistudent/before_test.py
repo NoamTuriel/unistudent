@@ -104,7 +104,9 @@ def build(course, index, clusters, fmt, notes):
     out = []
     if fmt == "html":
         a = lambda u, x: f'<a href="{html.escape(u)}">{html.escape(x)}</a>' if u else html.escape(x)
-        out = [f'<!doctype html><html lang="{course.settings().get("language", "he")}" dir="{'rtl' if course.settings().get('language', 'he') == 'he' else 'ltr'}"><meta charset="utf-8"><title>{name}</title>',
+        lang = course.settings().get("language", "he")
+        direction = "rtl" if lang == "he" else "ltr"  # outside the f-string: nested quotes need Python 3.12
+        out = [f'<!doctype html><html lang="{lang}" dir="{direction}"><meta charset="utf-8"><title>{name}</title>',
                "<style>body{font:17px/1.65 system-ui,Arial;max-width:900px;margin:24px auto;padding:0 16px}h2{background:#e8eef8;padding:6px 10px}"
                "li{margin:9px 0}details{margin:6px 0}summary{cursor:pointer;font-weight:bold}.n{background:#fff4d6;padding:8px 12px}</style>",
                f"<h1>{name}</h1><p>{html.escape(t['intro'])}</p>",
