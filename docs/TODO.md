@@ -20,3 +20,12 @@ Decide whether the Fetch plan offers "smaller copy" per recording, and what it m
 
 ## Before-the-test page: refresh when an exam is added
 The page (skill `before-test`) is a snapshot. Decide how it is refreshed: `study changes` should report "new exam file, before-the-test page is stale".
+
+## Found by the v3 self-test on synthetic courses (2026-10-14), not fixed
+- `us check` verifies that a `file:` link's file exists, not that its `#page=N` exists in the PDF: a solution link to the wrong page passes.
+- `us wiki check` counts a unit page as sourced because its generated block has a `Sources:` line, so an unsourced bullet a worker writes below it passes.
+- A `.pptx` slide cannot be linked by page (`#page=` works in PDFs only). With LibreOffice the kept PDF in `.unistudent/view/` could be the link target, but the Study vault never links into the hidden folder: decide.
+- Files the student unticks in the Fetch plan come back in every later plan (nothing remembers "skip this one").
+- The material can contradict itself (an answer key with a wrong count): no worker step says to flag it to the student.
+- The verifier flags a term that is in the material but missing from the glossary, and no pack step can fix the Wiki: decide who does.
+- Unverified on the live site: file sizes from the HEAD probe, recording lengths next to titles, whether a sound-only fetch still downloads the whole stream.
