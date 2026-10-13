@@ -49,10 +49,10 @@ class TranscriptionAndGraphRules(unittest.TestCase):
         self.assertLess(text.index("recordings approve"), text.index("recordings transcribe"))
         self.assertIn("Sit back and relax", text)
 
-    def test_setup_transcribes_nothing_and_asks_per_recording(self):
+    def test_setup_transcribes_what_its_fetch_plan_approved_and_never_asks_per_recording(self):  # ADR 0013
         text = (self.SKILLS / "course-setup" / "SKILL.md").read_text("utf-8")
-        self.assertIn("ask me per recording", text)
-        self.assertNotIn("recordings transcribe", text)
+        self.assertNotIn("ask me per recording", text)
+        self.assertLess(text.index("fetch-plan"), text.index("recordings transcribe"))
 
     RULES = (CORE.parent / "reference" / "study-pack.md").read_text("utf-8")
 
