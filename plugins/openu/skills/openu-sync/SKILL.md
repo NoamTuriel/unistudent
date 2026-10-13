@@ -32,13 +32,13 @@ Nothing downloads in this step, and no stream links are collected: they expire w
 - **Documents:** run the listing snippet from `site.md` for the course id, then add folder contents (open each folder, list its file links). One item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, `file: "unistudent-<course number>-<date>__<name>"` (the name it will be downloaded under), and `unit_hint: "general"` for past exams, exam information and file stores. Then run the size snippet: it adds `size` where the site gives one without downloading the file.
 - **Recordings:** skip them when `recording_level` is 0 (the student chose to skip recordings; count them for the report). Otherwise run the recordings snippet in each video collection (links on the course page and in the "וידאו" section). One item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` when a length is shown next to it.
 
-Drop every item whose `url` is in `site-status`. If nothing is left, say "Nothing new on the site since <last_sync>" in one line and stop: no empty plan. Otherwise download the listing `{"course_site": ..., "items": [...]}` from the course tab with the in-page method, as `unistudent-<course number>-<date>__listing.json`.
+Download the listing `{"course_site": ..., "items": [...]}` from the course tab with the in-page method, as `unistudent-<course number>-<date>__listing.json` (list everything: the Fetch plan leaves out what is already downloaded).
 
-Done when: every row of the resources list, every file in every folder and every recording the Settings want is an item or already downloaded, and the listing file is in Downloads (or the one "Nothing new" line was said).
+Done when: every row of the resources list, every file in every folder and every recording the Settings want is an item or already downloaded, and the listing file is in Downloads.
 
 ## 4. The Fetch plan
 
-On every sync, inside setup or not, run `us fetch-plan show --json "<Downloads>/<listing file>"`. Show its `summary` (totals per file type, free disk space, rough time) and the checklist path, then ask: **download all**, **skip all recordings**, or **edit the list** (untick lines in the checklist file, or say it in the chat: "skip unit 1 recordings", "drop the old exams").
+On every sync, inside setup or not, run `us fetch-plan show --json "<Downloads>/<listing file>"`. When its `nothing_new` is true, say its `summary` ("Nothing new on the site since <date>") in one line and stop: no empty plan. Otherwise show its `summary` (totals per file type, free disk space, rough time) and the checklist path, then ask: **download all**, **skip all recordings**, or **edit the list** (untick lines in the checklist file, or say it in the chat: "skip unit 1 recordings", "drop the old exams").
 
 - Skip all recordings: untick every `.mp4` line in the checklist.
 - Edit the list: make each change the student asks for in the checklist (change `[x]` to `[ ]`), run `us fetch-plan show` again and show the new `summary`. Repeat until the student says OK.
@@ -54,13 +54,13 @@ Done when: the student gave an explicit OK and `fetch-plan apply` returned the a
 
 From here to the end, never ask: a failure is retried once, then skipped and reported.
 
-In the course tab, download every document item of the approved listing with the in-page method from `site.md`, under its `file` name. Then run `us ingest --json "<approved listing>" "<Downloads>"`. The core moves the files into the course's Material folder (`official`, by unit), updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`. Download each `missing` file once more and run the ingest again; what is still missing goes in the report.
+In the course tab, download every document item of the approved listing whose `url` is not in `us site-status` yet (a resumed run skips what is already in), with the in-page method from `site.md`, under its `file` name. Then run `us ingest --json "<approved listing>" "<Downloads>"`. The core moves the files into the course's Material folder (`official`, by unit), updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`. Download each `missing` file once more and run the ingest again; what is still missing goes in the report.
 
 Done when: every approved document is ingested or listed as failed.
 
 ## 6. Download the recordings, one at a time
 
-For each recording item of the approved listing, in order, and only now:
+For each recording item of the approved listing whose `url` is not in `us site-status` yet (a resumed run skips what is already in), in order, and only now:
 
 1. In its collection tab, run the stream snippet from `site.md` with the item: it collects that one recording's link and downloads a one-recording listing, `unistudent-<course number>-<date>__rec-<n>.json`.
 2. Run `us recordings fetch --json "<Downloads>/<that file>" "<Downloads>"` (it keeps the sound only when the Settings say so).

@@ -78,6 +78,12 @@ def _read_listing(path):
     return json.loads(Path(path).read_text("utf-8"))
 
 
+def _new_items(course, data):
+    """The listing's files not downloaded yet (a later sync, or a scan that kept them), biggest first."""
+    have = {e.get("site_url") for e in course.manifest()["files"].values() if e.get("site_url")}
+    return _ordered([i for i in data.get("items", []) if i.get("url") not in have])
+
+
 def _ticks(course, plan_id):
     """{number: ticked} from the checklist, when it was written for this listing; None otherwise."""
     path = checklist_file(course)
@@ -129,7 +135,12 @@ def _transcribes(course):
 
 
 def show(course, listing_path):
-    items = _ordered(_read_listing(listing_path).get("items", []))
+    items = _new_items(course, _read_listing(listing_path))
+    if not items:
+        fetched = [e["fetched"] for e in course.manifest()["files"].values() if e.get("site_url") and e.get("fetched")]
+        return {"checklist": None, "totals": {}, "total_bytes": 0, "unknown_size": 0, "fits": True, "hours": 0,
+                "rough": False, "needs_unit": [], "nothing_new": True,
+                "summary": "Nothing new on the site" + (f" since {max(fetched)}." if fetched else ".")}
     plan_id = _plan_id(items)
     ticks = _ticks(course, plan_id)
     totals, lines, needs_unit = {}, [], []
@@ -177,12 +188,12 @@ def show(course, listing_path):
                + f" Time: {about(hours, rough, unknown_lengths(lengths))}. Checklist: {path}")
     return {"checklist": str(path), "totals": totals, "total_bytes": total, "unknown_size": unknown,
             "free_bytes": free, "fits": fits, "hours": hours, "rough": rough, "needs_unit": needs_unit,
-            "summary": summary}
+            "nothing_new": False, "summary": summary}
 
 
 def apply(course, listing_path, unit_answers):
     data = _read_listing(listing_path)
-    items = _ordered(data.get("items", []))
+    items = _new_items(course, data)
     ticks = _ticks(course, _plan_id(items))
     if ticks is None:
         raise UserError("No Fetch plan for this listing yet: run `us fetch-plan show` first and let the student "
