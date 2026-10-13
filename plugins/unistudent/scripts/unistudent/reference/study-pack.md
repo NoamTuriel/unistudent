@@ -12,7 +12,7 @@ The generic rules for building a study pack, used when no preference says otherw
 
 ## Topics: the backbone
 
-Split the unit into 4–6 topics in teaching order (usually the lecture order). This one topic list is shared by every page. Topics carry no tags.
+Split the unit into 4–6 topics in teaching order (usually the lecture order); a unit whose material teaches fewer gets fewer, never an invented one. This one topic list is shared by every page. Topics carry no tags.
 
 ## Pages
 
@@ -58,7 +58,7 @@ A quote in a Model answer or Say it is copied word for word from the solution: `
 
 The page the student reads first, in this order, each part only when it has something to say:
 
-1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. End with this fixed sentence, written in the course language, its example request built from one of this unit's own concepts: "UniStudent draws graphs and flowcharts on request: ask in chat, for example \"draw the graph of <concept>\"." The study-pack skill adds the Recommended tools sentences after the pack is written (Recommended tools, below).
+1. **How to start:** three numbered steps, each linked to the page it names, so the student knows how to use the pack: brief this page (where the unit is going, what to know by heart, which tools to master), then read the full explanation (the Walkthrough), then test yourself on the Practice page. End with this fixed sentence, written in the course language, its example request built from one of this unit's own concepts, a graph where the unit has one and otherwise a flowchart: "UniStudent draws graphs and flowcharts on request: ask in chat, for example \"draw the graph of <concept>\"." (or "\"draw <procedure> as a flowchart\"") The study-pack skill adds the Recommended tools sentences after the pack is written (Recommended tools, below).
 2. **The idea** of the unit, one or two lines.
 3. **What to know by heart and what to understand:** one list for the whole unit, not one per topic.
 4. **A table of the unit's topics**, the same names and order as the walkthrough: per topic its tool, the question that recurs, the common mistake, and a pointer to the topic's "How to answer" block (only when it has one).
@@ -67,7 +67,7 @@ The page the student reads first, in this order, each part only when it has some
 7. **A checklist** before the exam (or the course's end, when it has no exam).
 8. **All the unit's sources:** one folded block (closed by default, a foldable callout in Obsidian format, `<details>` in plain Markdown) listing every source file and recording of the unit as links, plain names only. The roadmap is where a student looks for where things are, so this is the one place the whole unit's sources are together.
 
-What to know by heart and each topic's recurring question come from the Wiki course page's Exam format section and from the past-exam questions in the question bank, never from the student.
+What to know by heart and each topic's recurring question come from the Wiki course page's Exam format section and from the past-exam questions in the question bank, never from the student. A course with neither (no exam yet, or self-study): what to know by heart is the unit's formulas, definitions and procedure steps from its Wiki unit page, and the table leaves out the columns it has no source for.
 
 Formulas and Latin symbols follow the right-to-left rule above.
 
@@ -85,7 +85,7 @@ Formulas and Latin symbols follow the right-to-left rule above.
 1. A table of the unit's topics with how many questions each has.
 2. Under each topic, every suited question from the course material, easy to hard, as one checklist bullet (`- [ ]`, so the student ticks what is solved): the question's number and source page (`שאלה 3, עמוד 4`, in the course language), a link to the question, a link to its solution right beside it, and one line saying what it exercises. Nothing else per question: no stage, no tag, no recording time.
    - **Links:** full `file:` links to the student's own file with `#page=N`. The solution link is the solution's page (same file or the solutions file); a question with no solution in the files says so in words instead of a link. A question with no page anchor (a `.doc`, a scan) links the file by its plain name and says in words where in it to look. Check the layout before linking: render the page and look, never assume the solution is on the next page.
-   - **Hide the answer:** when the question's page also shows the solution (handwritten answer on the same page, or the solution on the page right after in the same PDF), make a single-page copy of the question page (`pdfseparate -f N -l N`) in the unit's folder in the Study vault and link the question to it. Never modify the original. A page whose answer can't be hidden says so in the link text.
+   - **Hide the answer:** when the solution is on the page right after the question in the same PDF, make a single-page copy of the question page (`pdfseparate -f N -l N`) in the unit's folder in the Study vault and link the question to it. Never modify the original. When the answer is on the question's own page it can't be hidden: one link, whose text says the answer is on it.
    - **Groups:** inside a topic, put similar questions together, 3-8 from different sources, easy to hard, so a student who fails one and understands its solution meets the same idea next. Each group opens with one line on what to master. Questions that fit no group stand alone.
 3. Ends with the **Short version**, introduced by one line saying what it is: the must-do questions, one per distinct way of solving, past-exam questions first.
 
@@ -98,7 +98,7 @@ For a student short on time: every topic still appears, but with the fewest ques
 - Two questions are **the same** when solving them takes the same method and the same steps, even with different numbers or a different scenario. They are **different** when the method or steps differ, even if one is much easier than the other. Decide it after you read both solutions: surface wording never decides it alone.
 - Group each topic's questions by that test. From each group of "the same" questions keep only the **hardest** one (the most steps, the most combined concepts, or an explicit challenge or combined-unit question).
 - Every group of "different" questions keeps its one question, regardless of difficulty.
-- Every topic has at least one question. Past-exam questions come first.
+- Every topic the material has a question for has at least one. Past-exam questions come first.
 
 ## Recordings index page
 
