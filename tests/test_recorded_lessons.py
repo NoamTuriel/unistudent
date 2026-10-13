@@ -44,6 +44,17 @@ class RecordedLessons(CourseTestCase):
         self.assertNotIn("Lesson 9", unit4)
         self.assertIn("question 1", unit4)
 
+    def test_a_unit_page_lists_the_lessons_that_cover_it_and_an_emptied_unsorted_page_goes(self):
+        run_json("wiki", "build", "--course", self.course)
+        self.assertTrue((self.f.wiki / "units" / "unsorted.md").exists())  # lesson 9 is unsorted for now
+        write(self.f.material / "official" / "Unit 8" / "notes.txt", "Unit 8 notes, long enough to be a page of text.")
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        run_json("wiki", "build", "--course", self.course)
+        unit8 = (self.f.wiki / "units" / "unit-08.md").read_text("utf-8")
+        self.assertIn("lesson 9.mp4", unit8)  # its summary says it covers units 7-9: unit 8's writer reads its toc.md
+        self.assertNotIn("lesson 9.mp4", (self.f.wiki / "units" / "unit-04.md").read_text("utf-8"))
+        self.assertFalse((self.f.wiki / "units" / "unsorted.md").exists())
+
     def test_the_roadmap_is_slim_and_keeps_the_announcements(self):
         run_json("assign", LESSON, "lessons", "--course", self.course)
         run_json("wiki", "build", "--course", self.course)

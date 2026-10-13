@@ -114,6 +114,7 @@ class PagesReadVisually(CourseTestCase):
         self.assertEqual((files["official/Unit 1/scan.pdf"]["status"], files["official/Unit 1/scan.pdf"]["why"]), ("analyzed", ""))
         again = self.build()
         self.assertEqual((again["images"], again["needs_visual"]), ([], []))
+        self.assertIn("../sources/unit-01/diagram.md", (self.wiki / "units" / "unit-01.md").read_text("utf-8"))  # its unit writer reads it
         self.assertIn("## Analyzed (2)", (self.wiki / "coverage.md").read_text("utf-8"))
         self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
 

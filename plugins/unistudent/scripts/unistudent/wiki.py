@@ -34,7 +34,7 @@ STUBS = {
 {stub}
 <!-- One entry per question found in the course material (Q&A files, assignments, past exams):
 ### <short title>  #unit-NN/<topic-tag>
-- Where: [..](sources/..#page-N) · Solved in a recording: [..](recordings/../toc.md#..) or "no"
+- Where: [..](sources/..#page-N) · Solved in a recording: [<time>](recordings/../toc.md#solved-in-this-recording) or "no"
 - Question: <short paraphrase>
 -->
 """,
@@ -44,7 +44,7 @@ STUBS = {
 <!-- Filled from exam information files and past exams. Each line cites its source.
 ## Exam format
 ## Formula sheet and aids allowed
-## What the lecturer stresses
+## What the course stresses
 -->
 """,
 }
@@ -252,8 +252,9 @@ def build(course, force=False):
 
     # Unit pages: generated block only.
     by_unit = {}
-    for rel, page in plan.items():
-        by_unit.setdefault(unit_dir(manifest[rel].get("unit")), []).append((rel, page))
+    for rel, page in pages.items():  # documents, and images once the source-reader wrote their page
+        if rel in plan or (wiki / page).exists():
+            by_unit.setdefault(unit_dir(manifest[rel].get("unit")), []).append((rel, page))
     for rel, info in recordings.items():
         by_unit.setdefault(unit_dir(info["unit"]), [])
     # A new table of contents makes its units' pages stale: the unit writer can now fill "Solved in a recording".
@@ -265,13 +266,19 @@ def build(course, force=False):
             touched |= ({unit_dir(n) for n in _units_named(line)} & set(by_unit) if info["unit"] == "lessons"
                         else {unit_dir(info["unit"])})
     course.write_state("tocs.json", sorted(seen))
+    covers = {rel: {unit_dir(n) for n in _units_named(description_line((wiki / i["folder"] / SUMMARY).read_text("utf-8"))
+                                                         or "")}
+              for rel, i in recordings.items() if i["unit"] == "lessons" and i["processed"]}
+    if "unsorted" not in by_unit and (wiki / "units" / "unsorted.md").exists():
+        (wiki / "units" / "unsorted.md").unlink()  # every file got its unit (a unit page keeps what was written on it)
     unit_pages = []
     for folder in sorted(by_unit):
         unit = {"unsorted": None, "general": "general", "lessons": "lessons"}.get(folder, folder[len("unit-"):])
         lines = [f"# {course.unit_label(unit)}", "", "Sources:", ""]
         for rel, page in sorted(by_unit[folder], key=lambda item: item[1]):
             lines.append(f"- {_link(Path(page).stem, '../' + page)} ({manifest[rel].get('tier')}, {manifest[rel].get('origin')})")
-        recs = [(r, i) for r, i in recordings.items() if unit_dir(i["unit"]) == folder]
+        recs = [(r, i) for r, i in recordings.items()  # its own, and the recorded lessons that cover it
+                if unit_dir(i["unit"]) == folder or folder in covers.get(r, ())]
         if recs:
             lines += ["", "Recordings:", ""]
             for r, i in recs:
