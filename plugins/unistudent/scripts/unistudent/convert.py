@@ -1,9 +1,10 @@
 """Turning course documents into text pages. Best available tool first, pure-Python fallback.
 
 Returns a Conversion: a list of page texts, the method used, and warnings.
-Pages whose text layer is (almost) empty are reported, so Claude can read them visually.
+Pages whose text layer is (almost) empty, and slides with a picture, are reported, so Claude can read them visually.
 """
 import logging
+import re
 import shutil
 import subprocess
 import tempfile
@@ -28,12 +29,15 @@ class Conversion:
     pages: list
     method: str
     warnings: list = field(default_factory=list)
+    picture_pages: list = field(default_factory=list)  # slides whose picture (often a graph) has no text
 
     @property
     def empty_pages(self):
+        """The pages to read visually: no text layer, or a slide with a picture."""
         if self.method in NOT_PAGED:  # a short text file is not a page with a missing text layer
             return []
-        return [i + 1 for i, text in enumerate(self.pages) if len(text.strip()) < EMPTY_PAGE_CHARS]
+        return sorted({i + 1 for i, text in enumerate(self.pages) if len(text.strip()) < EMPTY_PAGE_CHARS}
+                      | set(self.picture_pages))
 
 
 def kind(path) -> str:
@@ -118,8 +122,45 @@ def _pptx_text(path: Path) -> Conversion:
     return Conversion(slides, "python-pptx")
 
 
+def _pictures(path) -> dict:
+    """{slide number: its pictures} of a .pptx; empty without python-pptx."""
+    if Path(path).suffix.lower() != ".pptx":
+        return {}
+    try:
+        from pptx import Presentation
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
+    except ImportError:
+        return {}
+    return {number: pictures for number, slide in enumerate(Presentation(str(path)).slides, 1)  # ponytail: top-level
+            if (pictures := [s for s in slide.shapes if s.shape_type == MSO_SHAPE_TYPE.PICTURE])}  # pictures only
+
+
+def slide_pictures(path, pages, folder) -> list:
+    """The pictures on these slides of a .pptx, saved as image files a worker can open (Read can't open a .pptx)."""
+    found, out = _pictures(path), []
+    for number in pages:
+        for k, shape in enumerate(found.get(number, []), 1):
+            target = Path(folder) / f"slide-{number}-{k}.{shape.image.ext}"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(shape.image.blob)
+            out.append(str(target))
+    return out
+
+
 def convert(path) -> Conversion:
-    path = Path(path)
+    conversion = _convert(Path(path))
+    if conversion.pages:
+        conversion.picture_pages = sorted(n for n in _pictures(path) if n <= len(conversion.pages))
+    return conversion
+
+
+def _slides(conversion):
+    """MarkItDown's .pptx text, one page per slide (it marks each slide), so pages can be cited and read."""
+    parts = re.split(r"<!-- Slide number: \d+ -->\n?", conversion.pages[0])
+    return Conversion([p.strip() for p in parts[1:]], "markitdown-slides") if len(parts) > 1 else conversion
+
+
+def _convert(path) -> Conversion:
     suffix = path.suffix.lower()
     if suffix in (".txt", ".md"):
         return Conversion([path.read_text("utf-8", errors="replace")], "text")
@@ -134,7 +175,7 @@ def convert(path) -> Conversion:
                 return conversion
         conversion = _markitdown(path)
         if conversion is not None and conversion.pages:
-            return conversion
+            return _slides(conversion) if suffix == ".pptx" else conversion
         try:
             if suffix == ".docx":
                 return _docx_text(path)

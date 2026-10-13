@@ -251,7 +251,7 @@ def register(add, with_course):
     p.add_argument("action", choices=["status", "advance", "clear", "list"])
     p.add_argument("--course-name")
     p.add_argument("--stage", choices=SETUP_STAGES + list(RENAMED_STAGES))  # old names: recorded as the new stage
-    p.add_argument("--answer", nargs="+", help="key=value pairs to remember (repeatable)")
+    p.add_argument("--answer", action="extend", nargs="+", help="key=value pairs to remember (repeatable)")
 
     def cmd_study(args):
         from datetime import datetime
@@ -341,7 +341,7 @@ def register(add, with_course):
                 raise UserError("fetch needs the listing JSON and the download folder.")
             result = recordings.fetch_streams(args.paths[0], args.paths[1],
                                                audio_only=args.audio_only or recordings.audio_only_fetch(course))
-            result["summary"] = (f"Downloaded {len(result['downloaded'])} recordings"
+            result["summary"] = (f"Downloaded {len(result['downloaded'])} recording" + ("" if len(result["downloaded"]) == 1 else "s")
                                  + (f"; failed: {', '.join(result['failed'])}" if result["failed"] else "") + ".")
             return result
         if not args.paths:
@@ -435,7 +435,7 @@ def register(add, with_course):
                         "student's ticks and unit answers, or show the run's progress box"))
     p.add_argument("action", choices=["show", "apply", "status"])
     p.add_argument("listing", nargs="?", help="show/apply: listing JSON written by the university plugin")
-    p.add_argument("--unit", nargs="+", metavar="NUMBER=UNIT",
+    p.add_argument("--unit", action="extend", nargs="+", metavar="NUMBER=UNIT",
                    help="apply: the student's answer for a checklist line, e.g. 4=3, 5=general, 6=unknown (I don't know)")
 
     def cmd_site_status(args):
@@ -464,6 +464,6 @@ def register(add, with_course):
     p.add_argument("name", nargs="?", help="e.g. study-pack, verifier, source-reader")
 
     p = with_course(add("add", cmd_add, "move the inbox files into the Material folder, sort them, update the Wiki"))
-    p.add_argument("--official", nargs="*", help="inbox file names that are the lecturer's material")
-    p.add_argument("--describe", nargs="*", metavar="NAME=ORIGIN",
+    p.add_argument("--official", action="extend", nargs="*", help="inbox file names that are the lecturer's material")
+    p.add_argument("--describe", action="extend", nargs="*", metavar="NAME=ORIGIN",
                    help="where a file comes from, e.g. \"summary.pdf=friend's summary\"")

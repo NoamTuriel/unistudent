@@ -127,6 +127,37 @@ class PagesReadVisually(CourseTestCase):
         files = {r["path"]: r for r in run_json("wiki", "coverage", "--course", self.course)["files"]}
         self.assertNotEqual(files["official/Unit 1/diagram.png"]["status"], "analyzed")
 
+    def test_an_image_item_carries_the_frontmatter_its_page_needs(self):
+        item = self.build()["images"][0]
+        self.assertEqual((item["origin"], item["tier"], item["unit"]), ("student-folder", "official", 1))
+
+
+try:
+    import pptx  # optional: the slides' pictures are only extracted when python-pptx is installed
+except ImportError:
+    pptx = None
+
+
+@unittest.skipUnless(pptx, "python-pptx not installed")
+class SlidePictures(CourseTestCase):
+    def test_a_slide_with_only_a_picture_hands_the_picture_to_the_source_reader(self):
+        import base64
+        from pptx import Presentation
+        png = write(self.tmp / "graph.png", base64.b64decode(
+            "iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg=="))
+        deck = Presentation()
+        deck.slides.add_slide(deck.slide_layouts[5]).shapes.title.text = "Unit 1: supply, demand and the equilibrium price"
+        deck.slides.add_slide(deck.slide_layouts[6]).shapes.add_picture(str(png), 0, 0)  # a graph, no text at all
+        own = self.tmp / "own" / "Unit 1"
+        own.mkdir(parents=True)
+        deck.save(own / "slides.pptx")
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", self.tmp / "own", "--tier", "official")
+        with mock.patch("unistudent.convert._soffice", return_value=None):
+            [item] = run_json("wiki", "build", "--course", course)["needs_visual"]
+        self.assertEqual(item["pages"], [2])
+        self.assertEqual([p.rsplit("/", 1)[-1] for p in item["pictures"]], ["slide-2-1.png"])
+
 
 if __name__ == "__main__":
     unittest.main()

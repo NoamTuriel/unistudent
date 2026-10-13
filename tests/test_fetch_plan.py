@@ -247,6 +247,7 @@ class StatusTimeLeft(CourseTestCase):
         box = run_json("fetch-plan", "status", "--course", self.course)["box"]
         self.assertIn("ROUGH", box)
         self.assertNotIn("1 MINUTES", box)
+        self.assertIn("1 RECORDING OF UNKNOWN LENGTH", box)  # named, not counted as zero minutes
 
     def test_a_downloaded_recording_counts_its_real_length_measured_once(self):
         data = json.loads(Path(self.approved).read_text("utf-8"))

@@ -112,6 +112,12 @@ def about(hours, rough, after=""):
     return text + after + (" (rough estimate)" if rough else "")
 
 
+def unknown_lengths(lengths):
+    """The part of the time no number covers yet: recordings whose length the site did not show."""
+    n = lengths.count(None)
+    return f", plus transcribing {plural(n, 'recording')} of unknown length" if n else ""
+
+
 def _length(item):
     return float(item["seconds"]) if item.get("seconds") else None
 
@@ -166,7 +172,7 @@ def show(course, listing_path):
                        for ext, t in sorted(totals.items(), key=lambda kv: -kv[1]["bytes"]))
     summary = (f"{plural(sum(t['files'] for t in totals.values()), 'file')} ticked ({by_ext}). {total_line} "
                f"Free disk space: {human(free)}" + ("." if fits else ": the plan does not fit, untick some files first.")
-               + f" Time: {about(hours, rough)}. Checklist: {path}")
+               + f" Time: {about(hours, rough, unknown_lengths(lengths))}. Checklist: {path}")
     return {"checklist": str(path), "totals": totals, "total_bytes": total, "unknown_size": unknown,
             "free_bytes": free, "fits": fits, "hours": hours, "rough": rough, "needs_unit": needs_unit,
             "summary": summary}
@@ -242,7 +248,7 @@ def status(course):
     wanted = sum(1 for i in recs if i.get("transcribe"))
     steps = len(recs) + 2 * wanted  # a transcript or summary nobody ticked for is not a step of this run
     done = len(downloaded) + sum(1 for i in transcribed + summarised if i.get("transcribe"))
-    rows = WARNING + [about(hours, rough, " left").upper() + ".", "",
+    rows = WARNING + [about(hours, rough, " left" + unknown_lengths(lengths)).upper() + ".", "",
                       f"Documents   {_bar(docs_done, len(docs))}  {docs_done} of {len(docs)} downloaded",
                       f"Recordings  {_bar(done, steps)}  "
                       f"{len(downloaded)} of {len(recs)} downloaded, {len(transcribed)} transcribed, "

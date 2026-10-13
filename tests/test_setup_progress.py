@@ -69,6 +69,13 @@ class SetupProgress(CourseTestCase):
                  "--answer", "source=own", "transcribe=no", "frame_analysis=no", "keep_video=no")
         self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["missing_answers"], [])
 
+    def test_a_repeated_answer_option_keeps_every_answer(self):
+        # The skill writes `--answer a=1 --answer b=2`: every pair must be kept, not only the last.
+        run_json("setup-progress", "advance", "--course-name", "Macro", "--stage", "recordings",
+                 "--answer", "transcribe=yes", "--answer", "frame_analysis=no", "keep_video=no")
+        answers = run_json("setup-progress", "status", "--course-name", "Macro")["answers"]
+        self.assertEqual((answers["transcribe"], answers["frame_analysis"], answers["keep_video"]), ("yes", "no", "no"))
+
     def test_an_old_stage_name_is_still_accepted_and_recorded_as_the_new_one(self):
         run_json("setup-progress", "advance", "--course-name", "Macro", "--stage", "analyze")
         status = run_json("setup-progress", "status", "--course-name", "Macro")

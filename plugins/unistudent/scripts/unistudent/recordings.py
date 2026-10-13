@@ -18,6 +18,7 @@ from pathlib import Path
 
 from . import material
 from .common import UserError
+from .convert import RECORDINGS
 from .course import home
 from .course import unit_dir
 from .wiki import recording_pages, video_link
@@ -191,7 +192,10 @@ def transcribe_audio(audio: Path, name: str, language: str):
         return [(t, t + 20, f"segment at {hms(t)}") for t in range(0, 150, 20)]
     if name == "mlx":
         import mlx_whisper
-        result = mlx_whisper.transcribe(str(audio), path_or_hf_repo=model, language=language)
+        # Not conditioning on the previous text stops Whisper's repetition loop over silence and the audio's end
+        # (mlx has no VAD filter); measured on a lecture: no invented lines, three times faster.
+        result = mlx_whisper.transcribe(str(audio), path_or_hf_repo=model, language=language,
+                                        condition_on_previous_text=False)
         return [(s["start"], s["end"], s["text"].strip()) for s in result["segments"]]
     from faster_whisper import WhisperModel
     whisper = WhisperModel(model, device="auto", compute_type="auto")
@@ -363,7 +367,9 @@ def fetch_streams(listing_path, folder, audio_only=False):
     for item in data.get("items", []):
         if item.get("kind") != "recording" or not item.get("stream_url") or item.get("file"):
             continue
-        stem = Path(safe_name(item.get("name") or "recording")).stem
+        stem = safe_name(item.get("name") or "recording")
+        if Path(stem).suffix.lower() in RECORDINGS:  # only a real media suffix: "Lesson 3 12.10.2025" keeps its year
+            stem = Path(stem).stem
         name = stem + (".m4a" if audio_only else ".mp4")
         target = folder / name
         part = folder / (name + ".part" + target.suffix)
