@@ -72,6 +72,12 @@ class FetchPlanShow(CourseTestCase):
         self.assertGreater(plan["hours"], 0)
         self.assertIn("rough", plan["summary"])
 
+    def test_a_course_that_keeps_only_the_sound_plans_small_m4a_files(self):
+        run("context", "--course", self.course, "--frame-analysis", "0", "--keep-video", "0")
+        totals = self.show()["totals"]
+        self.assertNotIn(".mp4", totals)
+        self.assertEqual(totals[".m4a"]["bytes"], 3600 * 16_000)  # an hour of sound, not 0.8 GB of video
+
     def test_a_recording_titled_with_a_dotted_date_still_counts_as_mp4(self):
         dated = dict(RECORDING, url="https://example.edu/v/5", name="Session 5 - 12.10.2025")
         write(self.listing, json.dumps(listing(dated)))

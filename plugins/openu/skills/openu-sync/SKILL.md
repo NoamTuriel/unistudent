@@ -40,7 +40,7 @@ Done when: every row of the resources list, every file in every folder and every
 
 On every sync, inside setup or not, run `us fetch-plan show --json "<Downloads>/<listing file>"`. When its `nothing_new` is true, say its `summary` ("Nothing new on the site since <date>") in one line and stop: no empty plan. Otherwise show its `summary` (totals per file type, free disk space, rough time) and the checklist path, then ask: **download all**, **skip all recordings**, or **edit the list** (untick lines in the checklist file, or say it in the chat: "skip unit 1 recordings", "drop the old exams").
 
-- Skip all recordings: untick every `.mp4` line in the checklist.
+- Skip all recordings: untick every recording line (`.mp4`, or `.m4a` when only the sound is kept) in the checklist.
 - Edit the list: make each change the student asks for in the checklist (change `[x]` to `[ ]`), run `us fetch-plan show` again and show the new `summary`. Repeat until the student says OK.
 - When `fits` is false, say so and ask what to untick before going on.
 
