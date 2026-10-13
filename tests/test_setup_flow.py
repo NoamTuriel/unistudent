@@ -205,6 +205,22 @@ class WalkAwaySetup(unittest.TestCase):
         self.assertIn("Claude usage", questions[1])
         self.assertIn("pause", questions[1])
 
+    def test_no_transcripts_still_downloads_the_recordings_to_transcribe_later(self):
+        seven = step(self.text, 7)
+        self.assertIn("--recording-level <3 if transcribe, else 1>", seven)
+        self.assertNotIn("else 0", seven)
+        first = re.split(r"\*\*Question \d of 3", step(self.text, 6))[1]
+        self.assertIn("course-recordings", first)
+
+    def test_a_resumed_older_setup_asks_only_the_missing_answers_and_never_guesses(self):
+        zero = step(self.text, 0)
+        self.assertIn("missing_answers", zero)
+        self.assertIn("never guess a missing answer, `keep_video` least of all", zero.lower())
+        self.assertLess(zero.index("missing_answers"), zero.index("only then go on to step 7"))
+
+    def test_nothing_to_download_has_no_box(self):
+        self.assertIn("`box` is empty (nothing to download)", step(self.text, 8))
+
     def test_one_restart_at_most_after_the_questions(self):
         self.assertEqual(self.text.count("close and reopen"), 1)
         seven = step(self.text, 7)

@@ -364,5 +364,24 @@ class WindowsPaths(CourseTestCase):
         self.assertTrue((folders(course).inbox / name).is_file())
 
 
+class CommandsAtOnce(CourseTestCase):
+    def test_commands_running_at_the_same_time_never_lose_each_others_files(self):
+        """The setup run ingests recordings while documents are ingested: every entry must survive."""
+        import subprocess
+        import sys
+        from helpers import SCRIPTS
+        course = self.tmp / "Macro"
+        run_json("setup", course, "--name", "Macro", "--language", "en")
+        for n in range(4):
+            for m in range(6):
+                write(self.tmp / f"own{n}" / f"Unit {m + 1} notes {n}-{m}.txt", f"notes {n} {m}")
+        env = dict(os.environ, UNISTUDENT_HOME=str(self.home))
+        procs = [subprocess.Popen([sys.executable, str(SCRIPTS / "us.py"), "import", "--course", str(course),
+                                   str(self.tmp / f"own{n}"), "--json"], env=env, stdout=subprocess.DEVNULL)
+                 for n in range(4)]
+        self.assertEqual([p.wait(timeout=60) for p in procs], [0] * 4)
+        self.assertEqual(len(run_json("manifest", "--course", course)["files"]), 24)
+
+
 if __name__ == "__main__":
     unittest.main()

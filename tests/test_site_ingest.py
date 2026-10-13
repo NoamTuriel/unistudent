@@ -57,6 +57,18 @@ class SiteIngest(CourseTestCase):
         self.assertEqual(status["last_sync"], datetime.date.today().isoformat())
         self.assertIn(status["last_sync"], status["summary"])
 
+    def test_a_batch_of_ingests_can_leave_the_wiki_to_one_build_at_the_end(self):
+        page = folders(self.course).wiki / "sources" / "unit-01" / "a.md"
+        write(self.staged / "a.txt", "Unit 1 notes")
+        path = write(self.tmp / "listing.json", json.dumps(listing(
+            {"url": "https://example.edu/f/1", "file": "a.txt", "name": "a.txt", "section": "Unit 1"})))
+        result = run_json("ingest", "--course", self.course, path, self.staged, "--no-wiki")
+        self.assertEqual(result["new"], ["official/Unit 1/a.txt"])
+        self.assertIsNone(result["wiki"])
+        self.assertFalse(page.exists())
+        run_json("wiki", "build", "--course", self.course)
+        self.assertTrue(page.exists())
+
     def test_a_second_sync_reports_only_what_changed(self):
         if not can_read_pdfs():
             self.skipTest("no PDF tool installed (pdftotext or pypdf)")

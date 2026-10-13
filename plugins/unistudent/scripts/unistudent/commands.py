@@ -5,8 +5,8 @@ from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
 from .course import (Course, Registry, find_course, SETUP_STAGES, RENAMED_STAGES, clear_setup_progress, generated_university_file,
-                     list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, recommend_plugins,
-                     safe_name, unit_dir, write_setup_progress)
+                     list_generated, list_setup_progress, missing_setup_answers, next_setup_stage, parse_unit,
+                     read_setup_progress, recommend_plugins, safe_name, unit_dir, write_setup_progress)
 
 
 def register(add, with_course):
@@ -226,8 +226,10 @@ def register(add, with_course):
         if args.action == "status":
             data = read_setup_progress(args.course_name)
             nxt = next_setup_stage(data["stage"])
-            return {"stage": data["stage"], "next_stage": nxt, "answers": data["answers"],
+            missing = missing_setup_answers(data)
+            return {"stage": data["stage"], "next_stage": nxt, "answers": data["answers"], "missing_answers": missing,
                     "summary": (f"Resuming {args.course_name} after '{data['stage']}': next is '{nxt}'."
+                                + (f" Ask first (missing): {', '.join(missing)}." if missing else "")
                                 if data["stage"] else f"No setup in progress for {args.course_name}.")}
         if not args.stage:
             raise UserError("Give --stage.")
@@ -405,7 +407,7 @@ def register(add, with_course):
             if item.get("transcribe"):  # ticked in the Fetch plan by a student who wants transcripts
                 from .recordings import approve
                 approve(course, [rel])
-        built = wiki.build(course) if (new or changed) else None
+        built = wiki.build(course) if (new or changed) and not args.no_wiki else None
         return {"new": new, "changed": changed, "missing": missing, "recordings_available": recordings,
                 "unsorted": [r for r in material.unsorted(course) if r in new or r in changed], "wiki": built,
                 "summary": f"{len(new)} new, {len(changed)} changed, {len(missing)} missing, "
@@ -414,6 +416,8 @@ def register(add, with_course):
     p = with_course(add("ingest", cmd_ingest, "take a university plugin's listing and downloaded files into the Material folder"))
     p.add_argument("listing", help="listing JSON written by the university plugin")
     p.add_argument("folder", help="folder with the downloaded files")
+    p.add_argument("--no-wiki", action="store_true",
+                   help="leave the Wiki as it is (one ingest of many: run `us wiki build` once after the last)")
 
     def cmd_fetch_plan(args):
         from . import fetch_plan

@@ -219,12 +219,47 @@ class FetchPlanStatus(CourseTestCase):
         self.assertNotIn("rough", status["box"].lower())
         self.assertEqual(status["hours"], 0.25)  # one hour of recording left at 0.25
 
-    def test_status_before_any_plan_says_so(self):
+    def test_nothing_to_download_is_a_status_too(self):
         course = self.tmp / "Other"
-        run("setup", course, "--name", "Other", "--language", "en")
-        code, out = run("fetch-plan", "status", "--course", course)
-        self.assertEqual(code, 1)
-        self.assertIn("No Fetch plan", out)
+        run("setup", course, "--name", "Other", "--language", "en", "--university", "none")
+        status = run_json("fetch-plan", "status", "--course", course)
+        self.assertIsNone(status["box"])
+        self.assertEqual(status["documents"], {"done": 0, "total": 0})
+        self.assertEqual(status["recordings"]["total"], 0)
+        self.assertIn("Nothing to download", status["summary"])
+
+
+class StatusTimeLeft(CourseTestCase):
+    """Recordings whose length the site did not show: measured once downloaded, a rough guess before."""
+
+    def setUp(self):
+        super().setUp()
+        self.course = self.tmp / "Macro"
+        run("setup", self.course, "--name", "Macro", "--language", "en", "--university", "openu")
+        run("context", "--course", self.course, "--recording-level", "3")
+        write(self.home / "benchmark.json", json.dumps({"backend": "fake", "realtime_factor": 0.25}))
+        untimed = {k: v for k, v in RECORDING.items() if k != "seconds"}
+        path = write(self.tmp / "listing.json", json.dumps(listing(untimed)))
+        run_json("fetch-plan", "show", "--course", self.course, path)
+        self.approved = run_json("fetch-plan", "apply", "--course", self.course, path)["listing"]
+
+    def test_a_recording_of_unknown_length_makes_the_time_rough_not_zero(self):
+        box = run_json("fetch-plan", "status", "--course", self.course)["box"]
+        self.assertIn("ROUGH", box)
+        self.assertNotIn("1 MINUTES", box)
+
+    def test_a_downloaded_recording_counts_its_real_length_measured_once(self):
+        data = json.loads(Path(self.approved).read_text("utf-8"))
+        data["items"][0].update(file="Session 3.mp4", name="Session 3.mp4")
+        write(self.approved, json.dumps(data))
+        write(self.tmp / "staged" / "Session 3.mp4", b"\x00" * 4096)
+        run_json("ingest", "--course", self.course, self.approved, self.tmp / "staged")
+        with mock.patch("unistudent.recordings.duration", return_value=3600.0) as probe:
+            status = run_json("fetch-plan", "status", "--course", self.course)
+            run_json("fetch-plan", "status", "--course", self.course)
+        self.assertEqual(status["hours"], 0.25)  # one hour of audio at 0.25
+        self.assertFalse(status["rough"])
+        self.assertEqual(probe.call_count, 1)  # cached, not probed on every status
 
 
 class StatusWithoutASite(CourseTestCase):
@@ -244,6 +279,19 @@ class StatusWithoutASite(CourseTestCase):
         self.assertEqual(status["recordings"], {"downloaded": 1, "transcribed": 0, "summarised": 0, "total": 1})
         self.assertIn("KEEP THE COMPUTER ON, PLUGGED IN AND AWAKE", status["box"])
         self.assertIn("1 of 1 downloaded", status["box"])
+
+    def test_a_recording_transcribed_without_a_tick_never_overflows_the_bar(self):
+        write(self.tmp / "own" / "Lesson 1.mp4", b"\x00" * 4096)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--university", "none",
+            "--import", self.tmp / "own", "--tier", "official")
+        recording = run_json("recordings", "list", "--course", course)["recordings"][0]["path"]
+        run_json("recordings", "approve", "--course", course, recording)
+        with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "transcribe", "--course", course, recording)  # no longer waiting: not "wanted"
+        box = run_json("fetch-plan", "status", "--course", course)["box"]
+        self.assertIn("Recordings  [" + "#" * 20 + "]  1 of 1", box)  # full, and no wider than the other bar
+
 
 class ImportDryRun(CourseTestCase):
     def test_dry_run_counts_and_sizes_without_copying(self):

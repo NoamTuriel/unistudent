@@ -29,13 +29,16 @@ ACTION_ARGS = {
     ("setup-progress", "status"): ["course_name"], ("setup-progress", "clear"): ["course_name"],
     ("setup-progress", "list"): [],
     ("setup-progress", "advance"): ["course_name", "stage", "answer"],
+    ("fetch-plan", "show"): ["course", "listing"], ("fetch-plan", "apply"): ["course", "listing", "unit"],
+    ("fetch-plan", "status"): ["course"],
 }
 REQUIRED = {("courses", "switch"): ["target"], ("prefs", "add"): ["text"],
             ("recordings", "benchmark"): ["paths"], ("recordings", "transcribe"): ["paths"],
             ("recordings", "fetch"): ["paths"], ("recordings", "audio-only"): ["paths"],
             ("university", "save"): ["url", "organizing"],
             ("setup-progress", "status"): ["course_name"], ("setup-progress", "clear"): ["course_name"],
-            ("setup-progress", "advance"): ["course_name", "stage"]}
+            ("setup-progress", "advance"): ["course_name", "stage"],
+            ("fetch-plan", "show"): ["listing"], ("fetch-plan", "apply"): ["listing"]}
 SKILL_DIRS = [Path(__file__).resolve().parent / "skills"]
 # In a repo checkout, university plugins' skills are prompts too.
 _REPO_PLUGINS = Path(__file__).resolve().parents[3]

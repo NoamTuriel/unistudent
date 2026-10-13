@@ -258,6 +258,17 @@ class OpenUSync(unittest.TestCase):
         self.assertIn("I don't know", self.step("Report"))
         self.assertIn("Inside setup", self.step("Report"))
 
+    def test_recordings_are_skipped_only_by_choice_and_the_sound_only_rule_lives_in_the_command(self):
+        scan = self.step("Scan, without downloading")
+        self.assertIn("skip them when `recording_level` is 0", scan)
+        self.assertNotIn("keep_video", scan)
+        self.assertNotIn("--audio-only", self.TEXT)  # `us recordings fetch` applies the Settings itself
+
+    def test_a_batch_of_recordings_builds_the_wiki_once(self):
+        recordings = self.step("Download the recordings, one at a time")
+        self.assertIn("--no-wiki", recordings)
+        self.assertLess(recordings.index("--no-wiki"), recordings.index("us wiki build"))
+
     def test_site_notes_mark_the_live_unknowns_and_the_corrected_size(self):
         self.assertIn("about 2.4 GB", self.SITE)
         self.assertNotIn("3 GB", self.SITE)
