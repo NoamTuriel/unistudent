@@ -158,7 +158,7 @@ def show(course, listing_path):
     ticks = _ticks(course, plan_id)
     audio = _audio_only(course)
     totals, lines, needs_unit = {}, [], []
-    total = unknown = 0
+    total = unknown = download = 0
     lengths = []
     for number, item in enumerate(items, 1):
         ticked = True if ticks is None else ticks.get(number, False)  # a new listing starts all ticked
@@ -175,6 +175,7 @@ def show(course, listing_path):
         entry["estimated"] |= estimated
         entry["unknown_size"] += size is None
         total += size or 0
+        download += size_of(item)[0] or 0  # a sound-only copy is still cut from the whole stream: time it as video
         unknown += size is None
         if is_recording(item) and _transcribes(course):
             lengths.append(_length(item))
@@ -192,7 +193,7 @@ def show(course, listing_path):
                     "(change [x] to [ ]) to skip that file. Sizes with ~ are estimates.\n\n"
                     f"<!-- fetch-plan {plan_id} -->\n" + "\n".join(lines) + f"\n\n{total_line}\n", "utf-8")
     free = shutil.disk_usage(course.root).free
-    hours, rough = time_left(total, lengths)
+    hours, rough = time_left(download, lengths)
     fits = total <= free
     by_ext = ", ".join(f"{ext} " + ("size unknown" if t["files"] == t["unknown_size"]
                                     else ("~" if t["estimated"] else "") + human(t["bytes"]))
@@ -268,8 +269,7 @@ def status(course):
     transcribed = [i for i in downloaded if pages_of[i.get("url")]
                    and (course.wiki / pages_of[i.get("url")]["folder"] / "transcript.md").exists()]
     summarised = [i for i in downloaded if pages_of[i.get("url")] and pages_of[i.get("url")]["processed"]]
-    audio = _audio_only(course)
-    to_download = sum(size_of(i, audio)[0] or 0 for i in items if i.get("url") not in by_url)
+    to_download = sum(size_of(i)[0] or 0 for i in items if i.get("url") not in by_url)  # what crosses the network
     lengths = [(i in downloaded and recording_seconds(course, by_url[i.get("url")])) or _length(i)  # the real length
                for i in recs if i.get("transcribe") and i not in transcribed]                      # once it is here
     hours, rough = time_left(to_download, lengths)
