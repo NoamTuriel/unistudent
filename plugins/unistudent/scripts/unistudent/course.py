@@ -32,6 +32,7 @@ DEFAULT_SETTINGS = {
     "university": None,            # e.g. "openu"; None → core only
     "recording_level": None,       # None (not asked yet) | 0 skip | 1 download only | 3 transcript + summary
     "frame_analysis": None,        # None (not asked yet) | True | False: per-segment vision calls (opt-in, costly)
+    "keep_video": None,            # None (not asked yet: kept) | True | False: keep only an audio-only copy of each recording
     "recordings_dir": None,        # local non-synced folder when the course folder syncs
     "exam_date": None,
     "layout": 1,                   # 2 once the course folder has the three visible folders (LAYOUT)
@@ -370,8 +371,12 @@ def list_generated() -> list:
     return out
 
 
-SETUP_STAGES = ["university", "course", "language", "path", "format", "fetch", "sort", "recordings", "analyze", "capabilities"]
-RENAMED_STAGES = {"fetch-and-organize": "recordings"}  # recorded by versions that had one step for fetch, sort and recordings
+# The question block (university .. installs), the Fetch plan (plan), the unattended run (run), then capabilities.
+SETUP_STAGES = ["university", "course", "language", "path", "format", "material", "recordings", "installs", "plan",
+                "run", "capabilities"]
+# Stages recorded by older versions, read as the new stage they finished: fetch-and-organize was one step for fetch,
+# sort and the recordings question; fetch and sort brought the material in; analyze built the Wiki (the run's end).
+RENAMED_STAGES = {"fetch-and-organize": "recordings", "fetch": "material", "sort": "material", "analyze": "run"}
 
 
 def _setup_progress_dir() -> Path:
@@ -387,6 +392,7 @@ def read_setup_progress(course_name: str) -> dict:
 
 
 def write_setup_progress(course_name: str, stage: str, answers: dict) -> dict:
+    stage = RENAMED_STAGES.get(stage, stage)
     if stage not in SETUP_STAGES:
         raise ValueError(f"Unknown setup stage {stage!r}; must be one of {', '.join(SETUP_STAGES)}.")
     data = read_setup_progress(course_name)

@@ -245,6 +245,7 @@ def estimate(course, unit=None):
         "files": [r["path"] for r in rows],
         "frame_analysis_segments": segments,
         "frame_analysis": course.settings().get("frame_analysis"),
+        "keep_video": course.settings().get("keep_video"),
     }
 
 
@@ -306,6 +307,34 @@ def transcribe(course, rel):
     left = [r for r in approved(course) if r != rel]
     _approved_file(course).write_text(json.dumps(left, ensure_ascii=False), "utf-8")
     return path
+
+
+def audio_only_fetch(course):
+    """Whether recordings are fetched with their sound only: nothing needs the video (no frame analysis) and the
+    student chose not to keep it. Not asked yet means kept."""
+    settings = course.settings()
+    return not settings.get("frame_analysis") and settings.get("keep_video") is False
+
+
+def keep_audio_only(course, rel):
+    """Replace a recording's video, once its frame analysis is done, by an audio-only copy under the same name, so
+    every time link to it still opens the right minute. Only when the student chose not to keep the video."""
+    if course.settings().get("keep_video") is not False:
+        raise UserError("The student keeps the video files (keep_video), so the video stays.")
+    info = recording_pages(course).get(rel)
+    if info is None:
+        raise UserError(f"Not a recording in this course: {rel}")
+    if not info["processed"]:
+        raise UserError(f"{rel} has no summary yet: replace its video only once its analysis is done.")
+    if not shutil.which("ffmpeg"):
+        raise RuntimeError("ffmpeg is needed for recordings. Install it (macOS: brew install ffmpeg; "
+                           "Windows: winget install ffmpeg; Linux: your package manager).")
+    source = material.path_of(course, rel)
+    with tempfile.TemporaryDirectory(dir=source.parent) as tmp:  # same disk, so the swap is one rename
+        audio = Path(tmp) / source.name
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(source), "-vn", "-c:a", "copy", str(audio)], check=True)
+        os.replace(audio, source)
+    return rel
 
 
 def fetch_streams(listing_path, folder, audio_only=False):
