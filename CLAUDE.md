@@ -70,3 +70,17 @@ use only, not meant to be public. If in doubt about whether something is persona
 - Skills and agents follow `writing-for-agents`: steps with "Done when" criteria, one source of truth per rule. The grounding rule's single source is `plugins/unistudent/scripts/unistudent/templates/context.md`; study-pack generic rules live in `plugins/unistudent/scripts/unistudent/reference/study-pack.md`.
 - Subject plugins never depend on a university plugin; university plugins never hold study-pack rules.
 - Never commit course material.
+
+## Agent skills
+
+### Issue tracker
+
+Local markdown: specs in `docs/spec/`, tickets in `.scratch/unistudent-v<N>/issues/` (gitignored, never pushed). See `docs/agents/issue-tracker.md`.
+
+### Triage labels
+
+The five default labels, written on each ticket's `**Status:**` line. See `docs/agents/triage-labels.md`.
+
+### Domain docs
+
+Single-context: `CONTEXT.md` and `docs/adr/` at the repo root. See `docs/agents/domain.md`.
