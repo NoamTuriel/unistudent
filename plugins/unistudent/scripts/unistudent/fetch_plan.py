@@ -16,6 +16,7 @@ from .course import parse_unit, safe_name
 from .sorting import detect_unit
 
 RECORDING_BYTES_PER_SECOND = 1_800_000 / 8  # the site's documented 1.8 Mbit/s: about 0.81 GB per hour
+AUDIO_BYTES_PER_SECOND = 128_000 / 8  # the sound only (AAC, about 128 kbit/s): about 0.06 GB per hour
 ROUGH_DOWNLOAD_BYTES_PER_SECOND = 2_500_000  # ponytail: a fixed rough network speed until a download is measured
 ROUGH_REALTIME_FACTOR = {"mlx": 0.15, "faster": 0.5}  # hours of work per hour of audio, before a benchmark
 TICK = re.compile(r"^\s*[-*]\s*\[([ xX])\]\s*(\d+)\.", re.M)
@@ -45,13 +46,25 @@ def extension(item):
     return Path(item.get("name") or item.get("file") or "").suffix.lower() or "(none)"
 
 
-def size_of(item):
-    """(bytes, estimated); bytes is None when the site gave neither a size nor a recording's length."""
+def size_of(item, audio_only=False):
+    """(bytes, estimated); bytes is None when the site gave neither a size nor a recording's length. `audio_only`: the
+    course keeps only the sound of its recordings, so a recording downloads a small fraction of the video's size."""
+    if is_recording(item) and audio_only:
+        if item.get("seconds"):
+            return round(float(item["seconds"]) * AUDIO_BYTES_PER_SECOND), True
+        if item.get("size") is not None:
+            return round(int(item["size"]) * AUDIO_BYTES_PER_SECOND / RECORDING_BYTES_PER_SECOND), True
+        return None, False
     if item.get("size") is not None:
         return int(item["size"]), False
     if is_recording(item) and item.get("seconds"):
         return round(float(item["seconds"]) * RECORDING_BYTES_PER_SECOND), True
     return None, False
+
+
+def _audio_only(course):
+    from .recordings import audio_only_fetch
+    return audio_only_fetch(course)
 
 
 def human(n):
@@ -143,13 +156,14 @@ def show(course, listing_path):
                 "summary": "Nothing new on the site" + (f" since {max(fetched)}." if fetched else ".")}
     plan_id = _plan_id(items)
     ticks = _ticks(course, plan_id)
+    audio = _audio_only(course)
     totals, lines, needs_unit = {}, [], []
     total = unknown = 0
     lengths = []
     for number, item in enumerate(items, 1):
         ticked = True if ticks is None else ticks.get(number, False)  # a new listing starts all ticked
-        size, estimated = size_of(item)
-        ext = extension(item)
+        size, estimated = size_of(item, audio)
+        ext = ".m4a" if audio and is_recording(item) else extension(item)  # what will land on the disk
         shown = "size unknown" if size is None else ("~" if estimated else "") + human(size)
         lines.append(f"- [{'x' if ticked else ' '}] {number}. {shown}  {ext}  {item.get('name') or item.get('url')}  "
                      f"({item.get('section') or 'no section'})")
@@ -254,7 +268,8 @@ def status(course):
     transcribed = [i for i in downloaded if pages_of[i.get("url")]
                    and (course.wiki / pages_of[i.get("url")]["folder"] / "transcript.md").exists()]
     summarised = [i for i in downloaded if pages_of[i.get("url")] and pages_of[i.get("url")]["processed"]]
-    to_download = sum(size_of(i)[0] or 0 for i in items if i.get("url") not in by_url)
+    audio = _audio_only(course)
+    to_download = sum(size_of(i, audio)[0] or 0 for i in items if i.get("url") not in by_url)
     lengths = [(i in downloaded and recording_seconds(course, by_url[i.get("url")])) or _length(i)  # the real length
                for i in recs if i.get("transcribe") and i not in transcribed]                      # once it is here
     hours, rough = time_left(to_download, lengths)
