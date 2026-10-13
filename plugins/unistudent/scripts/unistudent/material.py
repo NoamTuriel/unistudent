@@ -220,6 +220,7 @@ def assign(course, rel, unit):
             new_rel = f"{_slot(course, entry['tier'], value)}/{_free_name(target.parent, target.name)}"
             (course.material / new_rel).parent.mkdir(parents=True, exist_ok=True)
             shutil.move(str(course.material / rel), str(course.material / new_rel))
+            _carry_sidecar(course, rel, new_rel)
         entry.update(unit=value, sort_reason="student answer")
         files[new_rel] = entry
     return new_rel
@@ -235,10 +236,18 @@ def path_of(course, rel):
     return Path(entry.get("stored_at") or course.material / rel)
 
 
-def _is_sidecar(path: Path) -> bool:
-    """A transcript .vtt written next to its recording: ours, not course material."""
-    return path.suffix.lower() == ".vtt" and any(
-        sibling.stem == path.stem and kind(sibling) == "recording" for sibling in path.parent.iterdir())
+def _is_sidecar(path: Path, recordings=()) -> bool:
+    """A transcript .vtt written next to its recording: ours, not course material. Also one left behind when its
+    recording moved (`recordings`: the names of the recordings UniStudent knows); the scan carries it along."""
+    return path.suffix.lower() == ".vtt" and (path.stem in recordings or any(
+        sibling.stem == path.stem and kind(sibling) == "recording" for sibling in path.parent.iterdir()))
+
+
+def _carry_sidecar(course, old_rel, new_rel):
+    """A recording's transcript .vtt goes where the recording went."""
+    old, new = (course.material / old_rel).with_suffix(".vtt"), (course.material / new_rel).with_suffix(".vtt")
+    if old != new and old.is_file() and kind(new_rel) == "recording":
+        shutil.move(str(old), str(new))
 
 
 def _location(rel):
@@ -279,7 +288,9 @@ def scan(course):
         if not course.material.is_dir():
             raise UserError(f"The Material folder is missing ({course.material}). Nothing was changed. Put it back "
                             "(or restore it from the Trash) and run this again.")
-        found = {p.relative_to(course.material).as_posix(): p for p in iter_files(course.material) if not _is_sidecar(p)}
+        names = {Path(rel).stem for rel in files if kind(rel) == "recording"}
+        found = {p.relative_to(course.material).as_posix(): p for p in iter_files(course.material)
+                 if not _is_sidecar(p, names)}
         away = set(_icloud_placeholders(course.material))
         gone = {rel: e for rel, e in files.items()
                 if rel not in found and rel not in away and not (e.get("stored_at") and Path(e["stored_at"]).exists())}
@@ -322,9 +333,12 @@ def scan(course):
             (course.material / slot).mkdir(parents=True, exist_ok=True)
             name = _free_name(course.material / slot, Path(rel).name)
             shutil.move(str(course.material / rel), str(course.material / slot / name))
+            _carry_sidecar(course, rel, f"{slot}/{name}")
             kept[f"{slot}/{name}"] = entry
             result["new"] = [f"{slot}/{name}" if r == rel else r for r in result["new"]]
             result["moved"] = [(a, f"{slot}/{name}" if b == rel else b) for a, b in result["moved"]]
+        for old, new in result["moved"]:  # moved by the student: the sidecar stayed behind
+            _carry_sidecar(course, old, new)
         result["dropped"] = sorted(gone)
         manifest["files"] = kept
         assign_wiki_folders(kept)

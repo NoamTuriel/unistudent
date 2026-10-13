@@ -93,6 +93,22 @@ class Recordings(CourseTestCase):
         unit4 = (folders(self.course).wiki / "units" / "unit-04.md").read_text("utf-8")
         self.assertIn("../recordings/session 5/summary.md", unit4)
 
+    def test_a_moved_recording_takes_its_transcript_sidecar_along_and_the_transcript_follows(self):
+        rec = "official/Unit 4/session 5.mp4"
+        run_json("recordings", "approve", "--course", self.course, rec)
+        run_json("recordings", "transcribe", "--course", self.course, rec)
+        material = folders(self.course).material
+        self.assertTrue((material / "official" / "Unit 4" / "session 5.vtt").exists())
+        why = {f["path"]: f["why"] for f in run_json("wiki", "coverage", "--course", self.course)["files"]}
+        self.assertIn("waiting for its summary", why[rec])  # transcribed already: only the summary is missing
+        moved = run_json("assign", "--course", self.course, rec, "lessons")["path"]
+        self.assertTrue((material / moved).with_suffix(".vtt").exists())
+        self.assertFalse((material / "official" / "Unit 4" / "session 5.vtt").exists())
+        built = run_json("wiki", "build", "--course", self.course)
+        self.assertEqual(built["folder"]["new"], 0)  # the sidecar is never taken as new course material
+        transcript = (folders(self.course).wiki / "recordings" / "session 5" / "transcript.md").read_text("utf-8")
+        self.assertIn(f"source: {moved}\nunit: lessons\n", transcript)
+
 
 class SyncedCourseFolder(CourseTestCase):
     def test_recordings_added_to_a_synced_course_folder_live_in_a_local_folder(self):

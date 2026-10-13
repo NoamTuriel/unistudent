@@ -290,6 +290,9 @@ def build(course, force=False):
             text = transcript.read_text("utf-8")
             patched = re.sub(r"(?m)^Sources: \[recording\]\(.*\)$",
                              lambda _: "Sources: " + video_link(course, rel, transcript.parent), text, count=1)
+            unit = info["unit"] if info["unit"] is not None else "unsorted"  # the recording may have moved
+            patched = re.sub(r"\A(---\n(?:.*\n)*?)source: .*\n", lambda m: f"{m.group(1)}source: {rel}\n", patched, count=1)
+            patched = re.sub(r"\A(---\n(?:.*\n)*?)unit: .*\n", lambda m: f"{m.group(1)}unit: {unit}\n", patched, count=1)
             if patched != text:
                 transcript.write_text(patched, "utf-8")
     covered = coverage(course, write=True)
@@ -508,6 +511,8 @@ def coverage(course, write=False):
         elif what == "recording":
             if recordings[rel]["processed"]:
                 status, why = "analyzed", ""
+            elif (course.wiki / recordings[rel]["folder"] / "transcript.md").exists():
+                status, why = "pending", "transcribed, waiting for its summary (/unistudent:course-recordings)"
             elif level in (0, 1):
                 status, why = "skipped", "you chose " + ("not to process recordings" if level == 0 else "download only, no transcript")
             elif level is None:
