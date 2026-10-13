@@ -32,9 +32,9 @@ Done when: every touched unit page has its methods, notation and assumptions sec
 
 ## 4. The course page
 
-Fill `<wiki>/course.md` from the exam-information files, formula sheets and past exams: exam format, aids allowed, what the lecturer stresses. Each line cites its source. Unknown → write "not in the course material yet".
+Fill `<wiki>/course.md` from the exam-information files, formula sheets and past exams: exam format, aids allowed, what the course stresses. Each line cites its source. Unknown → write "not in the course material yet". Nothing at all to cite yet (a self-study course, or no exam files so far) → leave the page as it is: its stub line marks it as not filled, and `us wiki check` accepts it.
 
-Done when: each section of `<wiki>/course.md` has content with sources, or says it's not in the material yet.
+Done when: each section of `<wiki>/course.md` has content with sources or says it's not in the material yet, or the page is left as its stub because nothing can be cited.
 
 ## 5. Check
 
@@ -44,4 +44,4 @@ Done when: `us wiki check` reports 0 problems.
 
 ## 6. Report
 
-Two lines: what changed in the Wiki, and anything the student should add (e.g. "no exam-format file found: drop one in the inbox").
+Two lines: what changed in the Wiki, and anything the student should add (e.g., for a course with an exam, "no exam-format file found: drop one in the inbox").
