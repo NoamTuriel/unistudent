@@ -4,7 +4,7 @@ import re
 from pathlib import Path
 
 from .common import UserError, problems_summary, resolve_course
-from .course import (Course, Registry, find_course, SETUP_STAGES, clear_setup_progress, generated_university_file,
+from .course import (Course, Registry, find_course, SETUP_STAGES, RENAMED_STAGES, clear_setup_progress, generated_university_file,
                      list_generated, list_setup_progress, next_setup_stage, parse_unit, read_setup_progress, recommend_plugins,
                      safe_name, unit_dir, write_setup_progress)
 
@@ -248,7 +248,7 @@ def register(add, with_course):
     p = add("setup-progress", cmd_setup_progress, "track and resume course-setup's stage-by-stage progress")
     p.add_argument("action", choices=["status", "advance", "clear", "list"])
     p.add_argument("--course-name")
-    p.add_argument("--stage", choices=SETUP_STAGES)
+    p.add_argument("--stage", choices=SETUP_STAGES + list(RENAMED_STAGES))  # old names: recorded as the new stage
     p.add_argument("--answer", nargs="+", help="key=value pairs to remember (repeatable)")
 
     def cmd_study(args):
@@ -337,7 +337,8 @@ def register(add, with_course):
         if args.action == "fetch":
             if len(args.paths) != 2:
                 raise UserError("fetch needs the listing JSON and the download folder.")
-            result = recordings.fetch_streams(args.paths[0], args.paths[1], audio_only=args.audio_only)
+            result = recordings.fetch_streams(args.paths[0], args.paths[1],
+                                               audio_only=args.audio_only or recordings.audio_only_fetch(course))
             result["summary"] = (f"Downloaded {len(result['downloaded'])} recordings"
                                  + (f"; failed: {', '.join(result['failed'])}" if result["failed"] else "") + ".")
             return result
@@ -347,6 +348,9 @@ def register(add, with_course):
             factor = recordings.benchmark(course, args.paths[0])
             return {"realtime_factor": factor,
                     "summary": f"This machine transcribes 1 hour of audio in about {factor:.2f} h."}
+        if args.action == "audio-only":
+            done = [recordings.keep_audio_only(course, rel) for rel in args.paths]
+            return {"replaced": done, "summary": "Video replaced by an audio-only copy (same file name):\n" + "\n".join(done)}
         if args.action == "approve":
             chosen = recordings.approve(course, args.paths)
             return {"approved": chosen, "summary": "Approved for transcription:\n" + "\n".join(chosen)}
@@ -358,10 +362,11 @@ def register(add, with_course):
         done = [str(recordings.transcribe(course, rel)) for rel in args.paths]
         return {"transcripts": done, "summary": "Transcribed:\n" + "\n".join(done)}
 
-    p = with_course(add("recordings", cmd_recordings, "list, estimate, benchmark, approve or transcribe recordings (transcribe only runs what the student approved)"))
-    p.add_argument("action", choices=["list", "estimate", "benchmark", "approve", "transcribe", "fetch"])
+    p = with_course(add("recordings", cmd_recordings, "list, estimate, benchmark, approve or transcribe recordings (transcribe only runs what the student approved); audio-only: once a recording's analysis is done and the course's keep_video is 0, replace its video by an audio-only copy"))
+    p.add_argument("action", choices=["list", "estimate", "benchmark", "approve", "transcribe", "fetch", "audio-only"])
     p.add_argument("paths", nargs="*", help="recording paths in the Material folder (fetch: listing JSON and download folder)")
-    p.add_argument("--audio-only", action="store_true", help="fetch: keep only the sound (enough for transcripts)")
+    p.add_argument("--audio-only", action="store_true", help="fetch: keep only the sound (enough for transcripts); "
+                   "also the default when frame analysis is off and the course's keep_video is 0")
     p.add_argument("--background", action="store_true",
                    help="transcribe: run detached and return at once (long jobs outlive tool-call time limits)")
     p.add_argument("--unit", help="only this unit's recordings")
