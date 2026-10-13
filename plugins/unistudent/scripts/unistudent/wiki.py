@@ -13,7 +13,7 @@ from urllib.request import url2pathname
 
 from . import material
 from .common import problems_summary
-from .convert import convert, kind
+from .convert import convert, kind, slide_pictures
 from .course import LABELS, safe_name, unit_dir
 from .links_check import MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources
 
@@ -76,6 +76,13 @@ def _read_visually(course, rel, fp, page):
     return f"\nsource: {rel}\n" in head and f"\nfingerprint: {fp}\n" in head
 
 
+def _visual_item(course, rel, pages, page, entry):
+    """One file for the source-reader; a .pptx also gets its slides' pictures as files, since Read can't open it."""
+    item = {"source": rel, "pages": pages, "page": page, "fingerprint": entry.get("fingerprint")}
+    pictures = slide_pictures(material.path_of(course, rel), pages, course.state / "visual" / Path(page).with_suffix(""))
+    return {**item, "pictures": pictures} if pictures else item
+
+
 def _source_page(rel, entry, conversion):
     lines = [
         "---",
@@ -91,7 +98,7 @@ def _source_page(rel, entry, conversion):
         "",
     ]
     if conversion.empty_pages:
-        lines += [f"> Pages with no text layer (read them visually): {', '.join(map(str, conversion.empty_pages))}", ""]
+        lines += [f"> Pages to read visually (no text layer, or a picture): {', '.join(map(str, conversion.empty_pages))}", ""]
     for number, text in enumerate(conversion.pages, 1):
         lines += [f"## Page {number}", "", text.rstrip(), ""]
     return "\n".join(lines).rstrip() + "\n"
@@ -195,8 +202,7 @@ def build(course, force=False):
         info = state.get(rel)
         if not force and info and info.get("fingerprint") == entry.get("fingerprint") and target.exists():
             if info.get("empty_pages") and not _read_visually(course, rel, entry.get("fingerprint"), page):
-                needs_visual.append({"source": rel, "pages": info["empty_pages"], "page": page,
-                                     "fingerprint": entry.get("fingerprint")})
+                needs_visual.append(_visual_item(course, rel, info["empty_pages"], page, entry))
             continue
         conversion = convert(material.path_of(course, rel))
         target.parent.mkdir(parents=True, exist_ok=True)
@@ -208,12 +214,13 @@ def build(course, force=False):
         touched.add(unit_dir(entry.get("unit")))
         warnings_out += [f"{rel}: {w}" for w in conversion.warnings]
         if conversion.empty_pages:
-            needs_visual.append({"source": rel, "pages": conversion.empty_pages, "page": page,
-                                 "fingerprint": entry.get("fingerprint")})
+            needs_visual.append(_visual_item(course, rel, conversion.empty_pages, page, entry))
     course.write_state("wiki.json", state)
     _relink_pages(wiki, {old: new for old, new in moved_pages.items() if (wiki / new).exists()})
 
-    images = [{"source": rel, "page": page, "fingerprint": manifest[rel].get("fingerprint")}
+    images = [{"source": rel, "page": page, "fingerprint": manifest[rel].get("fingerprint"),
+               "origin": manifest[rel].get("origin"), "tier": manifest[rel].get("tier"),  # the image page's frontmatter
+               "unit": manifest[rel].get("unit") if manifest[rel].get("unit") is not None else "unsorted"}
               for rel, page in pages.items()
               if kind(rel) == "image" and not _read_visually(course, rel, manifest[rel].get("fingerprint"), page)]
     recordings = recording_pages(course)
@@ -495,7 +502,7 @@ def coverage(course, write=False):
                 status, why = "failed", " ".join(info.get("warnings") or ["could not be read"])
             elif info.get("empty_pages") and not _read_visually(course, rel, files[rel].get("fingerprint"), info["page"]):
                 status = "analyzed"
-                why = f"pages with no text layer need visual reading: {', '.join(map(str, info['empty_pages']))}"
+                why = f"pages to read visually (no text layer, or a picture): {', '.join(map(str, info['empty_pages']))}"
             else:
                 status, why = "analyzed", ""
         elif what == "recording":

@@ -92,6 +92,12 @@ class FetchFollowsTheRecordingChoices(StreamListing):
     def test_a_kept_video_is_fetched_whole(self):
         self.assertEqual(self.fetch("0", "1"), ["Session 5.mp4"])
 
+    def test_a_title_ending_in_a_dotted_date_keeps_its_year(self):
+        data = json.loads(self.listing.read_text("utf-8"))
+        data["items"][0]["name"] = "Lesson 3 12.10.2025"  # how the OpenU scan names a recording: title + date
+        self.listing.write_text(json.dumps(data), "utf-8")
+        self.assertEqual(self.fetch("0", "0"), ["Lesson 3 12.10.2025.m4a"])
+
 
 @unittest.skipUnless(HAS_FFMPEG, "ffmpeg not installed")
 class VideoReplacedAfterFrameAnalysis(CourseTestCase):
