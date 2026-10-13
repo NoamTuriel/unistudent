@@ -37,6 +37,16 @@ class PackAgainstTheUnit(CourseTestCase):
         page = "$\\Delta Y = \\frac{1}{1-C} \\cdot Y_{d}$, $\\text{GDP}$, $Y \\to Z$\n"
         self.assertEqual(self.problems("4.2 Walkthrough.md", page), [("notation", "Z")])
 
+    def test_a_symbol_an_earlier_unit_lists_may_be_used(self):
+        study = self.make("en")
+        write(folders(self.course).wiki / "units" / "unit-02.md", "# Unit 2\n\n## Notation\n\n- Z: savings\n")
+        write(study / "Unit 4" / "4.2 Walkthrough.md", "Spending is $Y = C + Z$ (assumption 2).\n")
+        self.assertEqual(run_json("check", study / "Unit 4", "--course", self.course)["problems"], [])
+
+    def test_a_less_than_sign_in_maths_is_not_an_html_tag(self):
+        page = "When $C < Y$ spending is below output.\n\n> [!note]- Sources\n> Output is large and $Y > C$ here.\n"
+        self.assertEqual(self.problems("4.2 Walkthrough.md", page), [])
+
     def test_an_assumption_number_the_unit_page_does_not_list_is_a_notation_problem(self):
         self.assertEqual(self.problems("4.2 Walkthrough.md", "By assumption 7, $Y = C$.\n"),
                          [("notation", "assumption 7")])
