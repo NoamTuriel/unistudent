@@ -38,7 +38,7 @@ class BeforeTest(CourseTestCase):
         self.assertLess(text.index("exam one, Question 3"), text.index("exam one, Question 1"))  # cluster order kept
         self.assertIn("exam two, Question 1", text)  # unclustered rows are not dropped
         self.assertIn("no solution in the files", text)
-        self.assertIn("includes the handwritten answer", text)  # answer on the question's own page
+        self.assertIn("the answer is on this page", text)  # answer on the question's own page
         self.assertEqual(run_json("check", page, "--course", self.course)["problems"], [])
         if shutil.which("pdfseparate"):
             self.assertTrue((folders(self.course).study / "Before the test - Question pages" / "exam one - 2.pdf").exists())
@@ -52,6 +52,18 @@ class BeforeTest(CourseTestCase):
         self.assertEqual(run_json("check", page, "--course", self.course)["problems"], [])
         page.write_text(page.read_text("utf-8") + '<a href="file:///nope/missing.pdf">x</a>', "utf-8")
         self.assertIn("broken-link", [p["kind"] for p in run_json("check", page, "--course", self.course)["problems"]])
+
+    def test_a_solution_in_its_own_file_is_linked_there_and_an_exam_without_parts_says_none(self):
+        make_pdf(folders(self.course).material / "official" / "General" / "exam three.pdf", ["intro", "q1"])
+        make_pdf(folders(self.course).material / "official" / "General" / "exam three solutions.pdf", ["s1"])
+        write(self.scratch / "c.json", json.dumps([row("exam three", 1, [1], part=None, solfile="exam three solutions")]))
+        run_json("before-test", "merge", self.scratch / "c.json", "--course", self.course)
+        write(self.scratch / "clusters.json", "[]")
+        run_json("before-test", "build", "--format", "markdown", "--course", self.course)
+        text = (folders(self.course).study / "Before the test.md").read_text("utf-8")
+        self.assertIn("exam%20three%20solutions.pdf#page=1>)", text)
+        self.assertNotIn("the answer is on this page", text)  # page 1 of the solutions is not the question's page
+        self.assertIn("exam three, Question 1 (5 pts)", text)  # no "part None"
 
     def test_a_row_missing_a_field_is_refused(self):
         write(self.scratch / "bad.json", json.dumps([{"exam": "exam one"}]))
