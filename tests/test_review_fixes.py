@@ -283,14 +283,15 @@ class SetupSkill(CourseTestCase):
         write(self.home / "setup-progress" / "Macro.json", json.dumps({"stage": "fetch-and-organize", "answers": {}}))
         self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"], "installs")
 
-    def test_the_university_is_recorded_before_the_install_stop_and_a_restart_is_explained(self):  # S2
+    def test_the_university_is_recorded_before_the_install_stop_and_a_restart_is_explained(self):  # S2, ADR 0013
         one = step(1)
         self.assertLess(one.index("--stage university"), one.index("us plugins recommend"))
-        self.assertRegex(one, r"(?i)close and reopen|reload|restart")
-        self.assertIn("run setup again", one)
+        seven = step(7)
+        self.assertRegex(seven, r"(?i)close and reopen|reload|restart")
+        self.assertIn("run setup again", seven)
 
     def test_fetching_with_a_generated_fallback_can_fail_without_being_an_error(self):  # S5
-        five = step(5)
+        five = step(8)
         self.assertIn("can't log in", five)
         self.assertIn("not an error", five)
         self.assertIn("only record how the university organizes", five)
@@ -326,7 +327,7 @@ class SetupSkill(CourseTestCase):
         self.assertIn("npx skills", out["summary"])
 
     def test_coverage_is_shown_after_sorting_and_pending_is_explained(self):  # S7
-        eight = step(8)
+        eight = step(10)
         self.assertIn("pending", eight)
         self.assertLess(SETUP_TEXT.index("## 6."), SETUP_TEXT.index("us wiki coverage"))
 

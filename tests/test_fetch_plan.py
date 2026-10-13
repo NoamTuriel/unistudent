@@ -227,6 +227,24 @@ class FetchPlanStatus(CourseTestCase):
         self.assertIn("No Fetch plan", out)
 
 
+class StatusWithoutASite(CourseTestCase):
+    """A course fed from the student's own folder has no Fetch plan; the run still shows the same box."""
+
+    def test_own_folder_files_are_counted_and_approved_recordings_wait_for_their_transcript(self):
+        own = self.tmp / "own"
+        write(own / "Unit 1" / "slides.txt", "GDP is output.")
+        write(own / "Lesson 1.mp4", b"\x00" * 4096)
+        course = self.tmp / "Linear algebra"
+        run("setup", course, "--name", "Linear algebra", "--language", "en", "--university", "none",
+            "--import", own, "--tier", "official")
+        recording = run_json("recordings", "list", "--course", course)["recordings"][0]["path"]
+        run_json("recordings", "approve", "--course", course, recording)
+        status = run_json("fetch-plan", "status", "--course", course)
+        self.assertEqual((status["documents"]["done"], status["documents"]["total"]), (1, 1))
+        self.assertEqual(status["recordings"], {"downloaded": 1, "transcribed": 0, "summarised": 0, "total": 1})
+        self.assertIn("KEEP THE COMPUTER ON, PLUGGED IN AND AWAKE", status["box"])
+        self.assertIn("1 of 1 downloaded", status["box"])
+
 class ImportDryRun(CourseTestCase):
     def test_dry_run_counts_and_sizes_without_copying(self):
         own = self.tmp / "own"

@@ -2,7 +2,8 @@
 
 Built from a University plugin's listing (or the generated fallback's), so every university gets the same screen.
 `show` writes the checklist into the Hidden folder, `apply` reads its ticks back into the approved listing, `status`
-counts what the run has done from the approved listing, the Manifest and the recordings state.
+counts what the run has done from the approved listing, the Manifest and the recordings state (files from the student's
+own folder or the inbox count as already in, so a course with no site still gets the box).
 """
 import hashlib
 import json
@@ -202,13 +203,22 @@ def _bar(done, total, width=20):
 
 
 def status(course):
+    from .material import path_of
+    from .recordings import approved, duration
     from .wiki import recording_pages
     path = approved_file(course)
-    if not path.is_file():
+    files = course.manifest()["files"]
+    own = [rel for rel, e in files.items() if not e.get("site_url")]  # the student's folder or the inbox: already in
+    if not path.is_file() and not own:
         raise UserError("No Fetch plan approved yet: run `us fetch-plan show`, then `us fetch-plan apply`.")
-    items = _read_listing(path).get("items", [])
-    by_url = {e.get("site_url"): rel for rel, e in course.manifest()["files"].items() if e.get("site_url")}
+    items = _read_listing(path).get("items", []) if path.is_file() else []
+    by_url = {e.get("site_url"): rel for rel, e in files.items() if e.get("site_url")}
     pages = recording_pages(course)
+    chosen = set(approved(course))
+    for rel in own:
+        by_url[rel] = rel
+        items.append({"url": rel, "kind": "recording", "transcribe": rel in chosen,
+                      "seconds": duration(path_of(course, rel))} if rel in pages else {"url": rel})
     docs = [i for i in items if not is_recording(i)]
     recs = [i for i in items if is_recording(i)]
     docs_done = sum(1 for i in docs if i.get("url") in by_url)

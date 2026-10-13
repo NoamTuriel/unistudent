@@ -4,7 +4,7 @@ description: Transcribe and summarise course recordings into the Wiki (heavy and
 disable-model-invocation: true
 ---
 
-Heavy work starts only after the student says yes to real numbers.
+Heavy work starts only after the student says yes to real numbers. Course setup transcribes the recordings its Fetch plan approved; this skill is for recordings added later (the inbox, a later sync) and for ones skipped in setup.
 
 <!-- conventions: keep identical in every UniStudent skill -->
 Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); as the Claude plugin, give them to the plugin's subagent of that name, which has the UniStudent tools (in parallel when there are several); in any other app, follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
@@ -36,7 +36,9 @@ Done when: every chosen recording has a `transcript.md`.
 
 For each transcript, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `summary.md` next to the transcript (in the hidden Wiki) and returns a three-line summary. Only those three lines come back to you.
 
-Done when: every transcript has `toc.md` and `summary.md`.
+If frame analysis is on and the course's `keep_video` is `false`, run `us recordings audio-only "<path>"` for each recording once its summary is written: the video is replaced by a sound-only copy under the same name, so the time links still work.
+
+Done when: every transcript has `toc.md` and `summary.md`, and no video is kept that `keep_video` says not to keep.
 
 ## 5. Where each recording belongs
 
