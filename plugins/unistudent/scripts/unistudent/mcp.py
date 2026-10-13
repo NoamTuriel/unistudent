@@ -24,7 +24,7 @@ ACTION_ARGS = {
     ("recordings", "list"): ["course", "unit"], ("recordings", "estimate"): ["course", "unit"],
     ("recordings", "benchmark"): ["course", "paths"],
     ("recordings", "transcribe"): ["course", "paths", "background"],
-    ("recordings", "fetch"): ["course", "paths", "audio_only"],
+    ("recordings", "fetch"): ["course", "paths", "audio_only"], ("recordings", "audio-only"): ["course", "paths"],
     ("university", "status"): ["university"], ("university", "save"): ["university", "url", "organizing"],
     ("setup-progress", "status"): ["course_name"], ("setup-progress", "clear"): ["course_name"],
     ("setup-progress", "list"): [],
@@ -32,7 +32,7 @@ ACTION_ARGS = {
 }
 REQUIRED = {("courses", "switch"): ["target"], ("prefs", "add"): ["text"],
             ("recordings", "benchmark"): ["paths"], ("recordings", "transcribe"): ["paths"],
-            ("recordings", "fetch"): ["paths"],
+            ("recordings", "fetch"): ["paths"], ("recordings", "audio-only"): ["paths"],
             ("university", "save"): ["url", "organizing"],
             ("setup-progress", "status"): ["course_name"], ("setup-progress", "clear"): ["course_name"],
             ("setup-progress", "advance"): ["course_name", "stage"]}

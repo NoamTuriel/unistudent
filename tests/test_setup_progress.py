@@ -1,4 +1,5 @@
 """Setup progress + resume (ticket 03): stop after any stage, resume at the next one, answers intact."""
+import json
 import unittest
 
 from helpers import CourseTestCase, run_json
@@ -16,10 +17,11 @@ class SetupProgress(CourseTestCase):
             ("course", {"course_name": "Macro"}),
             ("path", {"path": "/tmp/Macro"}),
             ("format", {"format": "obsidian"}),
-            ("fetch", {"origin_mode": "own-folder"}),
-            ("sort", {}),
+            ("material", {"origin_mode": "own-folder"}),
             ("recordings", {"recording_level": "1"}),
-            ("analyze", {}),
+            ("installs", {}),
+            ("plan", {}),
+            ("run", {}),
         ]
         for stage, answers in stages_and_answers:
             args = ["setup-progress", "advance", "--course-name", "Macro", "--stage", stage]
@@ -35,6 +37,30 @@ class SetupProgress(CourseTestCase):
         self.assertEqual(final["answers"]["university"], "Bar-Ilan")
         self.assertEqual(final["answers"]["path"], "/tmp/Macro")
         self.assertEqual(final["next_stage"], "capabilities")
+
+    def test_the_stages_follow_the_question_block_then_the_plan_then_the_run(self):
+        order = [run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"]]
+        while order[-1] != "capabilities" and len(order) < 20:  # the last stage clears progress, so stop before it
+            run_json("setup-progress", "advance", "--course-name", "Macro", "--stage", order[-1])
+            order.append(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"])
+        self.assertEqual(order, ["university", "course", "language", "path", "format", "material", "recordings",
+                                 "installs", "plan", "run", "capabilities"])
+
+    def test_a_setup_started_on_an_older_version_resumes_at_the_matching_new_stage(self):
+        # Stages recorded by older versions: what was done then -> what comes next now.
+        for old, resume in [("fetch", "recordings"), ("sort", "recordings"), ("analyze", "capabilities"),
+                            ("fetch-and-organize", "installs")]:
+            progress = self.home / "setup-progress" / "Macro.json"
+            progress.parent.mkdir(parents=True, exist_ok=True)
+            progress.write_text(json.dumps({"stage": old, "answers": {"university": "openu"}}), "utf-8")
+            status = run_json("setup-progress", "status", "--course-name", "Macro")
+            self.assertEqual(status["next_stage"], resume, old)
+            self.assertEqual(status["answers"]["university"], "openu")
+
+    def test_an_old_stage_name_is_still_accepted_and_recorded_as_the_new_one(self):
+        run_json("setup-progress", "advance", "--course-name", "Macro", "--stage", "analyze")
+        status = run_json("setup-progress", "status", "--course-name", "Macro")
+        self.assertEqual((status["stage"], status["next_stage"]), ("run", "capabilities"))
 
     def test_finishing_the_last_stage_clears_progress(self):
         run_json("setup-progress", "advance", "--course-name", "Macro", "--stage", "university")

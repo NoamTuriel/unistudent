@@ -271,18 +271,17 @@ def step(number):
 
 class SetupSkill(CourseTestCase):
     def test_the_overview_counts_the_numbered_steps_and_the_stages_match_the_cli(self):  # S4
-        from unistudent.course import SETUP_STAGES
+        from unistudent.course import RENAMED_STAGES, SETUP_STAGES
         numbered = re.findall(r"(?m)^## (\d+)\.", SETUP_TEXT)
         self.assertIn(f"Step 5 of {len(numbered) - 1}", SETUP_TEXT)  # step 0 is bookkeeping
         self.assertNotIn("fetch-and-organize", SETUP_TEXT)
-        for stage in ("fetch", "sort", "recordings"):
-            self.assertIn(f"--stage {stage}", SETUP_TEXT)
-            self.assertIn(stage, SETUP_STAGES)
-        self.assertEqual([m for m in re.findall(r"--stage ([a-z-]+)", SETUP_TEXT) if m not in SETUP_STAGES], [])
+        self.assertIn("--stage recordings", SETUP_TEXT)
+        accepted = SETUP_STAGES + list(RENAMED_STAGES)  # the CLI still takes the older names
+        self.assertEqual([m for m in re.findall(r"--stage ([a-z-]+)", SETUP_TEXT) if m not in accepted], [])
 
-    def test_a_progress_file_from_the_old_single_step_resumes_at_analyze(self):  # S4
+    def test_a_progress_file_from_the_old_single_step_resumes_after_the_recordings_question(self):  # S4
         write(self.home / "setup-progress" / "Macro.json", json.dumps({"stage": "fetch-and-organize", "answers": {}}))
-        self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"], "analyze")
+        self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"], "installs")
 
     def test_the_university_is_recorded_before_the_install_stop_and_a_restart_is_explained(self):  # S2
         one = step(1)
