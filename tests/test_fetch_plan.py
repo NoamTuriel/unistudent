@@ -280,6 +280,7 @@ class StatusWithoutASite(CourseTestCase):
         self.assertEqual(status["recordings"], {"downloaded": 1, "transcribed": 0, "summarised": 0, "total": 1})
         self.assertIn("KEEP THE COMPUTER ON, PLUGGED IN AND AWAKE", status["box"])
         self.assertIn("1 of 1 downloaded", status["box"])
+        self.assertNotIn("CHROME", status["box"])  # no course site: nothing runs in the browser
 
     def test_a_recording_transcribed_without_a_tick_never_overflows_the_bar(self):
         write(self.tmp / "own" / "Lesson 1.mp4", b"\x00" * 4096)
