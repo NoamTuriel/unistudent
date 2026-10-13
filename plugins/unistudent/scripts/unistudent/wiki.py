@@ -7,6 +7,7 @@ never touched by a rebuild.
 """
 import os
 import re
+import shutil
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 from urllib.request import url2pathname
@@ -83,7 +84,18 @@ def _visual_item(course, rel, pages, page, entry):
     return {**item, "pictures": pictures} if pictures else item
 
 
-def _source_page(rel, entry, conversion):
+def _keep_view(course, page, conversion):
+    """The Office file's PDF goes to `.unistudent/view/<page>.pdf`; returns that path in the course folder, or None."""
+    if not conversion.view:
+        return None
+    target = course.state / "view" / Path(page).with_suffix(".pdf")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(conversion.view), str(target))
+    shutil.rmtree(Path(conversion.view).parent, ignore_errors=True)
+    return target.relative_to(course.root).as_posix()
+
+
+def _source_page(rel, entry, conversion, view=None):
     lines = [
         "---",
         f"source: {rel}",
@@ -92,6 +104,7 @@ def _source_page(rel, entry, conversion):
         *([f"origin_note: {entry['origin_note']}"] if entry.get("origin_note") else []),
         f"unit: {entry.get('unit') if entry.get('unit') is not None else 'unsorted'}",
         f"converted_with: {conversion.method}",
+        *([f"view: {view}"] if view else []),  # the pages as they look, for a worker that can't open the original
         "---",
         "",
         f"# {Path(rel).name}",
@@ -227,7 +240,7 @@ def build(course, force=False):
             continue
         conversion = convert(material.path_of(course, rel))
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(_source_page(rel, entry, conversion), "utf-8")
+        target.write_text(_source_page(rel, entry, conversion, _keep_view(course, page, conversion)), "utf-8")
         state[rel] = {"page": page, "fingerprint": entry.get("fingerprint"),
                       "method": conversion.method, "empty_pages": conversion.empty_pages,
                       "warnings": list(conversion.warnings)}

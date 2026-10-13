@@ -30,6 +30,7 @@ class Conversion:
     method: str
     warnings: list = field(default_factory=list)
     picture_pages: list = field(default_factory=list)  # slides whose picture (often a graph) has no text
+    view: Path = None  # LibreOffice's PDF of an Office file, kept so a worker can look at a page (Read can't open .pptx)
 
     @property
     def empty_pages(self):
@@ -78,14 +79,16 @@ def _pdf_pages(path: Path) -> Conversion:
 
 def _via_pdf(path: Path) -> Conversion:
     """Office → PDF with LibreOffice first: direct text export loses formulas."""
-    with tempfile.TemporaryDirectory() as out:
-        result = subprocess.run([_soffice(), "--headless", "--convert-to", "pdf", "--outdir", out, str(path)],
-                                capture_output=True, timeout=300)
-        pdf = Path(out) / (path.stem + ".pdf")
-        if result.returncode == 0 and pdf.exists():
-            conversion = _pdf_pages(pdf)
-            conversion.method = "soffice+" + conversion.method
-            return conversion
+    out = tempfile.mkdtemp()  # the build moves the PDF into the hidden folder (Conversion.view)
+    result = subprocess.run([_soffice(), "--headless", "--convert-to", "pdf", "--outdir", out, str(path)],
+                            capture_output=True, timeout=300)
+    pdf = Path(out) / (path.stem + ".pdf")
+    if result.returncode == 0 and pdf.exists():
+        conversion = _pdf_pages(pdf)
+        conversion.method = "soffice+" + conversion.method
+        conversion.view = pdf
+        return conversion
+    shutil.rmtree(out, ignore_errors=True)
     return None
 
 
