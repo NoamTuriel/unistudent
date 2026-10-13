@@ -1,4 +1,5 @@
 """Coverage (ticket 13): the Wiki says which files it read, which it couldn't, and which were skipped."""
+import shutil
 import unittest
 from unittest import mock
 
@@ -158,6 +159,20 @@ class SlidePictures(CourseTestCase):
             [item] = run_json("wiki", "build", "--course", course)["needs_visual"]
         self.assertEqual(item["pages"], [2])
         self.assertEqual([p.rsplit("/", 1)[-1] for p in item["pictures"]], ["slide-2-1.png"])
+
+
+@unittest.skipUnless(shutil.which("soffice") or shutil.which("libreoffice"), "LibreOffice not installed")
+class OfficeView(CourseTestCase):
+    def test_an_office_file_keeps_its_pdf_so_a_worker_can_look_at_its_pages(self):
+        own = self.tmp / "own" / "Unit 1"
+        own.mkdir(parents=True)
+        (own / "notes.rtf").write_text(r"{\rtf1\ansi Unit 1: a ledger of assets and liabilities, long enough to count.}")
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", self.tmp / "own", "--tier", "official")
+        run_json("wiki", "build", "--course", course)
+        page = (folders(course).wiki / "sources" / "unit-01" / "notes.md").read_text("utf-8")
+        self.assertIn("view: .unistudent/view/sources/unit-01/notes.pdf", page)
+        self.assertTrue((course / ".unistudent" / "view" / "sources" / "unit-01" / "notes.pdf").is_file())
 
 
 if __name__ == "__main__":
