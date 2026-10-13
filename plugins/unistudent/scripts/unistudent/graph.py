@@ -170,7 +170,9 @@ def load_spec(path):
         if len(kinds) != 1:
             raise UserError(f'Curve "{name}" needs exactly one of: {", ".join(KINDS)}.')
         kind = kinds[0]
-        curve = {"name": name, "kind": kind, "shift_of": item.get("shift_of")}
+        if item.get("dashed") not in (None, True, False):
+            raise UserError(f'"dashed" on curve "{name}" must be true or false.')
+        curve = {"name": name, "kind": kind, "shift_of": item.get("shift_of"), "dashed": item.get("dashed")}
         if kind == "points":
             curve["data"] = _pairs(item["points"], f'"{name}" points', 2)
         elif kind == "sketch":
@@ -322,14 +324,15 @@ def point_positions(spec, lines):
     return out
 
 
-def shift_arrow(original, moved):
-    """From the middle of the original curve to the nearest point on the moved one."""
+def shift_arrow(original, moved, spans=(1, 1)):
+    """From the middle of the original curve to the nearest point on the moved one, nearest as drawn: `spans` are the
+    axes' widths, so Q 0-140 against P 0-14 doesn't turn a shift to the right into an arrow pointing up."""
     ok = [p for p in original if all(math.isfinite(v) for v in p)]
     others = [p for p in moved if all(math.isfinite(v) for v in p)]
     if not ok or not others:
         return None
     start = ok[len(ok) // 2]
-    end = min(others, key=lambda p: (p[0] - start[0]) ** 2 + (p[1] - start[1]) ** 2)
+    end = min(others, key=lambda p: ((p[0] - start[0]) / spans[0]) ** 2 + ((p[1] - start[1]) / spans[1]) ** 2)
     return start, end
 
 
@@ -484,7 +487,8 @@ def draw(spec_path, force=False):
         line = lines[c["name"]]
         shown = line
         xs_, ys_ = [p[0] for p in shown], [p[1] for p in shown]
-        dashed = bool(c["shift_of"]) is False and any(o["shift_of"] == c["name"] for o in spec["curves"])
+        dashed = c["dashed"] if c["dashed"] is not None else (  # the course's style when the spec gives it
+            not c["shift_of"] and any(o["shift_of"] == c["name"] for o in spec["curves"]))
         ax.plot(xs_, ys_, color=colours[c["name"]], linewidth=2.2, solid_capstyle="round",
                 linestyle=(0, (5, 3)) if dashed else "-")
         end = next((p for p in reversed(shown) if all(math.isfinite(v) for v in p)), None)
@@ -495,7 +499,8 @@ def draw(spec_path, force=False):
                             (-5, -14, "right", "baseline"), (-5, 3, "right", "baseline")]))
     for c in spec["curves"]:
         if c["shift_of"]:
-            arrow = shift_arrow(lines[c["shift_of"]], lines[c["name"]])
+            arrow = shift_arrow(lines[c["shift_of"]], lines[c["name"]],
+                                (abs(ax.get_xlim()[1] - ax.get_xlim()[0]) or 1, abs(ax.get_ylim()[1] - ax.get_ylim()[0]) or 1))
             if arrow:
                 ax.annotate("", arrow[1], arrow[0], arrowprops={"arrowstyle": "-|>", "color": "#444444", "lw": 1.6})
     for label, (px, py) in points:

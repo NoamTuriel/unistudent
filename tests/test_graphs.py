@@ -48,6 +48,15 @@ class GraphCommand(CourseTestCase):
             self.assertEqual(code, 0, out)
             self.assertTrue(spec.with_suffix(".png").exists())
 
+    def test_a_curve_can_take_the_slides_dash_style(self):
+        dashed = dict(SKETCH, curves=[dict(c, dashed=True) if c["name"] == "Md'" else c for c in SKETCH["curves"]])
+        if HAS_MATPLOTLIB:
+            self.assertEqual(run("graph", self.spec(dashed, "dashed"))[0], 0)
+        wrong = dict(SKETCH, curves=[dict(c, dashed="yes") if c["name"] == "Md'" else c for c in SKETCH["curves"]])
+        code, out = run("graph", self.spec(wrong, "wrong"))
+        self.assertEqual(code, 1)
+        self.assertIn('"dashed" on curve "Md\'" must be true or false', out)
+
     def test_a_formula_outside_the_allowed_list_is_refused_plainly(self):
         bad = {"x": "x", "y": "y", "curves": [{"name": "f", "formula": "__import__(x)"}]}
         code, out = run("graph", self.spec(bad))
