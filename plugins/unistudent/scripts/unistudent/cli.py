@@ -46,7 +46,7 @@ def write_context_files(course: Course):
     if settings.get("exam_date"):
         exam.append(f"- Exam date: {settings['exam_date']}")
     if _course_page_has_exam_information(course):
-        exam.append(f"- Exam format, formula sheet and lecturer emphasis: see `{_rel(course, course.wiki)}/course.md`.")
+        exam.append(f"- Exam format, formula sheet and what the course stresses: see `{_rel(course, course.wiki)}/course.md`.")
     others = [c for c in Registry().courses() if c["path"] != str(course.root)]
     other_lines = [f"- {c['name']}: `{Course(c['path']).wiki}`" for c in others] or ["- None."]
     context = render("context.md",

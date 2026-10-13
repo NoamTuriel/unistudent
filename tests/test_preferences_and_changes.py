@@ -44,6 +44,19 @@ class StudyPackChanges(CourseTestCase):
         # Other units are not affected.
         self.assertEqual(run_json("study", "changes", "--course", course, "--unit", "5")["new"], [])
 
+    def test_a_new_past_exam_is_reported_to_every_unit_pack(self):
+        # Its questions are tagged by the unit they exercise, so a unit's pack may need them.
+        own = self.tmp / "own"
+        make_pdf(own / "Unit 4" / "slides.pdf", ["multiplier"])
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
+        run_json("wiki", "build", "--course", course)
+        run_json("study", "mark-built", "--course", course, "--unit", "4")
+        make_pdf(folders(course).material / "official" / "General" / "Exam 2024.pdf", ["question 1 on the multiplier"])
+        run_json("wiki", "build", "--course", course)
+        self.assertEqual(run_json("study", "changes", "--course", course, "--unit", "4")["new"],
+                         ["sources/general/Exam 2024.md"])
+
     def test_a_unit_without_a_study_pack_has_no_baseline(self):
         course = self.tmp / "Macro"
         run("setup", course, "--name", "Macro")

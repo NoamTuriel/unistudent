@@ -65,6 +65,12 @@ class BeforeTest(CourseTestCase):
         self.assertNotIn("the answer is on this page", text)  # page 1 of the solutions is not the question's page
         self.assertIn("exam three, Question 1 (5 pts)", text)  # no "part None"
 
+    def test_an_existing_page_is_never_overwritten(self):
+        first = self.build("markdown")["page"]
+        second = self.build("markdown")["page"]
+        self.assertTrue(first.endswith("Before the test.md"))
+        self.assertTrue(second.endswith("Before the test (2).md"))
+
     def test_a_row_missing_a_field_is_refused(self):
         write(self.scratch / "bad.json", json.dumps([{"exam": "exam one"}]))
         with self.assertRaises(Exception):

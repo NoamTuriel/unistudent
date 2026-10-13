@@ -137,7 +137,8 @@ def build(course, index, clusters, fmt, notes):
                 else:
                     out += [f"<details><summary>{title}</summary>", ""] + body + ["", "</details>", ""]
         ext = ".md"
-    page = course.study / (name + ext)
+    from .material import _free_name
+    page = course.study / _free_name(course.study, name + ext)  # an existing page is the student's: never overwritten
     page.write_text("\n".join(out) + "\n", "utf-8")
     return {"page": str(page), "questions": len(rows), "clusters": len(clusters), "single_page_copies": copied, "notes": notes,
             "summary": f"Wrote {page} ({len(rows)} questions in {len(clusters)} groups)."}

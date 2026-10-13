@@ -259,7 +259,7 @@ def register(add, with_course):
         folder = unit_dir(args.unit)
         current = {info["page"]: info.get("fingerprint")
                    for info in course.read_state("wiki.json", {}).values()
-                   if info["page"].startswith(f"sources/{folder}/")}
+                   if info["page"].startswith((f"sources/{folder}/", "sources/general/"))}  # past exams hold its questions too
         for rel, info in wiki.recording_pages(course).items():
             if unit_dir(info["unit"]) == folder and info["processed"]:
                 current[info["folder"] + "/summary.md"] = "processed"  # a key, kept as built packs recorded it
