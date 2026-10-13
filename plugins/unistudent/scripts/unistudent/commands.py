@@ -1,4 +1,5 @@
 """Commands for the Wiki, the inbox, checks, preferences, study packs, recordings and the course site."""
+import datetime
 import re
 from pathlib import Path
 
@@ -393,7 +394,8 @@ def register(add, with_course):
             rel = material.add_file(course, source, tier="official", origin="course-site", name=name,
                                     hint=f"{safe_name(item.get('section') or 'General')}/{name}", replace_rel=before,
                                     site_unit=parse_unit(hint) if hint is not None else None,
-                                    extra={"site_url": url, "site_modified": item.get("modified")})
+                                    extra={"site_url": url, "site_modified": item.get("modified"),
+                                           "fetched": datetime.date.today().isoformat()})
             (changed if before else new).append(rel)
             if item.get("transcribe"):  # ticked in the Fetch plan by a student who wants transcripts
                 from .recordings import approve
@@ -432,8 +434,10 @@ def register(add, with_course):
         entries = [e for e in course.manifest()["files"].values() if e.get("site_url")]
         urls = sorted(e["site_url"] for e in entries)
         modified = {e["site_url"]: e.get("site_modified") for e in entries}
-        return {"downloaded": urls, "modified": modified,
-                "summary": f"{len(urls)} files already downloaded from the course site."}
+        last_sync = max((e["fetched"] for e in entries if e.get("fetched")), default=None)
+        return {"downloaded": urls, "modified": modified, "last_sync": last_sync,
+                "summary": f"{len(urls)} files already downloaded from the course site"
+                           + (f", the last on {last_sync}." if last_sync else ".")}
 
     with_course(add("site-status", cmd_site_status, "which course-site files are already in the Material folder"))
 

@@ -38,8 +38,9 @@ def is_recording(item):
 
 
 def extension(item):
-    suffix = Path(item.get("name") or item.get("file") or "").suffix.lower()
-    return suffix or (".mp4" if is_recording(item) else "(none)")
+    if is_recording(item):
+        return ".mp4"  # a recording's name is its title, often with a dotted date ("12.10.2025")
+    return Path(item.get("name") or item.get("file") or "").suffix.lower() or "(none)"
 
 
 def size_of(item):

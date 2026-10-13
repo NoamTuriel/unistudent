@@ -72,6 +72,13 @@ class FetchPlanShow(CourseTestCase):
         self.assertGreater(plan["hours"], 0)
         self.assertIn("rough", plan["summary"])
 
+    def test_a_recording_titled_with_a_dotted_date_still_counts_as_mp4(self):
+        dated = dict(RECORDING, url="https://example.edu/v/5", name="Session 5 - 12.10.2025")
+        write(self.listing, json.dumps(listing(dated)))
+        plan = self.show()
+        self.assertEqual(list(plan["totals"]), [".mp4"])
+        self.assertIn(".mp4", Path(plan["checklist"]).read_text("utf-8"))
+
     def test_a_plan_bigger_than_the_free_space_does_not_fit(self):
         plan = self.show(free=500_000_000)
         self.assertFalse(plan["fits"])
