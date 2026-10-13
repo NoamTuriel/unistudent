@@ -7,52 +7,76 @@ Download what's new on the student's OpenU course site and hand it to the UniStu
 
 `us <command>` is the UniStudent core's tool for that command: the MCP tool named by its words joined with `_` (`us site-status` → `site_status`) when the unistudent MCP server is connected, otherwise `unistudent <command>` in a shell. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 
-How the site works (lists, download method, recordings, ready-made snippets) is in `<this skill's base directory>/references/site.md`. Read it first.
+How the site works (lists, sizes, download method, recordings, ready-made snippets) is in `<this skill's base directory>/references/site.md`. Read it first.
+
+The sync runs in three parts: scan the site without downloading (steps 1-3), show the Fetch plan and wait for the student's OK (step 4), then download without asking anything (steps 5-6). **Inside setup**, course setup tells you so when it starts this skill: it runs steps 1-4 before the student leaves and steps 5-6 in its unattended run, and does its own report (step 7 is skipped).
 
 ## 1. Course and what's already here
 
-Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded, with the site date each had). You need access to the student's Downloads folder: that's where the browser saves files.
+Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded, and `last_sync`, the date of the last sync). Read the course's Recording choices from `.unistudent/settings.json` in the course folder: `recording_level` (0 skip, 1 download only, 3 transcript and summary), `frame_analysis`, `keep_video`. You need access to the student's Downloads folder: that's where the browser saves files.
 
-Done when: you know the course folder, the Downloads folder path, and what's already downloaded.
+Ask the recordings question only when `recording_level` is `null` (an older course synced outside setup): transcribe and summarise them (recommended: the AI can then answer from what the lecturer said and link to the minute), download them only, or skip them. Record it with `us context --recording-level <3|1|0>`; it holds for every later sync.
+
+Done when: you know the course folder, the Downloads folder path, what's already downloaded, `last_sync`, and the Recording choices.
 
 ## 2. Find the course on the site
 
-Use a browser tool that drives the student's own logged-in Chrome (Claude in Chrome, or a browser MCP server attached to their Chrome profile). The site can't be reached without their session. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id`.
+Use a browser tool that drives the student's own logged-in Chrome (Claude in Chrome, or a browser MCP server attached to their Chrome profile). The site can't be reached without their session. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id` and the course number.
 
-Done when: you have the course id.
+Done when: you have the course id and number.
 
-## 3. List the files
+## 3. Scan, without downloading
 
-Run the listing snippet from `site.md` for the course id. Add folder contents (open each folder, list its file links). Build one listing item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, and `unit_hint: "general"` for past exams, exam information and file stores. Drop URLs already in `site-status`.
+Nothing downloads in this step, and no stream links are collected: they expire within hours.
 
-Done when: every row of the resources list and every file in every folder is an item or already downloaded.
+- **Documents:** run the listing snippet from `site.md` for the course id, then add folder contents (open each folder, list its file links). One item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, `file: "unistudent-<course number>-<date>__<name>"` (the name it will be downloaded under), and `unit_hint: "general"` for past exams, exam information and file stores. Then run the size snippet: it adds `size` where the site gives one without downloading the file.
+- **Recordings:** skip them when `recording_level` is 0 and neither `frame_analysis` nor `keep_video` is `true` (count them for the report). Otherwise run the recordings snippet in each video collection (links on the course page and in the "וידאו" section). One item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` when a length is shown next to it.
 
-## 4. Recordings: ask first
+Drop every item whose `url` is in `site-status`. If nothing is left, say "Nothing new on the site since <last_sync>" in one line and stop: no empty plan. Otherwise download the listing `{"course_site": ..., "items": [...]}` from the course tab with the in-page method, as `unistudent-<course number>-<date>__listing.json`.
 
-Open the course's video collections (links on the course page and in the "וידאו" section). Count the recordings and add up their durations when shown (otherwise about 1.5–3 hours per session). Tell the student: how many, total hours, about 3 GB per three hours at full quality, much less as audio only (enough for transcripts). Ask: all, only unit N, or not now; and full video or audio only. Record the answer with `us context --recording-level <0 skip|1 download|3 transcript and summary>`, and reuse it on later syncs unless the student asks.
+Done when: every row of the resources list, every file in every folder and every recording the Settings want is an item or already downloaded, and the listing file is in Downloads (or the one "Nothing new" line was said).
 
-For each chosen recording, collect its stream URL with the stream snippet from `site.md` and put it in the listing as `kind: "recording"`, `stream_url`, `name` (title + date), `section`. The URLs expire within hours: download them in this same run.
+## 4. The Fetch plan
 
-Done when: the student chose, and every chosen recording has a listing item with a stream URL.
+On every sync, inside setup or not, run `us fetch-plan show --json "<Downloads>/<listing file>"`. Show its `summary` (totals per file type, free disk space, rough time) and the checklist path, then ask: **download all**, **skip all recordings**, or **edit the list** (untick lines in the checklist file, or say it in the chat: "skip unit 1 recordings", "drop the old exams").
 
-## 5. Download
+- Skip all recordings: untick every `.mp4` line in the checklist.
+- Edit the list: make each change the student asks for in the checklist (change `[x]` to `[ ]`), run `us fetch-plan show` again and show the new `summary`. Repeat until the student says OK.
+- When `fits` is false, say so and ask what to untick before going on.
 
-In the course tab, download every document item with the in-page method from `site.md`, named `unistudent-<course number>-<date>__<name>`, and set each item's `file` to that name. Then download the listing itself as `unistudent-<course number>-<date>__listing.json`.
+**Inside setup**, ask one grouped question about the `needs_unit` files: a unit number, general, or "I don't know" (the file stays unsorted but is still read into the Wiki).
 
-Then run `us recordings fetch "<Downloads>/<listing file>" "<Downloads>" [--audio-only]` for the recordings.
+Only after an explicit OK (download all, skip all recordings, or OK to the edited list) run `us fetch-plan apply --json "<Downloads>/<listing file>" [--unit NUMBER=UNIT ...]` (`unknown` for "I don't know"). Its `listing` is the approved listing: download from it, nothing else.
 
-Done when: every chosen item has a `file`, or is reported as failed.
+Done when: the student gave an explicit OK and `fetch-plan apply` returned the approved listing.
 
-## 6. Hand over
+## 5. Download the documents and hand them over
 
-Run `us ingest --json "<Downloads>/<listing file>" "<Downloads>"`. The core moves the listed files into the course's Material folder (`official`, by unit), updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`.
+From here to the end, never ask: a failure is retried once, then skipped and reported.
 
-- `unsorted`: ask one grouped question and record answers with `us assign`.
-- `missing`: retry those downloads once, then report them.
-- `wiki.units_touched`: give each unit to the unistudent `wiki-unit-writer` worker (`us doc wiki-unit-writer` gives its instructions) and update the matching `question-bank.md` entries with the ones it returns.
+In the course tab, download every document item of the approved listing with the in-page method from `site.md`, under its `file` name. Then run `us ingest --json "<approved listing>" "<Downloads>"`. The core moves the files into the course's Material folder (`official`, by unit), updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`. Download each `missing` file once more and run the ingest again; what is still missing goes in the report.
 
-Done when: the ingest ran, unsorted files are answered or deferred, and every unit in `wiki.units_touched` went to the unit writer.
+Done when: every approved document is ingested or listed as failed.
+
+## 6. Download the recordings, one at a time
+
+For each recording item of the approved listing, in order, and only now:
+
+1. In its collection tab, run the stream snippet from `site.md` with the item: it collects that one recording's link and downloads a one-recording listing, `unistudent-<course number>-<date>__rec-<n>.json`.
+2. Run `us recordings fetch --json "<Downloads>/<that file>" "<Downloads>"`. Add `--audio-only` when `frame_analysis` is not `true` and `keep_video` is `false` (the video itself is not needed).
+3. If it failed (an expired link, usually), collect its link again once (`__rec-<n>-again.json`) and fetch again; if that fails too, skip the recording and add it to the report.
+4. Run `us ingest --json "<Downloads>/<that file>" "<Downloads>"`. A recording ticked for transcripts is approved for transcription as it lands.
+
+Done when: every approved recording is ingested or listed as failed.
 
 ## 7. Report
 
-Two lines: what's new since the last sync, and what's waiting (recordings not downloaded, unsorted files). If a unit with a study pack got new material, offer `/unistudent:study-pack N`. If recordings came in, offer `/unistudent:course-recordings`.
+Inside setup, skip this step: hand setup what's new, what failed, the `unsorted` files and the units in `wiki.units_touched`.
+
+Outside setup:
+
+- `unsorted` files: ask one grouped question: a unit number, general, or "I don't know". Record answers with `us assign`; "I don't know" leaves the file unsorted, already in the Wiki.
+- Give each unit in `wiki.units_touched` (all ingests together) to the unistudent `wiki-unit-writer` worker (`us doc wiki-unit-writer` gives its instructions) and update the matching `question-bank.md` entries with the ones it returns.
+- Two lines: what's new since the last sync, and what's waiting (failed downloads with what to do, recordings the Settings skip, unsorted files). If a unit with a study pack got new material, offer `/unistudent:study-pack N`. If recordings came in, offer `/unistudent:course-recordings`.
+
+Done when: unsorted files are answered or left unsorted by choice, every touched unit went to the unit writer, and the two lines were said.

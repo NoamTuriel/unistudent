@@ -219,3 +219,47 @@ class RecommendedTools(unittest.TestCase):
 
     def test_no_rule_asks_the_student_during_the_build(self):
         self.assertIsNone(re.search(r"(?i)\bask|interview|\bconfirm", self.section()))
+
+
+class OpenUSync(unittest.TestCase):
+    """Ticket 36: scan without downloading, the Fetch plan on every sync, stream links only after the OK."""
+    SYNC = ROOT / "plugins" / "openu" / "skills" / "openu-sync"
+    TEXT = (SYNC / "SKILL.md").read_text("utf-8")
+    SITE = (SYNC / "references" / "site.md").read_text("utf-8")
+
+    def step(self, title):
+        return self.TEXT.split(f". {title}\n")[1].split("\n## ")[0]
+
+    def test_no_recordings_question_when_settings_hold_the_choices(self):
+        self.assertIn("`recording_level`", self.TEXT)
+        self.assertIn("Ask the recordings question only when `recording_level` is `null`", self.TEXT)
+        self.assertNotIn("full video or audio only", self.TEXT)
+        self.assertNotIn("Recordings: ask first", self.TEXT)
+
+    def test_stream_links_are_collected_only_after_the_ok(self):
+        scan = self.step("Scan, without downloading")
+        self.assertIn("no stream links", scan)
+        self.assertNotIn("stream snippet", scan)
+        self.assertLess(self.TEXT.index("fetch-plan apply"), self.TEXT.index("stream snippet"))
+        self.assertIn("collect its link again once", self.TEXT)
+        self.assertIn("only after the student's OK", self.SITE)
+
+    def test_the_fetch_plan_shows_on_every_sync_before_any_download(self):
+        plan = self.step("The Fetch plan")
+        self.assertIn("every sync", plan)
+        for choice in ("download all", "skip all recordings", "edit the list"):
+            self.assertIn(choice, plan)
+        self.assertIn("explicit OK", plan)
+        self.assertLess(self.TEXT.index("fetch-plan show"), self.TEXT.index("download every document item"))
+        self.assertIn('"Nothing new on the site since <last_sync>"', self.TEXT)
+
+    def test_sorting_is_asked_before_the_download_inside_setup_and_after_it_outside(self):
+        self.assertIn("I don't know", self.step("The Fetch plan"))
+        self.assertIn("I don't know", self.step("Report"))
+        self.assertIn("Inside setup", self.step("Report"))
+
+    def test_site_notes_mark_the_live_unknowns_and_the_corrected_size(self):
+        self.assertIn("about 2.4 GB", self.SITE)
+        self.assertNotIn("3 GB", self.SITE)
+        self.assertIn("method: 'HEAD'", self.SITE)
+        self.assertGreaterEqual(self.SITE.count("Unverified"), 2)

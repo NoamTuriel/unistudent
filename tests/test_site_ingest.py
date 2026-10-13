@@ -3,6 +3,7 @@
 The university plugin (e.g. openu) owns reaching the site. It hands the core a listing
 (what's on the course site) and a folder of downloaded files; the core does the rest.
 """
+import datetime
 import json
 import unittest
 
@@ -47,6 +48,14 @@ class SiteIngest(CourseTestCase):
         self.ingest(listing({"url": "https://example.edu/f/1", "file": "a.pdf", "name": "a.pdf", "section": "Unit 1"}))
         status = run_json("site-status", "--course", self.course)
         self.assertEqual(status["downloaded"], ["https://example.edu/f/1"])
+
+    def test_status_names_the_date_of_the_last_sync_for_the_nothing_new_line(self):
+        self.assertIsNone(run_json("site-status", "--course", self.course)["last_sync"])
+        make_pdf(self.staged / "a.pdf", ["Unit 1"])
+        self.ingest(listing({"url": "https://example.edu/f/1", "file": "a.pdf", "name": "a.pdf", "section": "Unit 1"}))
+        status = run_json("site-status", "--course", self.course)
+        self.assertEqual(status["last_sync"], datetime.date.today().isoformat())
+        self.assertIn(status["last_sync"], status["summary"])
 
     def test_a_second_sync_reports_only_what_changed(self):
         if not can_read_pdfs():

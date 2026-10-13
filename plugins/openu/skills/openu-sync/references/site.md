@@ -28,30 +28,58 @@ let section = '';
 }).filter(Boolean)
 ```
 
+Size snippet (same tab; `ITEMS` is the document items built so far, folder files included). It asks for each file's headers only, so nothing downloads:
+
+```js
+for (const i of ITEMS) {
+  try {
+    const r = await fetch(i.url, {method: 'HEAD', credentials: 'include'});
+    const n = r.ok && r.headers.get('content-length');
+    if (n) i.size = Number(n);
+  } catch (e) {}
+}
+ITEMS
+```
+
+Unverified on the live site: whether `/mod/<type>/view.php?...&redirect=1` and `/pluginfile.php/...` answer a `HEAD` request with a `Content-Length`. On the first live sync, check that the returned items carry a plausible `size` (a PDF of a few MB, not a few KB of HTML). If they don't, the item simply has no `size` and the Fetch plan shows "size unknown": nothing else changes. A `url` activity that points to another site has no size either.
+
 ## Downloading files
 
 The session cookie is http-only, so scripts can't reuse it. Download from inside the logged-in tab: `fetch(url, {credentials: 'include'})` → `blob` → a temporary `<a download="<name>">` click. Files land in the student's Downloads folder (verified). Chrome may ask once to allow multiple downloads from opal.openu.ac.il: the student approves it.
 
-Put the files in one batch folder by prefixing names, e.g. `unistudent-<course>-<date>__<name>`, and write the listing as a JSON download the same way.
+Put the files in one batch folder by prefixing names, e.g. `unistudent-<course>-<date>__<name>`, and write the listing as a JSON download the same way: `new Blob([JSON.stringify(LISTING)], {type: 'application/json'})` → `URL.createObjectURL` → the same `<a download>` click.
 
 ## Recordings
 
 - Video collections: `/mod/ouilvideocollection/view.php?c=<id>`. Each recording is a `.ovc_playlist_title` element (title) inside `.ovc_playlist`; the date and lecturer are next to it.
-- Clicking a title loads an iframe `/local/ouil_video/player.php?mediaid=<id>`. In that iframe, `jwplayer_parameters.file` is an HLS playlist on `souvod1.bynetcdn.com` with a time-limited token in the URL. It needs **no cookies**: ffmpeg can download it directly while the token is valid (a few hours), so collect the URLs and download right away.
-- Two quality variants: about 1.8 Mbit/s and 0.4 Mbit/s. A three-hour session is about 3 GB at high quality, far less at low quality or audio only, which is all transcription needs.
+- Clicking a title loads an iframe `/local/ouil_video/player.php?mediaid=<id>`. In that iframe, `jwplayer_parameters.file` is an HLS playlist on `souvod1.bynetcdn.com` with a time-limited token in the URL. It needs **no cookies**: ffmpeg can download it directly while the token is valid (a few hours). A whole course takes longer than that to download, so a link is collected only after the student's OK, one recording at a time, just before its download.
+- Two quality variants: about 1.8 Mbit/s and 0.4 Mbit/s. At 1.8 Mbit/s an hour is about 0.81 GB, so a three-hour session is about 2.4 GB; far less at low quality or audio only, which is all transcription needs. The Fetch plan estimates a recording's size from its length at 1.8 Mbit/s.
 
-Stream snippet (in the collection tab):
+Recordings snippet (scan, in the collection tab; collects no links). It returns each title with the text around it, where the date, the lecturer and, when shown, the length are:
 
 ```js
-const out = [];
-for (const t of document.querySelectorAll('.ovc_playlist_title')) {
-  t.click(); await new Promise(r => setTimeout(r, 4000));
-  out.push({name: t.textContent.trim(), stream_url: document.querySelector('iframe').contentWindow.jwplayer_parameters.file});
-}
-out
+[...document.querySelectorAll('.ovc_playlist_title')].map(t => ({
+  title: t.textContent.trim(),
+  around: t.parentElement.textContent.trim().replace(/\s+/g, ' '),
+}))
 ```
 
-The javascript tool hides tokenised URLs from Claude's view, so write them straight into the listing download instead of returning them.
+Read the date and the length from `around`. A length (`h:mm:ss` or `mm:ss`) becomes the item's `seconds`; a time of day ("18:00-21:00") is not a length. Unverified on the live site: whether a recording's length is shown next to its title at all, and in which form. On the first live sync, check one collection by eye and record what you find here. No length shown: leave `seconds` out, and the Fetch plan shows the recording as "size unknown".
+
+Stream snippet (download, in the collection tab; only after the student's OK, one recording per run; `ITEM` is that recording's item from the approved listing, `FILE` the one-recording listing's name):
+
+```js
+const t = [...document.querySelectorAll('.ovc_playlist_title')].find(e => e.textContent.trim() === ITEM.title);
+if (!t) throw new Error('recording no longer on the site');
+t.click(); await new Promise(r => setTimeout(r, 4000));
+const stream_url = document.querySelector('iframe').contentWindow.jwplayer_parameters.file;
+const a = document.createElement('a');
+a.href = URL.createObjectURL(new Blob([JSON.stringify({items: [{...ITEM, stream_url}]})], {type: 'application/json'}));
+a.download = FILE; a.click();
+'saved'
+```
+
+The javascript tool hides tokenised URLs from Claude's view, so the snippet writes the link straight into the one-recording listing instead of returning it. `us recordings fetch` downloads from that file.
 
 ## Terms of use
 
