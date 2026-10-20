@@ -48,6 +48,7 @@ a:hover { text-decoration-color: var(--ink); text-decoration-thickness: 2px; }
 :focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 2px; }
 img, video, svg { display: block; max-width: 100%; }
 code, pre { font-family: ui-monospace, "SF Mono", Menlo, Consolas, monospace; font-size: .86em; }
+.nowrap { white-space: nowrap; }
 .sr { position: absolute; width: 1px; height: 1px; overflow: hidden; clip: rect(0 0 0 0); white-space: nowrap; }
 
 /* The reader: a text column and a margin, on one page */
@@ -167,15 +168,12 @@ details.cite[open] .open-hint { display: none; }
 .toc time { font-variant-numeric: tabular-nums; font-weight: 600; }
 .toc .tag { font-weight: 700; }
 
-/* The comparison table: the reader's own table rules */
-.versus { width: 100%; border-collapse: collapse; margin: 1.6rem 0 0; font-size: 1rem; line-height: 1.5; }
-.versus caption { text-align: left; caption-side: bottom; font-size: .9rem; color: var(--pencil); padding-top: .8rem; }
-.versus th, .versus td { text-align: left; vertical-align: top; padding: .8rem .9rem .8rem 0; }
-.versus thead th { font-size: 1.05rem; border-top: 2px solid var(--ink); border-bottom: 1px solid var(--ink); padding-top: .7rem; }
-.versus tbody th { font-weight: 700; width: 22%; }
-.versus tbody tr + tr > * { border-top: 1px solid var(--rule); }
-.versus tbody tr:last-child > * { border-bottom: 2px solid var(--ink); }
-.versus td.us { font-weight: 500; }
+/* Why not NotebookLM: numbered points in the margin's hand */
+.better { list-style: none; counter-reset: pt; margin: .4rem 0 0; padding: 0; }
+.better > li { counter-increment: pt; position: relative; padding: 0 0 0 3rem; margin-bottom: 1.6rem; }
+.better > li::before { content: counter(pt) "."; position: absolute; left: 0; top: -.1rem; font: 700 1.6rem/1 var(--hand); color: var(--pencil); }
+.better h3 { margin: 0 0 .35rem; font-size: 1.3rem; }
+.better p { margin: 0; }
 
 /* Install: a real sequence, so it is numbered */
 .steps { list-style: none; counter-reset: step; margin: 1.8rem 0 0; padding: 0; }
@@ -228,18 +226,6 @@ details.cite[open] .open-hint { display: none; }
   .runhead { flex-wrap: wrap; }
   .runhead nav li.wide { display: none; }
   .pack { grid-template-columns: 1fr; }
-  .versus { font-size: .94rem; }
-  .versus thead { display: none; }
-  .versus, .versus tbody, .versus tr, .versus th, .versus td { display: block; width: auto; }
-  .versus tbody tr { padding: .9rem 0; }
-  .versus tbody tr + tr > * { border-top: 0; }
-  .versus tbody tr + tr { border-top: 1px solid var(--rule); }
-  .versus tbody tr:last-child > * { border-bottom: 0; }
-  .versus tbody tr:last-child { border-bottom: 2px solid var(--ink); }
-  .versus tbody th { padding: 0 0 .3rem; width: auto; }
-  .versus caption { display: block; padding: 0 0 .8rem; }
-  .versus td { padding: .15rem 0 .25rem; }
-  .versus td::before { content: attr(data-label) ": "; font-weight: 700; }
   .steps > li { padding-left: 3.4rem; }
   .steps > li::before { width: 2.4rem; height: 2.4rem; font-size: 1.3rem; }
   .cmd pre { padding-right: 1rem; padding-bottom: 3.2rem; }
@@ -268,7 +254,7 @@ details.cite[open] .open-hint { display: none; }
 <section class="hero" aria-labelledby="h-hero">
   <div class="row">
     <div>
-      <h1 id="h-hero">Your AI read the whole internet. <span class="hl draw">Your exam didn't.</span></h1>
+      <h1 id="h-hero">Study from your course, <span class="hl draw nowrap">not the internet.</span></h1>
       <p class="lede">A free plugin that makes your AI answer from your course's own files, with the exact page or lecture minute.</p>
       <div class="actions">
         <a class="go" href="#install">Install in 3 steps</a>
@@ -439,26 +425,33 @@ details.cite[open] .open-hint { display: none; }
   <div class="row">
     <div>
       <h2 id="h-nblm">Why not just use NotebookLM?</h2>
-      <p>NotebookLM is a good research notebook, and it also answers from the sources you give it. UniStudent is built for one job: studying one course for its exam.</p>
+      <p>NotebookLM is a good research notebook, and it also answers from the sources you give it. UniStudent is built for one job: studying your course for its exam. Here's what that gets you.</p>
     </div>
     <aside class="note" aria-label="Margin note"><p class="folio">p. 4</p></aside>
   </div>
   <div class="row">
-    <table class="versus">
-      <caption>NotebookLM is a Google product. Compared as of October 2026.</caption>
-      <thead>
-        <tr><th scope="col"><span class="sr">Topic</span></th><th scope="col">NotebookLM</th><th scope="col">UniStudent</th></tr>
-      </thead>
-      <tbody>
-        <tr><th scope="row">Where it lives</th><td data-label="NotebookLM">A separate Google website</td><td class="us" data-label="UniStudent">Inside the AI app you already use</td></tr>
-        <tr><th scope="row">Your files</th><td data-label="NotebookLM">Uploaded to and kept on Google's servers</td><td class="us" data-label="UniStudent">Kept in a folder on your computer; your AI app reads what it needs to answer</td></tr>
-        <tr><th scope="row">New material</th><td data-label="NotebookLM">You add each source yourself</td><td class="us" data-label="UniStudent">Drop it in the inbox, or your university plugin downloads it</td></tr>
-        <tr><th scope="row">Answers</th><td data-label="NotebookLM">From your sources, with citations</td><td class="us" data-label="UniStudent">From your course, with the exact page or minute; anything else marked ⚠️</td></tr>
-        <tr><th scope="row">Recordings</th><td data-label="NotebookLM">Audio can be a source</td><td class="us" data-label="UniStudent">A timed table of contents, the lecturer's announcements, one click to the minute</td></tr>
-        <tr><th scope="row">Studying</th><td data-label="NotebookLM">Study guides, flashcards, audio overviews</td><td class="us" data-label="UniStudent">Per unit: by heart vs. understand, common mistakes, practice up to real past exams</td></tr>
-        <tr><th scope="row">Cost</th><td data-label="NotebookLM">Free tier with limits, paid plans</td><td class="us" data-label="UniStudent">Free and open source (MIT); runs on your AI app's plan</td></tr>
-      </tbody>
-    </table>
+    <ol class="better">
+      <li>
+        <h3>Free, with no paid tiers.</h3>
+        <p>No plan to upgrade to and no limits of its own. It runs on the AI app you already pay for, or its free plan.</p>
+      </li>
+      <li>
+        <h3>Your course's illustrations, redrawn.</h3>
+        <p>Graphs, flowcharts, circuits and molecules from your course come back as clean drawings in your study pack, not just described in words.</p>
+      </li>
+      <li>
+        <h3>It's your AI, with everything it can already do.</h3>
+        <p>UniStudent lives inside the AI app you use, so every other tool you've added there works with your course too. Studying engineering, with a 3D modelling plugin installed? Ask for <span class="say">a 3D model of the part in question 6</span>.</p>
+      </li>
+      <li>
+        <h3>It fetches and sorts your material.</h3>
+        <p>With a plugin for your university, new material comes in from the course site by itself. Anything else, drop in the inbox folder: it reads each file and sorts it into the right unit. No uploading sources one by one.</p>
+      </li>
+      <li>
+        <h3>Made for students, from the first minute.</h3>
+        <p>Study packs per unit, recordings with the lecturer's announcements, practice that builds up to past exams. Nothing to set up or prompt your way into.</p>
+      </li>
+    </ol>
     <aside class="note" aria-label="Margin note"><p>Like NotebookLM's audio overviews? Keep them. The two work fine side by side.</p></aside>
   </div>
 </section>
@@ -553,7 +546,7 @@ details.cite[open] .open-hint { display: none; }
 <section class="close" aria-labelledby="h-close">
   <div class="row">
     <div>
-      <h2 id="h-close">Study from your course, <span class="hl">not the internet.</span></h2>
+      <h2 id="h-close">Set it up once. <span class="hl">Study from it all semester.</span></h2>
       <p class="lede">Free and open source, under the MIT license. Read the code, file an issue, or suggest a plugin for your university.</p>
       <div class="actions">
         <a class="go" href="#install">Start with step 1</a>
