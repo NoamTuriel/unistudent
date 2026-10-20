@@ -1,0 +1,365 @@
+{
+  "schemaVersion": 2,
+  "generatedAt": "2026-10-20T18:31:02+00:00",
+  "title": "Design System: UniStudent",
+  "extensions": {
+    "colorMeta": {
+      "paper": {
+        "role": "neutral",
+        "displayName": "Reader Paper",
+        "canonical": "oklch(98.7% 0.004 106.5)",
+        "tonalRamp": [
+          "oklch(15% 0.004 106.5)",
+          "oklch(26% 0.004 106.5)",
+          "oklch(38% 0.004 106.5)",
+          "oklch(50% 0.004 106.5)",
+          "oklch(62% 0.004 106.5)",
+          "oklch(74% 0.004 106.5)",
+          "oklch(85% 0.004 106.5)",
+          "oklch(95% 0.004 106.5)"
+        ]
+      },
+      "ink": {
+        "role": "neutral",
+        "displayName": "Print Ink",
+        "canonical": "oklch(23.2% 0.004 286.1)",
+        "tonalRamp": [
+          "oklch(15% 0.004 286.1)",
+          "oklch(26% 0.004 286.1)",
+          "oklch(38% 0.004 286.1)",
+          "oklch(50% 0.004 286.1)",
+          "oklch(62% 0.004 286.1)",
+          "oklch(74% 0.004 286.1)",
+          "oklch(85% 0.004 286.1)",
+          "oklch(95% 0.004 286.1)"
+        ]
+      },
+      "pencil": {
+        "role": "neutral",
+        "displayName": "Pencil Grey",
+        "canonical": "oklch(45.2% 0.025 264.3)",
+        "tonalRamp": [
+          "oklch(15% 0.025 264.3)",
+          "oklch(26% 0.025 264.3)",
+          "oklch(38% 0.025 264.3)",
+          "oklch(50% 0.025 264.3)",
+          "oklch(62% 0.025 264.3)",
+          "oklch(74% 0.025 264.3)",
+          "oklch(85% 0.025 264.3)",
+          "oklch(95% 0.025 264.3)"
+        ]
+      },
+      "rule": {
+        "role": "neutral",
+        "displayName": "Hairline Rule",
+        "canonical": "oklch(87.4% 0.009 106.6)",
+        "tonalRamp": [
+          "oklch(15% 0.009 106.6)",
+          "oklch(26% 0.009 106.6)",
+          "oklch(38% 0.009 106.6)",
+          "oklch(50% 0.009 106.6)",
+          "oklch(62% 0.009 106.6)",
+          "oklch(74% 0.009 106.6)",
+          "oklch(85% 0.009 106.6)",
+          "oklch(95% 0.009 106.6)"
+        ]
+      },
+      "highlighter-yellow": {
+        "role": "primary",
+        "displayName": "Course Yellow",
+        "canonical": "oklch(94.3% 0.167 104)",
+        "tonalRamp": [
+          "oklch(15% 0.167 104)",
+          "oklch(26% 0.167 104)",
+          "oklch(38% 0.167 104)",
+          "oklch(50% 0.167 104)",
+          "oklch(62% 0.167 104)",
+          "oklch(74% 0.167 104)",
+          "oklch(85% 0.167 104)",
+          "oklch(95% 0.167 104)"
+        ]
+      },
+      "highlighter-green": {
+        "role": "secondary",
+        "displayName": "Action Green",
+        "canonical": "oklch(87.9% 0.182 133.1)",
+        "tonalRamp": [
+          "oklch(15% 0.182 133.1)",
+          "oklch(26% 0.182 133.1)",
+          "oklch(38% 0.182 133.1)",
+          "oklch(50% 0.182 133.1)",
+          "oklch(62% 0.182 133.1)",
+          "oklch(74% 0.182 133.1)",
+          "oklch(85% 0.182 133.1)",
+          "oklch(95% 0.182 133.1)"
+        ]
+      },
+      "highlighter-green-deep": {
+        "role": "secondary",
+        "displayName": "Pressed Green",
+        "canonical": "oklch(82.2% 0.196 134)",
+        "tonalRamp": [
+          "oklch(15% 0.196 134)",
+          "oklch(26% 0.196 134)",
+          "oklch(38% 0.196 134)",
+          "oklch(50% 0.196 134)",
+          "oklch(62% 0.196 134)",
+          "oklch(74% 0.196 134)",
+          "oklch(85% 0.196 134)",
+          "oklch(95% 0.196 134)"
+        ]
+      },
+      "highlighter-pink": {
+        "role": "tertiary",
+        "displayName": "Warning Pink",
+        "canonical": "oklch(80.7% 0.13 350.5)",
+        "tonalRamp": [
+          "oklch(15% 0.13 350.5)",
+          "oklch(26% 0.13 350.5)",
+          "oklch(38% 0.13 350.5)",
+          "oklch(50% 0.13 350.5)",
+          "oklch(62% 0.13 350.5)",
+          "oklch(74% 0.13 350.5)",
+          "oklch(85% 0.13 350.5)",
+          "oklch(95% 0.13 350.5)"
+        ]
+      },
+      "code-wash": {
+        "role": "neutral",
+        "displayName": "Code Wash",
+        "canonical": "oklch(95.3% 0.008 106.5)",
+        "tonalRamp": [
+          "oklch(15% 0.008 106.5)",
+          "oklch(26% 0.008 106.5)",
+          "oklch(38% 0.008 106.5)",
+          "oklch(50% 0.008 106.5)",
+          "oklch(62% 0.008 106.5)",
+          "oklch(74% 0.008 106.5)",
+          "oklch(85% 0.008 106.5)",
+          "oklch(95% 0.008 106.5)"
+        ]
+      },
+      "sheet": {
+        "role": "neutral",
+        "displayName": "Loose Sheet",
+        "canonical": "oklch(100% 0 0)",
+        "tonalRamp": [
+          "oklch(15% 0 0)",
+          "oklch(26% 0 0)",
+          "oklch(38% 0 0)",
+          "oklch(50% 0 0)",
+          "oklch(62% 0 0)",
+          "oklch(74% 0 0)",
+          "oklch(85% 0 0)",
+          "oklch(95% 0 0)"
+        ]
+      }
+    },
+    "typographyMeta": {
+      "display": {
+        "displayName": "Display",
+        "purpose": "Hero headline only; the closing headline reuses it slightly smaller."
+      },
+      "headline": {
+        "displayName": "Headline",
+        "purpose": "Section titles, one per reader page."
+      },
+      "title": {
+        "displayName": "Title",
+        "purpose": "Subsections and install steps."
+      },
+      "lede": {
+        "displayName": "Lede",
+        "purpose": "The one-sentence subhead under the headline."
+      },
+      "body": {
+        "displayName": "Body",
+        "purpose": "Running text, max 68ch."
+      },
+      "hand": {
+        "displayName": "Hand",
+        "purpose": "Kalam margin notes and citations: the student's pencil."
+      },
+      "folio": {
+        "displayName": "Folio",
+        "purpose": "Italic page numbers in the margin and running head."
+      },
+      "label": {
+        "displayName": "Label",
+        "purpose": "The Install button."
+      }
+    },
+    "shadows": [
+      {
+        "name": "figure-on-page",
+        "value": "0 2px 4px rgb(29 29 31 / .08), 0 18px 40px -22px rgb(29 29 31 / .5)",
+        "purpose": "The video figure."
+      },
+      {
+        "name": "loose-sheet",
+        "value": "0 1px 2px rgb(29 29 31 / .12), 0 14px 28px -16px rgb(29 29 31 / .45)",
+        "purpose": "The cited source page lifted off the reader."
+      },
+      {
+        "name": "pressable",
+        "value": "0 1px 0 rgb(29 29 31 / .25), 0 6px 14px -8px rgb(29 29 31 / .45)",
+        "purpose": "The Install button."
+      }
+    ],
+    "motion": [
+      {
+        "name": "ease-ink",
+        "value": "cubic-bezier(.16, 1, .3, 1)",
+        "purpose": "Easing for the highlighter draw and the source-page unfold."
+      },
+      {
+        "name": "highlighter-draw",
+        "value": "1.1s ease-ink, 0.35s delay, once",
+        "purpose": "The hero's yellow highlight draws itself on load; reduced motion shows it already drawn."
+      },
+      {
+        "name": "sheet-unfold",
+        "value": "0.35s ease-ink, from translateY(-6px) scale(.98) and opacity 0",
+        "purpose": "Opening a cited source page."
+      },
+      {
+        "name": "press",
+        "value": "0.15s ease-out",
+        "purpose": "Green button fill change and 1px lift on hover."
+      }
+    ],
+    "breakpoints": [
+      {
+        "name": "one-column",
+        "value": "62rem"
+      },
+      {
+        "name": "phone",
+        "value": "40rem"
+      }
+    ]
+  },
+  "components": [
+    {
+      "name": "Install Button",
+      "kind": "button",
+      "refersTo": "button-primary",
+      "description": "The one primary action: a highlighter-green, pressable button.",
+      "html": "<a class=\"ds-go\" href=\"#install\">Install in 3 steps</a>",
+      "css": ".ds-go { display: inline-block; font: 700 1.12rem/1 var(--print); color: var(--ink); text-decoration: none; background: var(--green); padding: .95rem 1.4rem; border-radius: 6px; box-shadow: 0 1px 0 rgb(29 29 31 / .25), 0 6px 14px -8px rgb(29 29 31 / .45); transition: background-color .15s ease-out, transform .15s ease-out; } .ds-go:hover { background: var(--green-deep); transform: translateY(-1px); } .ds-go:active { transform: translateY(0); } .ds-go:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }"
+    },
+    {
+      "name": "Copy Button and Command",
+      "kind": "custom",
+      "refersTo": "command-block",
+      "description": "A command the student copies, on a code wash, with a green copy button.",
+      "html": "<div class=\"ds-cmd\"><pre>curl -LsSf https://astral.sh/uv/install.sh | sh</pre><button class=\"ds-copy\" type=\"button\">Copy</button></div>",
+      "css": ".ds-cmd { position: relative; } .ds-cmd pre { margin: 0; padding: .95rem 6.2rem .95rem 1rem; background: #f0f0ea; color: var(--ink); border-radius: 5px; line-height: 1.55; white-space: pre-wrap; font-family: ui-monospace, 'SF Mono', Menlo, Consolas, monospace; font-size: .86em; } .ds-copy { position: absolute; top: .55rem; right: .55rem; font: 700 .88rem var(--print); color: var(--ink); background: var(--green); border: 0; border-radius: 4px; padding: .45rem .8rem; cursor: pointer; } .ds-copy:hover { background: var(--green-deep); } .ds-copy:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }"
+    },
+    {
+      "name": "Link",
+      "kind": "custom",
+      "refersTo": "",
+      "description": "Ink text with a thin pencil underline that thickens to ink on hover.",
+      "html": "<a class=\"ds-link\" href=\"#trust\">See an answer it gives</a>",
+      "css": ".ds-link { color: var(--ink); font: 600 1.125rem var(--print); text-decoration-line: underline; text-decoration-color: var(--pencil); text-decoration-thickness: 1px; text-underline-offset: .18em; } .ds-link:hover { text-decoration-color: var(--ink); text-decoration-thickness: 2px; } .ds-link:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; border-radius: 2px; }"
+    },
+    {
+      "name": "Running Head",
+      "kind": "nav",
+      "refersTo": "",
+      "description": "Brand left, contents right, each link followed by an italic pencil page number; hairline below.",
+      "html": "<header class=\"ds-runhead\"><a class=\"ds-brand\" href=\"#top\">UniStudent</a><nav><a href=\"#trust\">Why trust it<span class=\"ds-pg\">p.&nbsp;2</span></a><a href=\"#install\">Install<span class=\"ds-pg\">p.&nbsp;5</span></a></nav></header>",
+      "css": ".ds-runhead { display: flex; align-items: center; justify-content: space-between; gap: 1.5rem; padding: 1.1rem 0 .9rem; border-bottom: 1px solid var(--rule); font: .92rem var(--print); color: var(--ink); } .ds-brand { font-weight: 700; font-size: 1.05rem; color: var(--ink); text-decoration: none; } .ds-runhead nav { display: flex; gap: 1.4rem; } .ds-runhead nav a { color: var(--ink); text-decoration: none; } .ds-runhead nav a:hover { text-decoration: underline; } .ds-runhead a:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; } .ds-pg { color: var(--pencil); font-style: italic; margin-left: .3em; font-size: .9em; }"
+    },
+    {
+      "name": "Highlighters",
+      "kind": "chip",
+      "refersTo": "",
+      "description": "The three fixed-meaning highlighter marks: from your course (yellow), do this (green), not from your course (pink).",
+      "html": "<p class=\"ds-hl-demo\"><span class=\"ds-hl\">From your course.</span> <span class=\"ds-hl-green\">Add my new files.</span> <span class=\"ds-hl-pink\">⚠️ Not from your course material.</span></p>",
+      "css": ".ds-hl-demo { font: 400 1.125rem/1.62 var(--print); color: var(--ink); } .ds-hl { background-image: linear-gradient(101deg, transparent .1em, var(--yellow) .3em, var(--yellow) calc(100% - .35em), transparent 100%); background-repeat: no-repeat; background-position: 0 62%; background-size: 100% 80%; -webkit-box-decoration-break: clone; box-decoration-break: clone; padding: 0 .12em; margin: 0 -.12em; } .ds-hl-green { font-weight: 700; background-image: linear-gradient(101deg, transparent .1em, var(--green) .3em, var(--green) calc(100% - .35em), transparent 100%); background-repeat: no-repeat; background-position: 0 62%; background-size: 100% 80%; -webkit-box-decoration-break: clone; box-decoration-break: clone; padding: 0 .12em; margin: 0 -.12em; } .ds-hl-pink { background-image: linear-gradient(101deg, transparent .1em, var(--pink) .3em, var(--pink) calc(100% - .35em), transparent 100%); background-repeat: no-repeat; background-position: 0 62%; background-size: 100% 80%; -webkit-box-decoration-break: clone; box-decoration-break: clone; padding: 0 .12em; margin: 0 -.12em; }"
+    },
+    {
+      "name": "Margin Note",
+      "kind": "custom",
+      "refersTo": "margin-note",
+      "description": "The student's pencil note in the margin: Kalam, pencil grey, a pencil stroke down the left.",
+      "html": "<aside class=\"ds-note\"><p class=\"ds-folio\">p. 1</p><p><b>Free and open source.</b></p><p>Any university, any course.</p></aside>",
+      "css": ".ds-note { font: 400 1.18rem/1.3 var(--hand); color: var(--pencil); padding-left: .9rem; border-left: 1px solid var(--pencil); max-width: 15rem; } .ds-note b { font-weight: 700; color: var(--ink); } .ds-note p { margin: 0 0 .6rem; } .ds-folio { font: italic 400 .95rem var(--print); color: var(--pencil); }"
+    },
+    {
+      "name": "Citation and Source Page",
+      "kind": "card",
+      "refersTo": "source-page",
+      "description": "A margin citation that opens the cited course page as a lifted white sheet.",
+      "html": "<details class=\"ds-cite\" open><summary>Unit 2, p. 14 <span class=\"ds-hint\">(open it)</span></summary><div class=\"ds-sheet\"><div class=\"ds-run\"><span>Unit 2. Demand</span><span>p. 14</span></div><p class=\"ds-sp-title\">2.3 The law of demand</p><p><span class=\"ds-hl\">When the price of a good rises, buyers purchase less of it.</span></p></div></details>",
+      "css": ".ds-cite summary { cursor: pointer; list-style: none; font: 700 1.18rem/1.3 var(--hand); color: var(--ink); text-decoration: underline; text-decoration-color: var(--pencil); text-underline-offset: .2em; } .ds-cite summary::-webkit-details-marker { display: none; } .ds-cite summary:hover { text-decoration-thickness: 2px; } .ds-cite summary:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; } .ds-cite[open] summary { text-decoration: none; } .ds-hint { font-weight: 400; color: var(--pencil); } .ds-cite[open] .ds-hint { display: none; } .ds-sheet { margin-top: .8rem; background: #fff; padding: 1rem 1.05rem 1.1rem; border-radius: 3px; font: 400 .9rem/1.5 var(--print); color: var(--ink); box-shadow: 0 1px 2px rgb(29 29 31 / .12), 0 14px 28px -16px rgb(29 29 31 / .45); max-width: 16rem; } .ds-run { display: flex; justify-content: space-between; font-style: italic; color: var(--pencil); font-size: .8rem; border-bottom: 1px solid var(--rule); padding-bottom: .35rem; margin-bottom: .6rem; } .ds-sp-title { font-weight: 700; font-size: .95rem; margin: 0 0 .35rem; } .ds-sheet p { margin: 0 0 .5rem; } .ds-hl { background-image: linear-gradient(101deg, transparent .1em, var(--yellow) .3em, var(--yellow) calc(100% - .35em), transparent 100%); background-repeat: no-repeat; background-position: 0 62%; background-size: 100% 80%; -webkit-box-decoration-break: clone; box-decoration-break: clone; padding: 0 .12em; margin: 0 -.12em; }"
+    },
+    {
+      "name": "Tabs",
+      "kind": "nav",
+      "refersTo": "tab",
+      "description": "Text tabs on a hairline baseline; the selected tab gets a 3px ink underline.",
+      "html": "<div class=\"ds-tabs\" role=\"tablist\"><button role=\"tab\" aria-selected=\"true\">Mac</button><button role=\"tab\" aria-selected=\"false\">Windows</button></div>",
+      "css": ".ds-tabs { display: flex; gap: 1.4rem; border-bottom: 1px solid var(--rule); } .ds-tabs button { font: 600 1rem var(--print); color: var(--pencil); background: none; border: 0; padding: .5rem 0 .55rem; cursor: pointer; border-bottom: 3px solid transparent; margin-bottom: -1px; } .ds-tabs button:hover { color: var(--ink); } .ds-tabs button[aria-selected=\"true\"] { color: var(--ink); border-bottom-color: var(--ink); } .ds-tabs button:focus-visible { outline: 2px solid var(--ink); outline-offset: 3px; }"
+    },
+    {
+      "name": "Install Step",
+      "kind": "custom",
+      "refersTo": "step-number",
+      "description": "A numbered install step: a green disc set in display weight beside the step title.",
+      "html": "<ol class=\"ds-steps\"><li><h3>Set up your first course</h3><p>Open a new chat and ask for it.</p></li></ol>",
+      "css": ".ds-steps { list-style: none; counter-reset: step; margin: 0; padding: 0; font: 400 1.125rem/1.62 var(--print); color: var(--ink); } .ds-steps > li { counter-increment: step; position: relative; padding: 0 0 1rem 4.2rem; } .ds-steps > li::before { content: counter(step); position: absolute; left: 0; top: -.35rem; width: 2.9rem; height: 2.9rem; display: grid; place-items: center; font: 760 1.6rem/1 var(--print); color: var(--ink); background: var(--green); border-radius: 50%; } .ds-steps h3 { margin: 0 0 .5rem; font-size: 1.5rem; font-weight: 700; letter-spacing: -.02em; }"
+    }
+  ],
+  "narrative": {
+    "northStar": "The Annotated Course Reader",
+    "overview": "The page is a printed course reader that a diligent student has already worked through. Everything set in type is the printed book: a serif text column on coated white paper, running heads, page numbers, numbered figures and ruled tables. Everything the student added is in pencil and highlighter: handwritten notes in a right-hand margin, and three highlighters whose colors carry fixed meanings. The visitor reads the product's promise the way they would read their own marked-up course.\n\nDensity is a reading density, not a dashboard density: one measure-limited text column with a narrower margin beside it, generous section breaks, no grid of tiles. Depth is paper on paper. Motion is a highlighter stroke drawn once and a cited page unfolding when opened; nothing loops or decorates. The world refuses the AI-tool landing default: no dark hero, no gradient wash, no feature-card grid, no hero code block.",
+    "keyCharacteristics": [
+      "A two-column reader: text column plus handwritten margin, collapsing to one column with notes falling in under what they annotate.",
+      "Three highlighters with fixed meanings: yellow is from your course, green is do this, pink is not from your course.",
+      "Literata for all print, Kalam only for the student's hand.",
+      "Running head with page numbers as navigation; folios (\"p. 2\") in the margin.",
+      "Boxes exist only as the reader's own objects: figures, ruled tables, a pulled-out source page, a command to copy."
+    ],
+    "rules": [
+      {
+        "name": "The Three Highlighters Rule",
+        "body": "Yellow means from your course, green means do this, pink means not from your course. A highlighter is never used for emphasis or decoration outside its meaning, and no fourth accent is introduced.",
+        "section": "colors"
+      },
+      {
+        "name": "The Ink Carries Text Rule",
+        "body": "Highlighters are backgrounds behind ink, never text colors. Text on any highlighter is ink.",
+        "section": "colors"
+      },
+      {
+        "name": "The Print and Pencil Rule",
+        "body": "Literata is what the course printed; Kalam is what the student wrote. Kalam never sets a heading, a button or body text, and Literata never sets a margin note.",
+        "section": "typography"
+      },
+      {
+        "name": "The Objects Only Rule",
+        "body": "Only a physical object on the page casts a shadow: a figure, a lifted sheet, a pressable button. Text blocks, notes, tables and sections stay flat.",
+        "section": "elevation"
+      }
+    ],
+    "dos": [
+      "**Do** set every printed word in Literata and every handwritten word in Kalam, per the Print and Pencil Rule.",
+      "**Do** mark meaning with the three highlighters only: yellow for from your course, green for actions, pink for the ⚠️ note.",
+      "**Do** put asides, reassurances and citations in the margin as pencil notes, and let them fall under their text on narrow screens.",
+      "**Do** number figures and steps, and give each section a page number in the running head and margin.",
+      "**Do** draw structure with rules (hairline, 2px ink for table bounds) rather than fills.",
+      "**Do** gate every animation behind `prefers-reduced-motion: no-preference`."
+    ],
+    "donts": [
+      "**Don't** use a dark hero, gradient backgrounds, or a feature-card grid.",
+      "**Don't** box content that is not a reader object; the only boxes are figures, tables, a lifted source page and copyable commands.",
+      "**Don't** use a highlighter for decoration or generic emphasis, and don't add a fourth accent color.",
+      "**Don't** set text in a highlighter color or put anything but ink on a highlighter.",
+      "**Don't** add shadows to text, notes, tables or sections, per the Objects Only Rule.",
+      "**Don't** use any emoji other than ⚠️."
+    ]
+  }
+}
