@@ -4,390 +4,470 @@
 <meta charset="utf-8">
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>UniStudent: study from your course, not the internet</title>
-<meta name="description" content="A free plugin for the AI app you already use. It reads your course's own files and answers from them, with the exact page or lecture minute, and builds study packs with summaries, illustrations and an exercise guide.">
+<meta name="description" content="A free plugin for the AI app you already use. It answers from your course's own files, with the exact page or lecture minute, and builds study packs with summaries, illustrations and an exercise guide.">
 <meta property="og:title" content="UniStudent: study from your course, not the internet">
 <meta property="og:description" content="A free plugin for your AI app that answers from your course's own files, with the exact page or lecture minute.">
 <meta property="og:image" content="https://noamturiel.github.io/unistudent/media/unistudent-35s.jpg">
-<meta property="og:type" content="website">
 <meta name="twitter:card" content="summary_large_image">
 <link rel="icon" href="media/icon.svg" type="image/svg+xml">
 <link rel="preconnect" href="https://fonts.googleapis.com">
 <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
-<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400..800&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500..800&family=Inter:wght@400..700&display=swap" rel="stylesheet">
 <style>
 :root {
-  --bg: #08080b;
-  --bg-2: #0e0e13;
-  --card: #121218;
-  --line: rgb(255 255 255 / .08);
-  --line-2: rgb(255 255 255 / .14);
-  --text: #f4f4f6;
-  --muted: #a3a3b2;
-  --faint: #6f6f80;
-  --violet: #a78bfa;
-  --blue: #60a5fa;
-  --mint: #5eead4;
-  --warn: #fbbf24;
-  --grad: linear-gradient(100deg, var(--violet), var(--blue) 50%, var(--mint));
+  --bg: #fdfcfa;
+  --ink: #16171d;
+  --muted: #5d606b;
+  --faint: #8a8d97;
+  --line: #e9e7e1;
+  --soft: #f4f3ef;
+  --accent: #4f46e5;
+  --accent-soft: #eeedfd;
+  --mint: #0b8f6c;
+  --mint-soft: #e4f5ef;
+  --amber: #b45309;
+  --amber-soft: #fff4e2;
+  --head: "Figtree", "Inter", system-ui, sans-serif;
   --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
-  --mono: "JetBrains Mono", ui-monospace, "SF Mono", Menlo, Consolas, monospace;
-  --wrap: 72rem;
-  color-scheme: dark;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --shadow: 0 0 0 1px var(--line), 0 30px 70px -32px rgb(30 30 60 / .32);
+  color-scheme: light;
 }
 * { box-sizing: border-box; }
 html { scroll-behavior: smooth; }
-body { margin: 0; background: var(--bg); color: var(--text); font: 400 1.0625rem/1.65 var(--sans); -webkit-font-smoothing: antialiased; }
-::selection { background: rgb(167 139 250 / .35); }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1.06rem/1.6 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+::selection { background: var(--accent-soft); }
 a { color: inherit; }
-:focus-visible { outline: 2px solid var(--blue); outline-offset: 3px; border-radius: 6px; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
 img, video, svg { display: block; max-width: 100%; }
-code, pre, kbd { font-family: var(--mono); font-size: .88em; }
-.wrap { max-width: var(--wrap); margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2rem); }
-.icon { width: 1.25rem; height: 1.25rem; fill: none; stroke: currentColor; stroke-width: 1.8; stroke-linecap: round; stroke-linejoin: round; flex: none; }
+code, pre, kbd, time { font-family: var(--mono); font-size: .88em; }
+h1, h2, h3 { font-family: var(--head); margin: 0; letter-spacing: -.03em; line-height: 1.08; text-wrap: balance; }
+.wrap { max-width: 76rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2.5rem); position: relative; }
+.made { font-size: .82rem; color: var(--faint); }
 
 /* Nav */
-.nav { position: sticky; top: 0; z-index: 10; backdrop-filter: blur(14px); -webkit-backdrop-filter: blur(14px); background: rgb(8 8 11 / .72); border-bottom: 1px solid var(--line); }
-.nav .wrap { display: flex; align-items: center; justify-content: space-between; height: 4rem; gap: 1rem; }
-.brand { display: flex; align-items: center; gap: .6rem; font-weight: 700; letter-spacing: -.01em; text-decoration: none; }
-.brand img { width: 1.75rem; height: 1.75rem; }
-.nav ul { display: flex; align-items: center; gap: 1.75rem; margin: 0; padding: 0; list-style: none; font-size: .94rem; }
-.nav ul a { color: var(--muted); text-decoration: none; transition: color .15s; }
-.nav ul a:hover { color: var(--text); }
-.nav .btn { padding: .5rem .9rem; font-size: .9rem; }
+.bar { position: sticky; top: 0; z-index: 20; background: rgb(253 252 250 / .8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.bar .wrap { display: flex; justify-content: space-between; align-items: center; height: 4.2rem; }
+.brand { display: flex; gap: .55rem; align-items: center; font: 800 1.12rem var(--head); letter-spacing: -.02em; text-decoration: none; }
+.brand img { width: 1.85rem; height: 1.85rem; }
+.bar nav { display: flex; gap: 1.8rem; align-items: center; font-size: .95rem; color: var(--muted); }
+.bar nav a { text-decoration: none; }
+.bar nav a:hover { color: var(--ink); }
 
 /* Buttons */
-.btn { display: inline-flex; align-items: center; gap: .55rem; font: 600 1rem/1 var(--sans); text-decoration: none; padding: .85rem 1.3rem; border-radius: 10px; border: 1px solid transparent; cursor: pointer; transition: transform .15s ease-out, background-color .15s, border-color .15s; }
-.btn:hover { transform: translateY(-1px); }
-.btn-primary { background: var(--text); color: var(--bg); }
-.btn-primary:hover { background: #fff; }
-.btn-ghost { background: rgb(255 255 255 / .04); color: var(--text); border-color: var(--line-2); }
-.btn-ghost:hover { background: rgb(255 255 255 / .08); }
-.nav ul .btn-primary { color: var(--bg); }
+.btn { display: inline-flex; align-items: center; gap: .5rem; font: 600 1rem/1 var(--sans); text-decoration: none; padding: .95rem 1.4rem; border-radius: 999px; background: var(--ink); color: #fff; border: 0; cursor: pointer; transition: transform .15s, background-color .15s; }
+.btn:hover { transform: translateY(-1px); background: #000; }
+.btn.ghost { background: rgb(255 255 255 / .75); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.btn.ghost:hover { background: #fff; }
+.bar nav .btn { padding: .6rem 1rem; font-size: .9rem; color: #fff; }
 
 /* Hero */
-.hero { position: relative; padding: clamp(4rem, 10vw, 7rem) 0 0; text-align: center; overflow: hidden; }
-.hero::before { content: ""; position: absolute; inset: -20% -10% auto; height: 46rem; z-index: -1;
-  background: radial-gradient(40% 50% at 50% 30%, rgb(167 139 250 / .28), transparent 70%), radial-gradient(30% 40% at 30% 55%, rgb(96 165 250 / .18), transparent 70%), radial-gradient(30% 40% at 72% 55%, rgb(94 234 212 / .14), transparent 70%); }
-.hero::after { content: ""; position: absolute; inset: 0; z-index: -1; opacity: .5;
-  background-image: linear-gradient(var(--line) 1px, transparent 1px), linear-gradient(90deg, var(--line) 1px, transparent 1px); background-size: 56px 56px;
-  -webkit-mask-image: radial-gradient(60% 50% at 50% 20%, #000, transparent 75%); mask-image: radial-gradient(60% 50% at 50% 20%, #000, transparent 75%); }
-.pill { display: inline-flex; align-items: center; gap: .5rem; padding: .35rem .85rem .35rem .45rem; border: 1px solid var(--line-2); border-radius: 999px; background: rgb(255 255 255 / .04); font-size: .88rem; color: var(--muted); }
-.pill b { color: var(--bg); background: var(--grad); border-radius: 999px; padding: .1rem .55rem; font-size: .78rem; font-weight: 700; }
-h1, h2, h3 { margin: 0; letter-spacing: -.03em; line-height: 1.05; text-wrap: balance; }
-h1 { font-size: clamp(2.7rem, 7vw, 5.4rem); font-weight: 800; margin: 1.6rem auto 0; max-width: 17ch; }
-.grad { background: var(--grad); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.sub { font-size: clamp(1.1rem, 1.8vw, 1.3rem); color: var(--muted); max-width: 38rem; margin: 1.4rem auto 2.2rem; }
-.cta { display: flex; justify-content: center; flex-wrap: wrap; gap: .8rem; }
-.works { margin: 2.6rem 0 0; font-size: .85rem; color: var(--faint); }
-.works ul { display: flex; flex-wrap: wrap; justify-content: center; gap: .5rem; margin: .7rem 0 0; padding: 0; list-style: none; }
-.works li { padding: .3rem .75rem; border: 1px solid var(--line); border-radius: 999px; color: var(--muted); font-size: .88rem; }
-.film { position: relative; margin: clamp(3rem, 6vw, 4.5rem) auto 0; max-width: 60rem; padding: .5rem; border-radius: 18px; background: linear-gradient(180deg, rgb(255 255 255 / .12), rgb(255 255 255 / .02)); box-shadow: 0 0 0 1px var(--line), 0 40px 120px -30px rgb(167 139 250 / .45); }
-.film video { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 12px; background: #000; }
-.film video::cue { font: 500 clamp(1rem, 1.7vw, 1.4rem)/1.35 var(--sans); background: rgb(0 0 0 / .78); }
-.film-cap { display: flex; justify-content: center; align-items: center; gap: 1rem; margin-top: 1rem; font-size: .92rem; color: var(--muted); }
-.link-btn { font: 600 .92rem var(--sans); color: var(--text); background: none; border: 0; padding: 0; cursor: pointer; display: inline-flex; align-items: center; gap: .4rem; }
-.link-btn:hover { color: var(--violet); }
+.aura { position: absolute; left: 50%; top: -12rem; width: 110rem; height: 56rem; margin-left: -55rem; z-index: -1; filter: blur(60px); opacity: .8; pointer-events: none;
+  background: radial-gradient(22% 30% at 32% 42%, #ffdcc7, transparent 70%), radial-gradient(22% 28% at 60% 30%, #dcd6ff, transparent 70%), radial-gradient(22% 28% at 76% 62%, #c9f1e2, transparent 70%); }
+.hero { text-align: center; padding: clamp(2.5rem, 6vw, 4.5rem) 0 0; }
+.kicker { display: inline-flex; gap: .5rem; align-items: center; font-size: .9rem; color: var(--muted); background: rgb(255 255 255 / .75); box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: .35rem .95rem; }
+.kicker i { width: .5rem; height: .5rem; border-radius: 50%; background: var(--mint); }
+h1 { font-size: clamp(2.8rem, 6.8vw, 5.6rem); font-weight: 800; letter-spacing: -.045em; line-height: 1; margin: 1.3rem auto 0; max-width: 15ch; }
+h1 .accent { background: linear-gradient(95deg, var(--accent), #7c3aed 55%, #0e9f8a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { color: var(--muted); font-size: clamp(1.08rem, 1.6vw, 1.2rem); max-width: 41rem; margin: 1.5rem auto 2rem; }
+.cta { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
+.works { margin: 1.6rem 0 0; font-size: .88rem; color: var(--faint); }
+
+/* The demo player */
+.demo { margin: clamp(3rem, 6vw, 4.5rem) auto 0; max-width: 64rem; text-align: left; scroll-margin-top: 5rem; }
+.dtabs { display: flex; gap: .35rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.dtabs button { position: relative; overflow: hidden; font: 600 .92rem var(--sans); color: var(--muted); background: rgb(255 255 255 / .75); border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: .55rem 1rem; cursor: pointer; }
+.dtabs button:hover { color: var(--ink); }
+.dtabs button[aria-selected="true"] { color: #fff; background: var(--ink); box-shadow: none; }
+.dtabs button::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: #a5b4fc; }
+.auto .dtabs button[aria-selected="true"]::after { animation: fill var(--dur, 9s) linear forwards; }
+@keyframes fill { to { width: 100%; } }
+.app { background: #fff; border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; }
+.app-top { display: flex; align-items: center; gap: .9rem; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); font-size: .85rem; color: var(--faint); }
+.app-top .dots { display: flex; gap: .35rem; } .app-top .dots i { width: .62rem; height: .62rem; border-radius: 50%; background: var(--line); }
+.pane { padding: clamp(1.1rem, 2.5vw, 1.8rem); min-height: 27rem; }
+.pane[hidden] { display: none; }
+.pane h3 { font-size: 1.15rem; letter-spacing: -.02em; margin-bottom: .2rem; }
+.pane .cap { color: var(--muted); font-size: .92rem; margin: 0 0 1.2rem; }
+.two { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.5rem; align-items: start; }
+.q { margin: 0 0 1rem auto; width: fit-content; max-width: 90%; background: var(--soft); border-radius: 14px 14px 4px 14px; padding: .55rem .95rem; font-weight: 500; }
+.chat p { margin: 0 0 .85rem; }
+.chip { display: inline-block; margin-left: .3rem; font-size: .76rem; font-weight: 600; color: var(--mint); background: var(--mint-soft); border-radius: 6px; padding: .05rem .45rem; white-space: nowrap; }
+.chip.min { color: var(--accent); background: var(--accent-soft); }
+.warn { color: #8a3b07; background: var(--amber-soft); border-radius: 10px; padding: .55rem .75rem; }
+.src { background: #fff; border-radius: 14px; box-shadow: var(--shadow); padding: 1.1rem 1.2rem; font-size: .9rem; color: var(--muted); }
+.src .head { display: flex; justify-content: space-between; font-size: .76rem; border-bottom: 1px solid var(--line); padding-bottom: .5rem; margin-bottom: .7rem; }
+.src .head b { color: var(--accent); }
+.src h4 { font: 700 1.05rem var(--head); color: var(--ink); margin: 0 0 .4rem; letter-spacing: -.01em; }
+.src p { margin: 0; }
+mark { background: var(--mint-soft); color: var(--ink); padding: 0 .1em; border-radius: 3px; }
+
+/* Inbox */
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.rows li { display: grid; grid-template-columns: 1fr auto 1fr; gap: .8rem; align-items: center; padding: .6rem .8rem; border-radius: 12px; background: var(--soft); font-size: .92rem; }
+.file { display: flex; gap: .55rem; align-items: center; font-weight: 500; min-width: 0; }
+.file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext { flex: none; font: 700 .66rem var(--sans); color: #fff; border-radius: 5px; padding: .18rem .35rem; background: #94a3b8; }
+.ext.pdf { background: #e2574c; } .ext.mp4 { background: var(--accent); } .ext.jpg { background: #0ea5a4; } .ext.pptx { background: #e67e22; } .ext.docx { background: #2b6cb0; }
+.arrow { color: var(--faint); }
+.dest { font-weight: 600; color: var(--ink); display: flex; gap: .4rem; align-items: center; justify-content: flex-end; text-align: right; }
+.dest::before { content: "✓"; color: var(--mint); font-weight: 800; }
+.fetched { margin-top: 1rem; font-size: .9rem; color: var(--muted); display: flex; gap: .5rem; align-items: center; }
+.fetched b { color: var(--ink); }
+.pulse { width: .55rem; height: .55rem; border-radius: 50%; background: var(--mint); flex: none; }
+
+/* Study pack */
+.pack { display: grid; grid-template-columns: 1fr 1fr 1.05fr; gap: 1.2rem; }
+.box h5 { font: 600 .72rem var(--sans); letter-spacing: .07em; text-transform: uppercase; color: var(--faint); margin: 0 0 .45rem; }
+.box ul { margin: 0; padding-left: 1.05rem; font-size: .93rem; }
+.box li { margin-bottom: .3rem; }
+.box li::marker { color: var(--accent); }
+.mistake { margin-top: 1rem; font-size: .9rem; background: #fdecec; color: #8f1d1d; border-radius: 10px; padding: .55rem .75rem; }
+.guide { margin-top: 1rem; }
+.guide div { display: flex; justify-content: space-between; gap: .6rem; font-size: .9rem; padding: .4rem 0; border-top: 1px solid var(--line); }
+.guide b { font-weight: 600; color: var(--accent); white-space: nowrap; }
+.graph svg { width: 100%; height: auto; }
+.graph .curve { stroke-dasharray: 420; }
+.graph figcaption { font-size: .8rem; color: var(--faint); margin-top: .3rem; }
+figure { margin: 0; }
+
+/* Recordings */
+.player { background: #15161c; color: #fff; border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.player .t { display: flex; justify-content: space-between; font-size: .82rem; color: #b8bac4; margin-bottom: .7rem; }
+.player .t b { color: #fff; font-weight: 600; }
+.scrub { position: relative; height: 6px; border-radius: 3px; background: #33353f; }
+.scrub .done { position: absolute; left: 0; top: 0; bottom: 0; width: 64%; border-radius: 3px; background: #a5b4fc; }
+.scrub .knob { position: absolute; top: 50%; left: 64%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; }
+.scrub .mark { position: absolute; top: -4px; width: 3px; height: 14px; border-radius: 2px; background: #fbbf24; }
+.toc { list-style: none; margin: 0; padding: 0; font-size: .93rem; }
+.toc li { display: grid; grid-template-columns: 4.6rem 1fr; gap: .8rem; padding: .55rem .7rem; border-radius: 10px; }
+.toc time { color: var(--faint); }
+.toc .ann { background: var(--amber-soft); }
+.toc .ann b { color: var(--amber); }
+.toc .exam { background: var(--accent-soft); }
+.toc .exam b { color: var(--accent); }
+.toc .now { box-shadow: inset 0 0 0 2px #fbbf24; }
+
+/* Practice */
+.ladder { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; align-items: end; margin-bottom: 1.3rem; }
+.step { border-radius: 12px; padding: .8rem .9rem; font-size: .9rem; background: var(--soft); }
+.step b { display: block; font: 700 .98rem var(--head); letter-spacing: -.01em; }
+.step span { color: var(--muted); font-size: .84rem; }
+.step:nth-child(1) { min-height: 5.2rem; } .step:nth-child(2) { min-height: 6.6rem; } .step:nth-child(3) { min-height: 8rem; } .step:nth-child(4) { min-height: 9.4rem; background: var(--accent); color: #fff; } .step:nth-child(4) span { color: #dcdcff; }
+.methods div { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem .2rem; border-top: 1px solid var(--line); font-size: .93rem; }
+.methods a { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+
+/* Your AI's tools */
+.model { display: grid; place-items: center; background: linear-gradient(180deg, #f6f6fb, #eef0f7); border-radius: 14px; min-height: 15rem; }
+.model svg { width: 13rem; }
+.tool { display: inline-flex; gap: .4rem; align-items: center; font-size: .8rem; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: .2rem .65rem; margin-bottom: .7rem; }
+
+/* Demo motion: everything with --d appears in turn */
+@media (prefers-reduced-motion: no-preference) {
+  .play [style*="--d"] { animation: rise .5s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--d) * 1s); }
+  .play .src { animation: slide .7s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--d) * 1s); }
+  .play .chip.ping { animation: rise .5s both, ping 1.2s ease-out 1.6s 2; animation-delay: calc(var(--d) * 1s), 1.5s; }
+  .play .graph .curve { animation: draw 1.6s ease-out both 1.4s; }
+  .play .scrub .done { animation: seek .8s cubic-bezier(.16, 1, .3, 1) both 3.4s; }
+  .play .scrub .knob { animation: seekk .8s cubic-bezier(.16, 1, .3, 1) both 3.4s; }
+  .play .toc .now { animation: rise .5s both, glow 1.4s ease-out 3.4s 2; animation-delay: calc(var(--d) * 1s), 3.4s; }
+  .play .model svg { animation: rise .6s both 1.6s, float 4s ease-in-out 2.2s infinite; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+  @keyframes slide { from { opacity: 0; transform: translateX(-36px) scale(.96); } }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgb(11 143 108 / .45); } 100% { box-shadow: 0 0 0 10px rgb(11 143 108 / 0); } }
+  @keyframes draw { from { stroke-dashoffset: 420; } to { stroke-dashoffset: 0; } }
+  @keyframes seek { from { width: 12%; } }
+  @keyframes seekk { from { left: 12%; } }
+  @keyframes glow { 50% { box-shadow: inset 0 0 0 2px #fbbf24, 0 0 0 6px rgb(251 191 36 / .25); } }
+  @keyframes float { 50% { transform: translateY(-8px) rotate(-2deg); } }
+}
 
 /* Sections */
-section { padding: clamp(5rem, 11vw, 8rem) 0 0; scroll-margin-top: 4rem; }
-.eyebrow { display: inline-block; font: 500 .8rem var(--mono); letter-spacing: .08em; text-transform: uppercase; color: var(--violet); margin-bottom: 1rem; }
-h2 { font-size: clamp(2rem, 4.4vw, 3.2rem); font-weight: 750; }
-.head { max-width: 40rem; margin-bottom: clamp(2.2rem, 4vw, 3.2rem); }
-.head.center { text-align: center; margin-left: auto; margin-right: auto; }
-.head p { color: var(--muted); font-size: 1.12rem; margin: 1rem 0 0; }
-.made-up { font-size: .82rem; color: var(--faint); margin: .8rem 0 0; }
-
-/* Grounded answer: chat mock */
-.split { display: grid; grid-template-columns: 1fr 1.15fr; gap: clamp(2rem, 5vw, 4rem); align-items: center; }
-.legend { list-style: none; margin: 1.8rem 0 0; padding: 0; display: grid; gap: 1rem; }
-.legend li { display: grid; grid-template-columns: auto 1fr; gap: .9rem; align-items: start; }
-.legend .dot { width: 2.2rem; height: 2.2rem; border-radius: 10px; display: grid; place-items: center; border: 1px solid var(--line-2); background: rgb(255 255 255 / .03); }
-.legend .dot.ok { color: var(--mint); }
-.legend .dot.warn { color: var(--warn); }
-.legend b { display: block; }
-.legend span { color: var(--muted); font-size: .97rem; }
-.chat { background: var(--card); border: 1px solid var(--line); border-radius: 18px; padding: 1.4rem; box-shadow: 0 30px 80px -40px rgb(96 165 250 / .35); }
-.chat-bar { display: flex; gap: .4rem; margin-bottom: 1.2rem; }
-.chat-bar i { width: .7rem; height: .7rem; border-radius: 50%; background: var(--line-2); }
-.bubble-q { margin-left: auto; width: fit-content; max-width: 85%; background: rgb(255 255 255 / .07); border-radius: 14px 14px 4px 14px; padding: .7rem 1rem; font-weight: 500; }
-.answer { margin-top: 1.2rem; display: grid; gap: .9rem; font-size: .98rem; }
-.answer p { margin: 0; }
-.chip { display: inline-flex; align-items: center; gap: .3rem; margin-left: .3rem; font: 500 .78rem var(--mono); color: var(--mint); background: rgb(94 234 212 / .1); border: 1px solid rgb(94 234 212 / .25); border-radius: 6px; padding: .1rem .45rem; vertical-align: .1em; }
-details.cite { display: inline; }
-details.cite summary { display: inline; list-style: none; cursor: pointer; }
-details.cite summary::-webkit-details-marker { display: none; }
-details.cite summary:hover .chip { background: rgb(94 234 212 / .18); }
-.source { display: block; margin-top: .7rem; padding: .9rem 1rem; border-radius: 10px; background: var(--bg-2); border: 1px solid var(--line-2); font-size: .88rem; color: var(--muted); }
-.source b { color: var(--text); }
-.source mark { background: rgb(94 234 212 / .18); color: var(--text); border-radius: 3px; padding: 0 .15em; }
-.warnline { border-left: 2px solid var(--warn); padding-left: .8rem; color: #fde68a; }
-
-/* Feature bento */
-.bento { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; }
-.card { position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1.5rem; transition: border-color .2s, transform .2s; }
-.card:hover { border-color: var(--line-2); transform: translateY(-2px); }
-.card .ic { width: 2.6rem; height: 2.6rem; border-radius: 12px; display: grid; place-items: center; margin-bottom: 1.1rem; color: var(--text); background: linear-gradient(135deg, rgb(167 139 250 / .25), rgb(96 165 250 / .15)); border: 1px solid var(--line-2); }
-.card h3 { font-size: 1.18rem; font-weight: 650; letter-spacing: -.01em; line-height: 1.3; margin-bottom: .45rem; }
-.card p { margin: 0; color: var(--muted); font-size: .98rem; }
-.c2 { grid-column: span 2; } .c3 { grid-column: span 3; } .c4 { grid-column: span 4; }
-.toc { list-style: none; margin: 1.2rem 0 0; padding: 0; font-size: .92rem; }
-.toc li { display: grid; grid-template-columns: 4.8rem 1fr; gap: .8rem; padding: .55rem 0; border-top: 1px solid var(--line); }
-.toc time { font-family: var(--mono); color: var(--faint); font-size: .85rem; padding-top: .1rem; }
-.toc .flag { color: var(--text); }
-.toc .flag b { color: var(--violet); }
-.packcols { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin-top: 1.2rem; font-size: .92rem; }
-.packcols h4 { margin: 0 0 .4rem; font-size: .8rem; font-family: var(--mono); text-transform: uppercase; letter-spacing: .06em; color: var(--faint); font-weight: 500; }
-.packcols ul { margin: 0; padding-left: 1.1rem; color: var(--muted); }
-.packcols li { margin-bottom: .25rem; }
-.packcols li::marker { color: var(--violet); }
-
-/* Why not NotebookLM */
+section.block { padding: clamp(5rem, 10vw, 7.5rem) 0 0; scroll-margin-top: 4rem; }
+.head { text-align: center; max-width: 42rem; margin: 0 auto clamp(2.2rem, 4vw, 3rem); }
+.eyebrow { font: 600 .82rem var(--sans); color: var(--accent); letter-spacing: .02em; margin: 0 0 .8rem; }
+h2 { font-size: clamp(2rem, 4.2vw, 3.1rem); font-weight: 800; }
+.head p { color: var(--muted); font-size: 1.1rem; margin: 1rem 0 0; }
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 52rem; margin: 2.2rem auto 0; }
+.rule { background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 1.3rem 1.4rem; }
+.rule h3 { font-size: 1.1rem; margin-bottom: .35rem; letter-spacing: -.015em; }
+.rule p { margin: 0; color: var(--muted); font-size: .97rem; }
+.badge { display: inline-block; font-size: .78rem; font-weight: 600; border-radius: 6px; padding: .1rem .5rem; margin-bottom: .7rem; }
+.film { max-width: 58rem; margin: 0 auto; padding: .5rem; background: #fff; border-radius: 22px; box-shadow: var(--shadow); }
+.film video { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px; background: #000; }
+.film video::cue { font: 500 clamp(1rem, 1.7vw, 1.4rem)/1.35 var(--sans); background: rgb(0 0 0 / .78); }
+.film-cap { text-align: center; color: var(--muted); font-size: .92rem; margin-top: 1rem; }
+.sound { font: 600 .92rem var(--sans); color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: .2em; margin-left: .6rem; }
 .reasons { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; }
-.reasons .card { grid-column: span 2; }
-.reasons .card:nth-child(4), .reasons .card:nth-child(5) { grid-column: span 3; }
-.reasons .num { font: 500 .8rem var(--mono); color: var(--faint); position: absolute; top: 1.5rem; right: 1.5rem; }
-.reasons .say { color: var(--text); font-weight: 600; }
-.aside-note { text-align: center; color: var(--muted); margin: 2rem 0 0; font-size: .97rem; }
+.reason { grid-column: span 2; background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 1.5rem; }
+.reason:nth-child(4), .reason:nth-child(5) { grid-column: span 3; }
+.reason .n { font: 800 .85rem var(--head); color: var(--accent); background: var(--accent-soft); width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1rem; }
+.reason h3 { font-size: 1.15rem; letter-spacing: -.015em; line-height: 1.3; margin-bottom: .4rem; }
+.reason p { margin: 0; color: var(--muted); font-size: .97rem; }
+.reason .say { color: var(--ink); font-weight: 600; }
+.side { text-align: center; color: var(--muted); margin: 1.8rem 0 0; }
 
 /* Install */
-.steps { list-style: none; counter-reset: step; margin: 0 auto; padding: 0; max-width: 50rem; display: grid; gap: 1rem; }
-.steps > li { counter-increment: step; position: relative; background: var(--card); border: 1px solid var(--line); border-radius: 16px; padding: 1.6rem 1.6rem 1.4rem 4.6rem; scroll-margin-top: 5rem; }
-.steps > li::before { content: counter(step); position: absolute; left: 1.4rem; top: 1.45rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-items: center; font: 700 1rem/1 var(--sans); color: var(--bg); background: var(--grad); }
-.steps h3 { font-size: 1.25rem; font-weight: 650; letter-spacing: -.01em; line-height: 1.3; margin-bottom: .2rem; }
+.steps { list-style: none; counter-reset: step; margin: 0 auto; padding: 0; max-width: 48rem; display: grid; gap: 1rem; }
+.steps > li { counter-increment: step; position: relative; background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 1.5rem 1.6rem 1.3rem 4.5rem; scroll-margin-top: 5rem; }
+.steps > li::before { content: counter(step); position: absolute; left: 1.4rem; top: 1.4rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-items: center; font: 800 1rem/1 var(--head); color: #fff; background: var(--accent); }
+.steps h3 { font-size: 1.2rem; letter-spacing: -.015em; line-height: 1.3; }
 .steps p { margin: .6rem 0; color: var(--muted); }
-.steps p b, .steps li li b { color: var(--text); }
-.tabs { display: inline-flex; flex-wrap: wrap; gap: .25rem; margin: 1rem 0 0; padding: .25rem; background: var(--bg-2); border: 1px solid var(--line); border-radius: 10px; }
-.tabs button { font: 500 .9rem var(--sans); color: var(--muted); background: none; border: 0; padding: .45rem .85rem; border-radius: 7px; cursor: pointer; }
-.tabs button:hover { color: var(--text); }
-.tabs button[aria-selected="true"] { color: var(--text); background: rgb(255 255 255 / .09); }
-.panel { padding-top: .6rem; }
+.steps b, .steps code { color: var(--ink); }
+.steps .cmd code { color: #e4e5ea; }
+.tabs { display: inline-flex; flex-wrap: wrap; gap: .25rem; margin: .9rem 0 0; padding: .25rem; background: var(--soft); border-radius: 999px; }
+.tabs button { font: 600 .88rem var(--sans); color: var(--muted); background: none; border: 0; padding: .45rem .9rem; border-radius: 999px; cursor: pointer; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .1); }
+.panel { padding-top: .5rem; }
 .panel ol { margin: .6rem 0; padding-left: 1.2rem; color: var(--muted); }
 .panel ol li { margin-bottom: .45rem; }
 .cmd { position: relative; margin: .6rem 0; }
-.cmd pre { margin: 0; padding: 1rem 5.6rem 1rem 1rem; background: #050507; border: 1px solid var(--line); border-radius: 10px; color: #d4d4dc; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
-.copy { position: absolute; top: .55rem; right: .55rem; font: 600 .8rem var(--sans); color: var(--text); background: rgb(255 255 255 / .08); border: 1px solid var(--line-2); border-radius: 7px; padding: .4rem .7rem; cursor: pointer; }
-.copy:hover { background: rgb(255 255 255 / .14); }
+.cmd pre { margin: 0; padding: 1rem 5.6rem 1rem 1rem; background: #15161c; color: #e4e5ea; border-radius: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.copy { position: absolute; top: .55rem; right: .55rem; font: 600 .8rem var(--sans); color: #fff; background: rgb(255 255 255 / .14); border: 0; border-radius: 999px; padding: .4rem .8rem; cursor: pointer; }
+.copy:hover { background: rgb(255 255 255 / .24); }
 .inline-cmd { display: inline-flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
-.inline-cmd code { background: #050507; border: 1px solid var(--line); padding: .15rem .45rem; border-radius: 6px; color: var(--text); }
-.inline-cmd .copy { position: static; }
-.steps code { color: var(--text); }
+.inline-cmd code { background: var(--soft); padding: .15rem .45rem; border-radius: 6px; }
+.inline-cmd .copy { position: static; background: var(--ink); }
+.say-it { display: inline-block; margin: .15rem 0; padding: .4rem .8rem; border-radius: 12px; background: var(--accent-soft); color: var(--accent) !important; font-weight: 600; }
 .fine { font-size: .9rem; color: var(--faint) !important; }
-.say-line { display: inline-block; margin: .2rem 0; padding: .45rem .8rem; border-radius: 10px; background: rgb(255 255 255 / .06); border: 1px solid var(--line-2); color: var(--text); font-weight: 500; }
-
-/* Closing CTA */
-.final { margin-top: clamp(5rem, 11vw, 8rem); position: relative; border-radius: 24px; padding: clamp(3rem, 7vw, 5rem) 1.5rem; text-align: center; overflow: hidden; border: 1px solid var(--line-2);
-  background: radial-gradient(60% 80% at 50% 0%, rgb(167 139 250 / .25), transparent 70%), var(--card); }
+.final { margin: clamp(5rem, 10vw, 7.5rem) auto 0; text-align: center; position: relative; padding: clamp(3rem, 7vw, 5rem) 1.5rem; border-radius: 28px; overflow: hidden; background: #fff; box-shadow: var(--shadow); }
+.final::before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: .7; filter: blur(40px); background: radial-gradient(30% 50% at 30% 30%, #ffdcc7, transparent 70%), radial-gradient(30% 50% at 70% 70%, #dcd6ff, transparent 70%); }
+.final > * { position: relative; }
 .final h2 { max-width: 18ch; margin: 0 auto; }
 .final p { color: var(--muted); max-width: 34rem; margin: 1rem auto 2rem; }
 footer { margin-top: 4rem; border-top: 1px solid var(--line); }
-footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; padding: 1.6rem clamp(1rem, 4vw, 2rem) 2.4rem; font-size: .88rem; color: var(--faint); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; padding-top: 1.6rem; padding-bottom: 2.4rem; font-size: .88rem; color: var(--faint); }
 footer p { margin: 0; max-width: 46rem; }
 
-@media (prefers-reduced-motion: reduce) { * { transition: none !important; } }
 @media (max-width: 56rem) {
-  .split { grid-template-columns: 1fr; }
-  .bento > *, .reasons .card, .reasons .card:nth-child(n) { grid-column: span 6; }
-  .nav ul li.wide { display: none; }
+  .two, .pack { grid-template-columns: 1fr; }
+  .rules { grid-template-columns: 1fr; }
+  .reason, .reason:nth-child(n) { grid-column: span 6; }
+  .bar nav a:not(.btn) { display: none; }
+  .pane { min-height: 0; }
+  .dtabs { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding-bottom: .3rem; }
+  .dtabs button { flex: none; }
 }
 @media (max-width: 34rem) {
-  .packcols { grid-template-columns: 1fr; }
+  .rows li { grid-template-columns: 1fr; gap: .2rem; }
+  .rows .arrow { display: none; }
+  .dest { justify-content: flex-start; }
+  .ladder { grid-template-columns: 1fr 1fr; }
   .steps > li { padding: 4rem 1.1rem 1.2rem; }
   .steps > li::before { left: 1.1rem; top: 1.2rem; }
   .cmd pre { padding: 1rem 1rem 3rem; }
   .copy { top: auto; bottom: .55rem; }
-  .nav ul { gap: 1rem; }
 }
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
 </style>
 </head>
 <body>
-<svg width="0" height="0" style="position:absolute" aria-hidden="true">
-  <symbol id="i-gh" viewBox="0 0 24 24"><path d="M15 22v-4a4.8 4.8 0 0 0-1-3.5c3 0 6-2 6-5.5.08-1.25-.27-2.48-1-3.5.28-1.15.28-2.35 0-3.5 0 0-1 0-3 1.5-2.64-.5-5.36-.5-8 0C6 2 5 2 5 2c-.3 1.15-.3 2.35 0 3.5A5.4 5.4 0 0 0 4 9c0 3.5 3 5.5 6 5.5-.39.49-.68 1.05-.85 1.65-.17.6-.22 1.23-.15 1.85v4"/><path d="M9 18c-4.51 2-5-2-7-2"/></symbol>
-  <symbol id="i-arrow" viewBox="0 0 24 24"><path d="M5 12h14M13 6l6 6-6 6"/></symbol>
-  <symbol id="i-sound" viewBox="0 0 24 24"><path d="M11 5 6 9H2v6h4l5 4z"/><path d="M15.5 8.5a5 5 0 0 1 0 7M19 5a10 10 0 0 1 0 14"/></symbol>
-  <symbol id="i-check" viewBox="0 0 24 24"><path d="M20 6 9 17l-5-5"/></symbol>
-  <symbol id="i-inbox" viewBox="0 0 24 24"><path d="M22 12h-6l-2 3h-4l-2-3H2"/><path d="M5.45 5.11 2 12v6a2 2 0 0 0 2 2h16a2 2 0 0 0 2-2v-6l-3.45-6.89A2 2 0 0 0 16.76 4H7.24a2 2 0 0 0-1.79 1.11z"/></symbol>
-  <symbol id="i-book" viewBox="0 0 24 24"><path d="M2 3h6a4 4 0 0 1 4 4v14a3 3 0 0 0-3-3H2z"/><path d="M22 3h-6a4 4 0 0 0-4 4v14a3 3 0 0 1 3-3h7z"/></symbol>
-  <symbol id="i-mic" viewBox="0 0 24 24"><path d="M12 2a3 3 0 0 0-3 3v7a3 3 0 0 0 6 0V5a3 3 0 0 0-3-3z"/><path d="M19 10v2a7 7 0 0 1-14 0v-2M12 19v3"/></symbol>
-  <symbol id="i-target" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><circle cx="12" cy="12" r="6"/><circle cx="12" cy="12" r="2"/></symbol>
-  <symbol id="i-lock" viewBox="0 0 24 24"><rect x="3" y="11" width="18" height="11" rx="2"/><path d="M7 11V7a5 5 0 0 1 10 0v4"/></symbol>
-  <symbol id="i-globe" viewBox="0 0 24 24"><circle cx="12" cy="12" r="10"/><path d="M2 12h20M12 2a15 15 0 0 1 4 10 15 15 0 0 1-4 10 15 15 0 0 1-4-10 15 15 0 0 1 4-10z"/></symbol>
-  <symbol id="i-tag" viewBox="0 0 24 24"><path d="M12.6 2.6A2 2 0 0 0 11.2 2H4a2 2 0 0 0-2 2v7.2a2 2 0 0 0 .6 1.4l8.7 8.7a2.4 2.4 0 0 0 3.4 0l6.6-6.6a2.4 2.4 0 0 0 0-3.4z"/><circle cx="7.5" cy="7.5" r="1"/></symbol>
-  <symbol id="i-pen" viewBox="0 0 24 24"><path d="m12 19 7-7 3 3-7 7z"/><path d="m18 13-1.5-7.5L2 2l3.5 14.5L13 18z"/><path d="m2 2 7.6 7.6"/><circle cx="11" cy="11" r="2"/></symbol>
-  <symbol id="i-cube" viewBox="0 0 24 24"><path d="M21 16V8a2 2 0 0 0-1-1.7l-7-4a2 2 0 0 0-2 0l-7 4A2 2 0 0 0 3 8v8a2 2 0 0 0 1 1.7l7 4a2 2 0 0 0 2 0l7-4a2 2 0 0 0 1-1.7z"/><path d="M3.3 7 12 12l8.7-5M12 22V12"/></symbol>
-  <symbol id="i-sort" viewBox="0 0 24 24"><path d="M3 6h18M7 12h10M10 18h4"/></symbol>
-  <symbol id="i-cap" viewBox="0 0 24 24"><path d="M22 10 12 5 2 10l10 5z"/><path d="M6 12v5c3 3 9 3 12 0v-5M22 10v6"/></symbol>
-</svg>
 
-<header class="nav">
+<header class="bar">
   <div class="wrap">
-    <a class="brand" href="#top"><img src="media/icon.svg" alt="" width="28" height="28">UniStudent</a>
+    <a class="brand" href="#top"><img src="media/icon.svg" alt="" width="30" height="30">UniStudent</a>
     <nav aria-label="Main">
-      <ul>
-        <li class="wide"><a href="#answers">How it answers</a></li>
-        <li class="wide"><a href="#features">Features</a></li>
-        <li class="wide"><a href="#notebooklm">vs NotebookLM</a></li>
-        <li><a href="https://github.com/NoamTuriel/unistudent" aria-label="GitHub"><svg class="icon"><use href="#i-gh"/></svg></a></li>
-        <li><a class="btn btn-primary" href="#install">Install</a></li>
-      </ul>
+      <a href="#demo">See it work</a>
+      <a href="#notebooklm">vs NotebookLM</a>
+      <a href="https://github.com/NoamTuriel/unistudent">GitHub</a>
+      <a class="btn" href="#install">Install free</a>
     </nav>
   </div>
 </header>
 
 <main id="top">
+<div class="wrap">
+  <div class="aura" aria-hidden="true"></div>
 
-<section class="hero" aria-labelledby="h-hero">
-  <div class="wrap">
-    <span class="pill"><b>Free</b> Open-source plugin for your AI app</span>
-    <h1 id="h-hero">Study from your course, <span class="grad">not the internet.</span></h1>
+  <section class="hero" aria-labelledby="h-hero">
+    <span class="kicker"><i></i>Free, open-source plugin for your AI app</span>
+    <h1 id="h-hero">Study from your course, <span class="accent">not the internet.</span></h1>
     <p class="sub">UniStudent makes your AI answer from your course's own files, with the exact page or lecture minute. It builds study packs with summaries, illustrations and an exercise guide, and you can ask it anything about your course.</p>
-    <div class="cta">
-      <a class="btn btn-primary" href="#install">Install in 3 steps <svg class="icon"><use href="#i-arrow"/></svg></a>
-      <a class="btn btn-ghost" href="https://github.com/NoamTuriel/unistudent"><svg class="icon"><use href="#i-gh"/></svg> View on GitHub</a>
+    <div class="cta"><a class="btn" href="#install">Install in 3 steps</a><a class="btn ghost" href="#video">Watch 35 seconds</a></div>
+    <p class="works">Works in Claude, Claude Code, Cursor, VS Code, Codex, Gemini CLI and any MCP app.</p>
+
+    <div class="demo auto" id="demo" aria-label="What UniStudent does, shown with made-up examples">
+      <div class="dtabs" role="tablist" aria-label="Features" data-demo>
+        <button role="tab" id="d-ask" aria-controls="dp-ask" aria-selected="true">Ask anything</button>
+        <button role="tab" id="d-inbox" aria-controls="dp-inbox" aria-selected="false" tabindex="-1">Drop in files</button>
+        <button role="tab" id="d-pack" aria-controls="dp-pack" aria-selected="false" tabindex="-1">Study packs</button>
+        <button role="tab" id="d-rec" aria-controls="dp-rec" aria-selected="false" tabindex="-1">Recordings</button>
+        <button role="tab" id="d-prac" aria-controls="dp-prac" aria-selected="false" tabindex="-1">Practice</button>
+        <button role="tab" id="d-tools" aria-controls="dp-tools" aria-selected="false" tabindex="-1">Your AI's tools</button>
+      </div>
+      <div class="app">
+        <div class="app-top"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Your AI app, with UniStudent · Intro to Economics</span></div>
+
+        <div class="pane play" role="tabpanel" id="dp-ask" aria-labelledby="d-ask">
+          <div class="two">
+            <div class="chat">
+              <p class="q" style="--d:.2">Why does the demand curve slope down?</p>
+              <p style="--d:1">As the price rises, buyers purchase less of the good.<span class="chip ping" style="--d:1.2">Subject 2 · p. 14</span></p>
+              <p style="--d:3.4">Think of coffee: from 3 to 6 euros a cup, you start making it at home. The lecturer used the same example.<span class="chip min">Lecture 5 · 23:10</span></p>
+              <p class="warn" style="--d:4.6">⚠️ Not from your course material (general knowledge): economists also explain this through loss aversion.</p>
+            </div>
+            <div class="src" style="--d:2.2">
+              <div class="head"><span>Subject 2 · Demand</span><b>p. 14</b></div>
+              <h4>The law of demand</h4>
+              <p><mark>When the price of a good rises, and nothing else changes, buyers purchase less of it.</mark> Part of the drop comes from switching to a substitute: the substitution effect.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-inbox" aria-labelledby="d-inbox" hidden>
+          <h3 style="--d:.1">Drop files in the inbox. Each one lands in the right subject.</h3>
+          <p class="cap" style="--d:.3">Then say "Add my new files". PDFs, slides, Word, scans, photos of notes, recordings.</p>
+          <ul class="rows">
+            <li style="--d:.8"><span class="file"><span class="ext pdf">PDF</span><span>week3-slides.pdf</span></span><span class="arrow">→</span><span class="dest">Subject 2 · Demand</span></li>
+            <li style="--d:1.6"><span class="file"><span class="ext mp4">MP4</span><span>lecture-05.mp4</span></span><span class="arrow">→</span><span class="dest">Recordings · transcribed</span></li>
+            <li style="--d:2.4"><span class="file"><span class="ext jpg">JPG</span><span>photo-of-my-notes.jpg</span></span><span class="arrow">→</span><span class="dest">Subject 3 · Elasticity</span></li>
+            <li style="--d:3.2"><span class="file"><span class="ext docx">DOCX</span><span>assignment-2.docx</span></span><span class="arrow">→</span><span class="dest">Assignments</span></li>
+            <li style="--d:4"><span class="file"><span class="ext pdf">PDF</span><span>exam-2024-winter.pdf</span></span><span class="arrow">→</span><span class="dest">Past exams</span></li>
+          </ul>
+          <p class="fetched" style="--d:5"><span class="pulse"></span><span><b>From your university's site:</b> 2 new files downloaded and sorted, with a university plugin.</span></p>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-pack" aria-labelledby="d-pack" hidden>
+          <h3 style="--d:.1">Study pack · Subject 2: Demand</h3>
+          <p class="cap" style="--d:.3">A summary, the illustrations, and a guide to the exercises. Ready before you ask.</p>
+          <div class="pack">
+            <div class="box" style="--d:.7">
+              <h5>Know by heart</h5>
+              <ul><li>The law of demand, in the course's words</li><li>The notation: <i>Q<sub>d</sub></i>, <i>P</i>, <i>ε</i></li><li>The three things that shift the curve</li></ul>
+              <div class="mistake" style="--d:2.8"><b>Common mistake:</b> mixing a move along the curve with a shift of it.</div>
+            </div>
+            <div class="box" style="--d:1.2">
+              <h5>Understand</h5>
+              <ul><li>Why a price change moves you <em>along</em> the curve</li><li>Why income shifts the <em>whole</em> curve</li></ul>
+              <div class="guide" style="--d:3.4">
+                <h5>Exercise guide</h5>
+                <div><span>Shift or move along?</span><b>4 exercises</b></div>
+                <div><span>Reading a demand table</span><b>3 exercises</b></div>
+                <div><span>Must-do before the test</span><b>2 exercises</b></div>
+              </div>
+            </div>
+            <figure class="graph box" style="--d:1.2">
+              <h5>Illustration, redrawn</h5>
+              <svg viewBox="0 0 420 270" role="img" aria-label="A demand curve: price up, quantity across, the curve sloping down, with points at prices 6 and 3.">
+                <g fill="none" stroke-linecap="round">
+                  <path d="M50 20 V230 H400" stroke="#16171d" stroke-width="2"/>
+                  <path d="M44 28 L50 18 L56 28 M392 224 L402 230 L392 236" stroke="#16171d" stroke-width="2"/>
+                  <path class="curve" d="M80 40 C 170 115, 260 170, 370 210" stroke="#4f46e5" stroke-width="5"/>
+                  <path d="M50 152 H222 V230 M50 84 H133 V230" stroke="#8a8d97" stroke-width="1.2" stroke-dasharray="4 5"/>
+                </g>
+                <circle cx="133" cy="84" r="7" fill="#4f46e5"/><circle cx="222" cy="152" r="7" fill="#4f46e5"/>
+                <g font-family="Inter, sans-serif" font-size="15" fill="#16171d"><text x="58" y="22">Price</text><text x="346" y="256">Quantity</text><text x="376" y="204" font-weight="700">D</text><text x="22" y="89">6</text><text x="22" y="157">3</text></g>
+              </svg>
+              <figcaption>Graphs, flowcharts, circuits, molecules: whatever your course draws.</figcaption>
+            </figure>
+          </div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-rec" aria-labelledby="d-rec" hidden>
+          <h3 style="--d:.1">Lecture 5, with a table of contents</h3>
+          <p class="cap" style="--d:.3">What the lecturer said out loud is written down. Click a line to play from that minute.</p>
+          <div class="player" style="--d:.6">
+            <div class="t"><span>lecture-05.mp4</span><b>Playing from 41:12</b></div>
+            <div class="scrub"><span class="done"></span><span class="mark" style="left:64%"></span><span class="mark" style="left:83%"></span><span class="knob"></span></div>
+          </div>
+          <ol class="toc">
+            <li style="--d:1"><time>03:40</time><span>The demand curve, defined</span></li>
+            <li style="--d:1.4"><time>18:05</time><span>Worked example: coffee prices</span></li>
+            <li class="ann now" style="--d:1.8"><time>41:12</time><span><b>Announcement:</b> send me your project partner's name by next Tuesday.</span></li>
+            <li class="exam" style="--d:2.2"><time>52:30</time><span><b>"This will be on the exam":</b> a shift of the curve vs. a move along it.</span></li>
+          </ol>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-prac" aria-labelledby="d-prac" hidden>
+          <h3 style="--d:.1">Practice that builds up to the real exam</h3>
+          <p class="cap" style="--d:.3">Start easy, finish on real past exams.</p>
+          <div class="ladder">
+            <div class="step" style="--d:.7"><b>Warm-up</b><span>Check you know the terms</span></div>
+            <div class="step" style="--d:1.1"><b>Exercises</b><span>From the course</span></div>
+            <div class="step" style="--d:1.5"><b>Harder</b><span>Two ideas at once</span></div>
+            <div class="step" style="--d:1.9"><b>Past exams</b><span>The real thing</span></div>
+          </div>
+          <div class="methods">
+            <h5 class="box" style="--d:2.6;font:600 .72rem var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin:0 0 .4rem">Before the test: every past-exam question, grouped by method</h5>
+            <div style="--d:3"><span>Shift vs. move along the curve</span><a href="#demo">6 questions · solutions →</a></div>
+            <div style="--d:3.4"><span>Price elasticity from a table</span><a href="#demo">4 questions · solutions →</a></div>
+            <div style="--d:3.8"><span>Finding the new equilibrium</span><a href="#demo">5 questions · solutions →</a></div>
+          </div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-tools" aria-labelledby="d-tools" hidden>
+          <div class="two">
+            <div class="chat">
+              <p class="q" style="--d:.2">Make me a 3D model of the part in question 6.</p>
+              <span class="tool" style="--d:1">Using your 3D modelling plugin</span>
+              <p style="--d:1.2">Here's the bracket from question 6, with the measurements from the drawing.<span class="chip">Subject 4 · p. 31</span></p>
+              <p style="--d:2.6">UniStudent lives inside your AI app, so every other tool you've added there works with your course too.</p>
+            </div>
+            <div class="model" style="--d:1.4">
+              <svg viewBox="40 -6 160 165" role="img" aria-label="A 3D model of an L-shaped bracket with two holes.">
+                <path d="M110 61.2 L186.2 105.2 L129.1 138.2 L52.9 94.2 Z" fill="#c7d2fe"/>
+                <path d="M186.2 105.2 L129.1 138.2 L129.1 147 L186.2 114 Z" fill="#6366f1"/>
+                <path d="M52.9 94.2 L129.1 138.2 L129.1 147 L52.9 103 Z" fill="#818cf8"/>
+                <ellipse cx="110" cy="105.2" rx="11" ry="6.4" fill="#4338ca"/>
+                <path d="M102.4 65.6 L178.6 109.6 L178.6 52.4 L102.4 8.4 Z" fill="#a5b4fc"/>
+                <path d="M186.2 105.2 L178.6 109.6 L178.6 52.4 L186.2 48 Z" fill="#6366f1"/>
+                <path d="M110 4 L186.2 48 L178.6 52.4 L102.4 8.4 Z" fill="#c7d2fe"/>
+                <ellipse cx="140.5" cy="56.8" rx="6.5" ry="9" transform="rotate(30 140.5 56.8)" fill="#4338ca"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="made" style="text-align:center;margin-top:.9rem">Made-up examples. No real course material appears on this site.</p>
     </div>
-    <div class="works">
-      Works in
-      <ul>
-        <li>Claude</li><li>Claude Code</li><li>Cursor</li><li>VS Code</li><li>Codex</li><li>Gemini CLI</li><li>Any MCP app</li>
-      </ul>
+  </section>
+
+  <section class="block" id="trust" aria-labelledby="h-trust">
+    <div class="head">
+      <p class="eyebrow">Why you can trust it</p>
+      <h2 id="h-trust">Every answer shows where it came from.</h2>
+      <p>A general AI answers from everywhere: methods your course doesn't teach, other notation, other courses. Your exam grades your course's way, so UniStudent keeps the AI inside your course, and tells you when it steps outside.</p>
     </div>
-    <figure class="film" style="margin-bottom:0">
+    <div class="rules">
+      <div class="rule"><span class="badge chip" style="margin-left:0">Subject 2 · p. 14</span><h3>From your course</h3><p>Linked to the exact page, or the exact minute of a recording. One click opens it.</p></div>
+      <div class="rule"><span class="badge warn" style="padding:.1rem .5rem">⚠️ Not from your course</span><h3>From somewhere else</h3><p>It says so, in plain words, and where it came from. When the usual way differs from your course's way, your course's way comes first.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="video" aria-labelledby="h-video">
+    <div class="head">
+      <p class="eyebrow">35 seconds</p>
+      <h2 id="h-video">See it from start to finish.</h2>
+    </div>
+    <figure class="film">
       <video id="film" src="media/unistudent-35s.mp4" poster="media/unistudent-35s.jpg" controls muted playsinline preload="metadata" width="1920" height="1080">
         <track kind="captions" src="media/unistudent-35s.vtt" srclang="en" label="English" default>
       </video>
     </figure>
-    <div class="film-cap"><span>UniStudent in 35 seconds</span><button class="link-btn" type="button" id="sound"><svg class="icon"><use href="#i-sound"/></svg> Play with sound</button></div>
-  </div>
-</section>
+    <p class="film-cap">Captions are on.<button class="sound" type="button" id="sound">Play with sound</button></p>
+  </section>
 
-<section id="answers" aria-labelledby="h-answers">
-  <div class="wrap split">
-    <div>
-      <span class="eyebrow">Grounded answers</span>
-      <h2 id="h-answers">Every answer shows where it came from.</h2>
-      <p style="color:var(--muted);font-size:1.12rem;margin:1rem 0 0">A general AI answers from everywhere: methods your course doesn't teach, other notation, other courses. Your exam grades your course's way. UniStudent keeps the AI inside your course material, and tells you when it steps outside.</p>
-      <ul class="legend">
-        <li><span class="dot ok"><svg class="icon"><use href="#i-check"/></svg></span><div><b>From your course</b><span>Links to the exact page, or the exact minute of a recording.</span></div></li>
-        <li><span class="dot warn" aria-hidden="true">⚠️</span><div><b>From somewhere else</b><span>Says where: general knowledge, or the web with a link. Your course's way always comes first.</span></div></li>
-      </ul>
-    </div>
-    <div>
-      <div class="chat" role="figure" aria-label="A made-up example answer">
-        <div class="chat-bar" aria-hidden="true"><i></i><i></i><i></i></div>
-        <p class="bubble-q">Why does the demand curve slope down?</p>
-        <div class="answer">
-          <p>As the price rises, buyers purchase less of the good.
-            <details class="cite"><summary><span class="chip">Subject 2 · p. 14</span></summary>
-              <span class="source"><b>2.3 The law of demand.</b> <mark>When the price of a good rises, and nothing else changes, buyers purchase less of it.</mark> Part of the drop comes from buyers switching to a substitute: the substitution effect. <i>(A made-up course page.)</i></span>
-            </details></p>
-          <p>Think of coffee: if a cup goes from 3 to 6 euros, you start making it at home. That's the substitution effect from the same page.<span class="chip">Subject 2 · p. 14</span></p>
-          <p class="warnline">⚠️ Not from your course material (general knowledge): behavioral economists also explain this through loss aversion.</p>
-        </div>
-      </div>
-      <p class="made-up">A made-up example for an intro economics course. Click the first citation to open its page.</p>
-    </div>
-  </div>
-</section>
-
-<section id="features" aria-labelledby="h-features">
-  <div class="wrap">
-    <div class="head center">
-      <span class="eyebrow">What it does</span>
-      <h2 id="h-features">Your course, organized for studying.</h2>
-      <p>You give it the course. It gives you back the course, ready to study, with every line traceable to where it came from.</p>
-    </div>
-    <div class="bento">
-      <article class="card c4">
-        <div class="ic"><svg class="icon"><use href="#i-book"/></svg></div>
-        <h3>A study pack for every subject</h3>
-        <p>What to know by heart, what to understand, common mistakes, the kinds of exercises you'll meet. Your course's graphs and diagrams are redrawn too.</p>
-        <div class="packcols">
-          <div><h4>Know by heart</h4><ul><li>The law of demand, in the course's words</li><li>The notation: <i>Q<sub>d</sub></i>, <i>P</i>, <i>ε</i></li></ul></div>
-          <div><h4>Understand</h4><ul><li>Why a price change moves you <em>along</em> the curve</li><li>Common mistake: mixing the two up</li></ul></div>
-        </div>
-      </article>
-      <article class="card c2">
-        <div class="ic"><svg class="icon"><use href="#i-inbox"/></svg></div>
-        <h3>Drop in any file</h3>
-        <p>PDFs, slides, Word, Excel, scans, photos of notes, recordings. It reads each one and sorts it into the right subject.</p>
-      </article>
-      <article class="card c3">
-        <div class="ic"><svg class="icon"><use href="#i-mic"/></svg></div>
-        <h3>Recordings you can search</h3>
-        <p>A timed table of contents for every lecture. Announcements and "this will be on the exam" are written down and highlighted.</p>
-        <ol class="toc" aria-label="A made-up recording's table of contents">
-          <li><time>00:03:40</time><span>The demand curve, defined</span></li>
-          <li><time>00:41:12</time><span class="flag"><b>Announcement:</b> send me your project partner's name by next Tuesday.</span></li>
-          <li><time>01:02:30</time><span class="flag"><b>On the exam:</b> a shift of the curve vs. a move along it.</span></li>
-        </ol>
-      </article>
-      <article class="card c3">
-        <div class="ic"><svg class="icon"><use href="#i-target"/></svg></div>
-        <h3>Practice up to the real exam</h3>
-        <p>Easy questions first, then real past exams. Before the test, every past-exam question is grouped by the method that solves it, with a link to each solution.</p>
-      </article>
-      <article class="card c2">
-        <div class="ic"><svg class="icon"><use href="#i-lock"/></svg></div>
-        <h3>Your files stay yours</h3>
-        <p>Everything lives in folders on your computer. Recordings are transcribed locally.</p>
-      </article>
-      <article class="card c2">
-        <div class="ic"><svg class="icon"><use href="#i-globe"/></svg></div>
-        <h3>Any university, any course</h3>
-        <p>Extra plugins add downloads from your university's site and rules for your subject.</p>
-      </article>
-      <article class="card c2">
-        <div class="ic"><svg class="icon"><use href="#i-cap"/></svg></div>
-        <h3>Plain-language setup</h3>
-        <p>One question at a time. No coding, and it tells you what to do next.</p>
-      </article>
-    </div>
-    <p class="made-up" style="text-align:center">Examples on this page are made up. No real course material appears here.</p>
-  </div>
-</section>
-
-<section id="notebooklm" aria-labelledby="h-nblm">
-  <div class="wrap">
-    <div class="head center">
-      <span class="eyebrow">Compared</span>
+  <section class="block" id="notebooklm" aria-labelledby="h-nblm">
+    <div class="head">
+      <p class="eyebrow">Compared</p>
       <h2 id="h-nblm">Why not just use NotebookLM?</h2>
       <p>NotebookLM is a good research notebook, and it also answers from the sources you give it. UniStudent is built for one job: studying your course for its exam.</p>
     </div>
     <div class="reasons">
-      <article class="card"><span class="num">01</span>
-        <div class="ic"><svg class="icon"><use href="#i-tag"/></svg></div>
-        <h3>Free, with no paid tiers</h3>
-        <p>No plan to upgrade to and no limits of its own. It runs on the AI app you already pay for, or its free plan.</p>
-      </article>
-      <article class="card"><span class="num">02</span>
-        <div class="ic"><svg class="icon"><use href="#i-pen"/></svg></div>
-        <h3>Illustrations, redrawn</h3>
-        <p>Graphs, flowcharts, circuits and molecules from your course come back as clean drawings, not just described in words.</p>
-      </article>
-      <article class="card"><span class="num">03</span>
-        <div class="ic"><svg class="icon"><use href="#i-cube"/></svg></div>
-        <h3>It's your AI, with all its tools</h3>
-        <p>It lives inside the AI app you use, so every tool you've added there works with your course. Engineering student with a 3D plugin? Ask for <span class="say">a 3D model of the part in question 6</span>.</p>
-      </article>
-      <article class="card"><span class="num">04</span>
-        <div class="ic"><svg class="icon"><use href="#i-sort"/></svg></div>
-        <h3>It fetches and sorts your material</h3>
-        <p>With a plugin for your university, new material comes in from the course site by itself. Anything else goes in the inbox folder and lands in the right subject. No uploading sources one by one.</p>
-      </article>
-      <article class="card"><span class="num">05</span>
-        <div class="ic"><svg class="icon"><use href="#i-cap"/></svg></div>
-        <h3>Made for students, out of the box</h3>
-        <p>Study packs per subject, recordings with the lecturer's announcements, practice that builds up to past exams. Nothing to set up or prompt your way into.</p>
-      </article>
+      <article class="reason"><span class="n">1</span><h3>Free, with no paid tiers</h3><p>No plan to upgrade to and no limits of its own. It runs on the AI app you already use, or its free plan.</p></article>
+      <article class="reason"><span class="n">2</span><h3>Your course's illustrations, redrawn</h3><p>Graphs, flowcharts, circuits and molecules come back as clean drawings in your study pack, not just described in words.</p></article>
+      <article class="reason"><span class="n">3</span><h3>It's your AI, with all its tools</h3><p>It lives inside the AI app you use, so every tool you've added there works with your course. Engineering student with a 3D plugin? Ask for <span class="say">a 3D model of the part in question 6</span>.</p></article>
+      <article class="reason"><span class="n">4</span><h3>It fetches and sorts your material</h3><p>With a plugin for your university, new files come in from the course site by themselves. Anything else goes in the inbox and lands in the right subject. No uploading sources one by one.</p></article>
+      <article class="reason"><span class="n">5</span><h3>Made for students, from the first minute</h3><p>Study packs per subject, recordings with the lecturer's announcements, practice up to past exams. Nothing to set up or prompt your way into.</p></article>
     </div>
-    <p class="aside-note">Like NotebookLM's audio overviews? Keep them. The two work fine side by side.</p>
-  </div>
-</section>
+    <p class="side">Like NotebookLM's audio overviews? Keep them. The two work fine side by side.</p>
+  </section>
 
-<section id="install" aria-labelledby="h-install">
-  <div class="wrap">
-    <div class="head center">
-      <span class="eyebrow">Install</span>
-      <h2 id="h-install">Start in three steps</h2>
+  <section class="block" id="install" aria-labelledby="h-install">
+    <div class="head">
+      <p class="eyebrow">Install</p>
+      <h2 id="h-install">Start in three steps.</h2>
       <p>About five minutes, once. No coding: each step is a copy and a paste, or a few clicks.</p>
     </div>
     <ol class="steps">
@@ -455,27 +535,20 @@ footer p { margin: 0; max-width: 46rem; }
       </li>
       <li>
         <h3>Set up your first course</h3>
-        <p>Open a new chat and say:</p>
-        <p><span class="say-line">Set up my course with UniStudent.</span></p>
+        <p>Open a new chat and say <span class="say-it">Set up my course with UniStudent.</span></p>
         <p>In Claude Code you can also type <code>/unistudent:course-setup</code>. It asks one question at a time: your university, your course, where your files are. Then it reads your course and tells you what's next.</p>
-        <p>Later, when you get new material, drop it in the course's inbox folder and say <span class="say-line">Add my new files.</span></p>
+        <p>Later, when you get new files, drop them in the course's inbox folder and say <span class="say-it">Add my new files.</span></p>
         <p class="fine">You can stop setup at any point; running it again picks up where you left off. Recordings also need ffmpeg, and setup offers to install it.</p>
       </li>
     </ol>
-  </div>
-</section>
+  </section>
 
-<div class="wrap">
   <div class="final">
-    <h2>Set it up once. <span class="grad">Study from it all semester.</span></h2>
+    <h2>Set it up once. <span style="color:var(--accent)">Study from it all semester.</span></h2>
     <p>Free and open source, under the MIT license. Read the code, file an issue, or suggest a plugin for your university.</p>
-    <div class="cta">
-      <a class="btn btn-primary" href="#install">Start with step 1 <svg class="icon"><use href="#i-arrow"/></svg></a>
-      <a class="btn btn-ghost" href="https://github.com/NoamTuriel/unistudent"><svg class="icon"><use href="#i-gh"/></svg> Star on GitHub</a>
-    </div>
+    <div class="cta"><a class="btn" href="#install">Start with step 1</a><a class="btn ghost" href="https://github.com/NoamTuriel/unistudent">See the code on GitHub</a></div>
   </div>
 </div>
-
 </main>
 
 <footer>
@@ -486,29 +559,66 @@ footer p { margin: 0; max-width: 46rem; }
 </footer>
 
 <script>
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
 // Video: autoplay muted with captions, unless the visitor prefers reduced motion
 const film = document.getElementById('film');
-if (!matchMedia('(prefers-reduced-motion: reduce)').matches) film.play().catch(() => {});
+if (!reduce) film.play().catch(() => {});
 document.getElementById('sound').addEventListener('click', () => {
   film.muted = false; film.currentTime = 0; film.play();
 });
 
-// Tabs
-document.querySelectorAll('[role=tablist]').forEach(list => {
+// Demo player: plays each feature in turn until the visitor picks one
+const demo = document.getElementById('demo');
+const dtabs = [...demo.querySelectorAll('[role=tab]')];
+const DUR = 9000;
+let cur = 0, timer = null, auto = !reduce;
+demo.style.setProperty('--dur', DUR + 'ms');
+if (!auto) demo.classList.remove('auto');
+function show(i) {
+  cur = (i + dtabs.length) % dtabs.length;
+  dtabs.forEach((t, j) => {
+    const on = j === cur;
+    t.setAttribute('aria-selected', on);
+    t.tabIndex = on ? 0 : -1;
+    const p = document.getElementById(t.getAttribute('aria-controls'));
+    p.hidden = !on;
+    p.classList.remove('play');
+    if (on) { void p.offsetWidth; p.classList.add('play'); }
+  });
+  clearTimeout(timer);
+  if (auto) timer = setTimeout(() => show(cur + 1), DUR);
+}
+function stopAuto() { auto = false; clearTimeout(timer); demo.classList.remove('auto'); }
+dtabs.forEach((t, i) => {
+  t.addEventListener('click', () => { stopAuto(); show(i); });
+  t.addEventListener('keydown', e => {
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    stopAuto(); show(cur + d); dtabs[cur].focus();
+  });
+});
+// Start playing when the demo comes into view
+new IntersectionObserver((entries, obs) => {
+  if (entries[0].isIntersecting) { show(0); obs.disconnect(); }
+}, { threshold: .35 }).observe(demo);
+
+// Install tabs
+document.querySelectorAll('[role=tablist]:not([data-demo])').forEach(list => {
   const tabs = [...list.querySelectorAll('[role=tab]')];
-  const show = tab => tabs.forEach(t => {
+  const pick = tab => tabs.forEach(t => {
     const on = t === tab;
     t.setAttribute('aria-selected', on);
     t.tabIndex = on ? 0 : -1;
     document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
   });
   tabs.forEach((t, i) => {
-    t.addEventListener('click', () => show(t));
+    t.addEventListener('click', () => pick(t));
     t.addEventListener('keydown', e => {
       const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
       if (!d) return;
       const next = tabs[(i + d + tabs.length) % tabs.length];
-      show(next); next.focus();
+      pick(next); next.focus();
     });
   });
 });
