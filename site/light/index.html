@@ -1,0 +1,637 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UniStudent: study from your course, not the internet</title>
+<meta name="description" content="A free plugin for the AI app you already use. It answers from your course's own files, with the exact page or lecture minute, and builds study packs with summaries, illustrations and an exercise guide.">
+<meta property="og:title" content="UniStudent: study from your course, not the internet">
+<meta property="og:description" content="A free plugin for your AI app that answers from your course's own files, with the exact page or lecture minute.">
+<meta property="og:image" content="https://noamturiel.github.io/unistudent/media/unistudent-35s.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../media/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@500..800&family=Inter:wght@400..700&display=swap" rel="stylesheet">
+<style>
+:root {
+  --bg: #fdfcfa;
+  --ink: #16171d;
+  --muted: #5d606b;
+  --faint: #8a8d97;
+  --line: #e9e7e1;
+  --soft: #f4f3ef;
+  --accent: #4f46e5;
+  --accent-soft: #eeedfd;
+  --mint: #0b8f6c;
+  --mint-soft: #e4f5ef;
+  --amber: #b45309;
+  --amber-soft: #fff4e2;
+  --head: "Figtree", "Inter", system-ui, sans-serif;
+  --sans: "Inter", system-ui, -apple-system, "Segoe UI", sans-serif;
+  --mono: ui-monospace, "SF Mono", Menlo, Consolas, monospace;
+  --shadow: 0 0 0 1px var(--line), 0 30px 70px -32px rgb(30 30 60 / .32);
+  color-scheme: light;
+}
+* { box-sizing: border-box; }
+html { scroll-behavior: smooth; }
+body { margin: 0; background: var(--bg); color: var(--ink); font: 400 1.06rem/1.6 var(--sans); -webkit-font-smoothing: antialiased; overflow-x: hidden; }
+::selection { background: var(--accent-soft); }
+a { color: inherit; }
+:focus-visible { outline: 2px solid var(--accent); outline-offset: 3px; border-radius: 6px; }
+img, video, svg { display: block; max-width: 100%; }
+code, pre, kbd, time { font-family: var(--mono); font-size: .88em; }
+h1, h2, h3 { font-family: var(--head); margin: 0; letter-spacing: -.03em; line-height: 1.08; text-wrap: balance; }
+.wrap { max-width: 76rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2.5rem); position: relative; }
+.made { font-size: .82rem; color: var(--faint); }
+
+/* Nav */
+.bar { position: sticky; top: 0; z-index: 20; background: rgb(253 252 250 / .8); backdrop-filter: blur(12px); -webkit-backdrop-filter: blur(12px); }
+.bar .wrap { display: flex; justify-content: space-between; align-items: center; height: 4.2rem; }
+.brand { display: flex; gap: .55rem; align-items: center; font: 800 1.12rem var(--head); letter-spacing: -.02em; text-decoration: none; }
+.brand img { width: 1.85rem; height: 1.85rem; }
+.bar nav { display: flex; gap: 1.8rem; align-items: center; font-size: .95rem; color: var(--muted); }
+.bar nav a { text-decoration: none; }
+.bar nav a:hover { color: var(--ink); }
+
+/* Buttons */
+.btn { display: inline-flex; align-items: center; gap: .5rem; font: 600 1rem/1 var(--sans); text-decoration: none; padding: .95rem 1.4rem; border-radius: 999px; background: var(--ink); color: #fff; border: 0; cursor: pointer; transition: transform .15s, background-color .15s; }
+.btn:hover { transform: translateY(-1px); background: #000; }
+.btn.ghost { background: rgb(255 255 255 / .75); color: var(--ink); box-shadow: inset 0 0 0 1px var(--line); }
+.btn.ghost:hover { background: #fff; }
+.bar nav .btn { padding: .6rem 1rem; font-size: .9rem; color: #fff; }
+
+/* Hero */
+.aura { position: absolute; left: 50%; top: -12rem; width: 110rem; height: 56rem; margin-left: -55rem; z-index: -1; filter: blur(60px); opacity: .8; pointer-events: none;
+  background: radial-gradient(22% 30% at 32% 42%, #ffdcc7, transparent 70%), radial-gradient(22% 28% at 60% 30%, #dcd6ff, transparent 70%), radial-gradient(22% 28% at 76% 62%, #c9f1e2, transparent 70%); }
+.hero { text-align: center; padding: clamp(2.5rem, 6vw, 4.5rem) 0 0; }
+.kicker { display: inline-flex; gap: .5rem; align-items: center; font-size: .9rem; color: var(--muted); background: rgb(255 255 255 / .75); box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: .35rem .95rem; }
+.kicker i { width: .5rem; height: .5rem; border-radius: 50%; background: var(--mint); }
+h1 { font-size: clamp(2.8rem, 6.8vw, 5.6rem); font-weight: 800; letter-spacing: -.045em; line-height: 1; margin: 1.3rem auto 0; max-width: 15ch; }
+h1 .accent { background: linear-gradient(95deg, var(--accent), #7c3aed 55%, #0e9f8a); -webkit-background-clip: text; background-clip: text; color: transparent; }
+.sub { color: var(--muted); font-size: clamp(1.08rem, 1.6vw, 1.2rem); max-width: 41rem; margin: 1.5rem auto 2rem; }
+.cta { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
+.works { margin: 1.6rem 0 0; font-size: .88rem; color: var(--faint); }
+
+/* The demo player */
+.demo { margin: clamp(3rem, 6vw, 4.5rem) auto 0; max-width: 64rem; text-align: left; scroll-margin-top: 5rem; }
+.dtabs { display: flex; gap: .35rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.dtabs button { position: relative; overflow: hidden; font: 600 .92rem var(--sans); color: var(--muted); background: rgb(255 255 255 / .75); border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: .55rem 1rem; cursor: pointer; }
+.dtabs button:hover { color: var(--ink); }
+.dtabs button[aria-selected="true"] { color: #fff; background: var(--ink); box-shadow: none; }
+.dtabs button::after { content: ""; position: absolute; left: 0; bottom: 0; height: 3px; width: 0; background: #a5b4fc; }
+.auto .dtabs button[aria-selected="true"]::after { animation: fill var(--dur, 9s) linear forwards; }
+@keyframes fill { to { width: 100%; } }
+.app { background: #fff; border-radius: 20px; box-shadow: var(--shadow); overflow: hidden; }
+.app-top { display: flex; align-items: center; gap: .9rem; padding: .8rem 1.1rem; border-bottom: 1px solid var(--line); font-size: .85rem; color: var(--faint); }
+.app-top .dots { display: flex; gap: .35rem; } .app-top .dots i { width: .62rem; height: .62rem; border-radius: 50%; background: var(--line); }
+.pane { padding: clamp(1.1rem, 2.5vw, 1.8rem); min-height: 27rem; }
+.pane[hidden] { display: none; }
+.pane h3 { font-size: 1.15rem; letter-spacing: -.02em; margin-bottom: .2rem; }
+.pane .cap { color: var(--muted); font-size: .92rem; margin: 0 0 1.2rem; }
+.two { display: grid; grid-template-columns: 1.15fr 1fr; gap: 1.5rem; align-items: start; }
+.q { margin: 0 0 1rem auto; width: fit-content; max-width: 90%; background: var(--soft); border-radius: 14px 14px 4px 14px; padding: .55rem .95rem; font-weight: 500; }
+.chat p { margin: 0 0 .85rem; }
+.chip { display: inline-block; margin-left: .3rem; font-size: .76rem; font-weight: 600; color: var(--mint); background: var(--mint-soft); border-radius: 6px; padding: .05rem .45rem; white-space: nowrap; }
+.chip.min { color: var(--accent); background: var(--accent-soft); }
+.warn { color: #8a3b07; background: var(--amber-soft); border-radius: 10px; padding: .55rem .75rem; }
+.src { background: #fff; border-radius: 14px; box-shadow: var(--shadow); padding: 1.1rem 1.2rem; font-size: .9rem; color: var(--muted); }
+.src .head { display: flex; justify-content: space-between; font-size: .76rem; border-bottom: 1px solid var(--line); padding-bottom: .5rem; margin-bottom: .7rem; }
+.src .head b { color: var(--accent); }
+.src h4 { font: 700 1.05rem var(--head); color: var(--ink); margin: 0 0 .4rem; letter-spacing: -.01em; }
+.src p { margin: 0; }
+mark { background: var(--mint-soft); color: var(--ink); padding: 0 .1em; border-radius: 3px; }
+
+/* Inbox */
+.rows { list-style: none; margin: 0; padding: 0; display: grid; gap: .55rem; }
+.rows li { display: grid; grid-template-columns: 1fr auto 1fr; gap: .8rem; align-items: center; padding: .6rem .8rem; border-radius: 12px; background: var(--soft); font-size: .92rem; }
+.file { display: flex; gap: .55rem; align-items: center; font-weight: 500; min-width: 0; }
+.file span { overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.ext { flex: none; font: 700 .66rem var(--sans); color: #fff; border-radius: 5px; padding: .18rem .35rem; background: #94a3b8; }
+.ext.pdf { background: #e2574c; } .ext.mp4 { background: var(--accent); } .ext.jpg { background: #0ea5a4; } .ext.pptx { background: #e67e22; } .ext.docx { background: #2b6cb0; }
+.arrow { color: var(--faint); }
+.dest { font-weight: 600; color: var(--ink); display: flex; gap: .4rem; align-items: center; justify-content: flex-end; text-align: right; }
+.dest::before { content: "✓"; color: var(--mint); font-weight: 800; }
+.fetched { margin-top: 1rem; font-size: .9rem; color: var(--muted); display: flex; gap: .5rem; align-items: center; }
+.fetched b { color: var(--ink); }
+.pulse { width: .55rem; height: .55rem; border-radius: 50%; background: var(--mint); flex: none; }
+
+/* Study pack */
+.pack { display: grid; grid-template-columns: 1fr 1fr 1.05fr; gap: 1.2rem; }
+.box h5 { font: 600 .72rem var(--sans); letter-spacing: .07em; text-transform: uppercase; color: var(--faint); margin: 0 0 .45rem; }
+.box ul { margin: 0; padding-left: 1.05rem; font-size: .93rem; }
+.box li { margin-bottom: .3rem; }
+.box li::marker { color: var(--accent); }
+.mistake { margin-top: 1rem; font-size: .9rem; background: #fdecec; color: #8f1d1d; border-radius: 10px; padding: .55rem .75rem; }
+.guide { margin-top: 1rem; }
+.guide div { display: flex; justify-content: space-between; gap: .6rem; font-size: .9rem; padding: .4rem 0; border-top: 1px solid var(--line); }
+.guide b { font-weight: 600; color: var(--accent); white-space: nowrap; }
+.graph svg { width: 100%; height: auto; }
+.graph .curve { stroke-dasharray: 420; }
+.graph figcaption { font-size: .8rem; color: var(--faint); margin-top: .3rem; }
+figure { margin: 0; }
+
+/* Recordings */
+.player { background: #15161c; color: #fff; border-radius: 14px; padding: 1rem 1.1rem; margin-bottom: 1rem; }
+.player .t { display: flex; justify-content: space-between; font-size: .82rem; color: #b8bac4; margin-bottom: .7rem; }
+.player .t b { color: #fff; font-weight: 600; }
+.scrub { position: relative; height: 6px; border-radius: 3px; background: #33353f; }
+.scrub .done { position: absolute; left: 0; top: 0; bottom: 0; width: 64%; border-radius: 3px; background: #a5b4fc; }
+.scrub .knob { position: absolute; top: 50%; left: 64%; width: 14px; height: 14px; margin: -7px 0 0 -7px; border-radius: 50%; background: #fff; }
+.scrub .mark { position: absolute; top: -4px; width: 3px; height: 14px; border-radius: 2px; background: #fbbf24; }
+.toc { list-style: none; margin: 0; padding: 0; font-size: .93rem; }
+.toc li { display: grid; grid-template-columns: 4.6rem 1fr; gap: .8rem; padding: .55rem .7rem; border-radius: 10px; }
+.toc time { color: var(--faint); }
+.toc .ann { background: var(--amber-soft); }
+.toc .ann b { color: var(--amber); }
+.toc .exam { background: var(--accent-soft); }
+.toc .exam b { color: var(--accent); }
+.toc .now { box-shadow: inset 0 0 0 2px #fbbf24; }
+
+/* Practice */
+.ladder { display: grid; grid-template-columns: repeat(4, 1fr); gap: .7rem; align-items: end; margin-bottom: 1.3rem; }
+.step { border-radius: 12px; padding: .8rem .9rem; font-size: .9rem; background: var(--soft); }
+.step b { display: block; font: 700 .98rem var(--head); letter-spacing: -.01em; }
+.step span { color: var(--muted); font-size: .84rem; }
+.step:nth-child(1) { min-height: 5.2rem; } .step:nth-child(2) { min-height: 6.6rem; } .step:nth-child(3) { min-height: 8rem; } .step:nth-child(4) { min-height: 9.4rem; background: var(--accent); color: #fff; } .step:nth-child(4) span { color: #dcdcff; }
+.methods div { display: flex; justify-content: space-between; gap: 1rem; padding: .55rem .2rem; border-top: 1px solid var(--line); font-size: .93rem; }
+.methods a { color: var(--accent); font-weight: 600; text-decoration: none; white-space: nowrap; }
+
+/* Your AI's tools */
+.model { display: grid; place-items: center; background: linear-gradient(180deg, #f6f6fb, #eef0f7); border-radius: 14px; min-height: 15rem; }
+.model svg { width: 13rem; }
+.tool { display: inline-flex; gap: .4rem; align-items: center; font-size: .8rem; font-weight: 600; color: var(--accent); background: var(--accent-soft); border-radius: 999px; padding: .2rem .65rem; margin-bottom: .7rem; }
+
+/* Demo motion: everything with --d appears in turn */
+@media (prefers-reduced-motion: no-preference) {
+  .play [style*="--d"] { animation: rise .5s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--d) * 1s); }
+  .play .src { animation: slide .7s cubic-bezier(.16, 1, .3, 1) both; animation-delay: calc(var(--d) * 1s); }
+  .play .chip.ping { animation: rise .5s both, ping 1.2s ease-out 1.6s 2; animation-delay: calc(var(--d) * 1s), 1.5s; }
+  .play .graph .curve { animation: draw 1.6s ease-out both 1.4s; }
+  .play .scrub .done { animation: seek .8s cubic-bezier(.16, 1, .3, 1) both 3.4s; }
+  .play .scrub .knob { animation: seekk .8s cubic-bezier(.16, 1, .3, 1) both 3.4s; }
+  .play .toc .now { animation: rise .5s both, glow 1.4s ease-out 3.4s 2; animation-delay: calc(var(--d) * 1s), 3.4s; }
+  .play .model svg { animation: rise .6s both 1.6s, float 4s ease-in-out 2.2s infinite; }
+  @keyframes rise { from { opacity: 0; transform: translateY(10px); } }
+  @keyframes slide { from { opacity: 0; transform: translateX(-36px) scale(.96); } }
+  @keyframes ping { 0% { box-shadow: 0 0 0 0 rgb(11 143 108 / .45); } 100% { box-shadow: 0 0 0 10px rgb(11 143 108 / 0); } }
+  @keyframes draw { from { stroke-dashoffset: 420; } to { stroke-dashoffset: 0; } }
+  @keyframes seek { from { width: 12%; } }
+  @keyframes seekk { from { left: 12%; } }
+  @keyframes glow { 50% { box-shadow: inset 0 0 0 2px #fbbf24, 0 0 0 6px rgb(251 191 36 / .25); } }
+  @keyframes float { 50% { transform: translateY(-8px) rotate(-2deg); } }
+}
+
+/* Sections */
+section.block { padding: clamp(5rem, 10vw, 7.5rem) 0 0; scroll-margin-top: 4rem; }
+.head { text-align: center; max-width: 42rem; margin: 0 auto clamp(2.2rem, 4vw, 3rem); }
+.eyebrow { font: 600 .82rem var(--sans); color: var(--accent); letter-spacing: .02em; margin: 0 0 .8rem; }
+h2 { font-size: clamp(2rem, 4.2vw, 3.1rem); font-weight: 800; }
+.head p { color: var(--muted); font-size: 1.1rem; margin: 1rem 0 0; }
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 52rem; margin: 2.2rem auto 0; }
+.rule { background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 1.3rem 1.4rem; }
+.rule h3 { font-size: 1.1rem; margin-bottom: .35rem; letter-spacing: -.015em; }
+.rule p { margin: 0; color: var(--muted); font-size: .97rem; }
+.badge { display: inline-block; font-size: .78rem; font-weight: 600; border-radius: 6px; padding: .1rem .5rem; margin-bottom: .7rem; }
+.film { max-width: 58rem; margin: 0 auto; padding: .5rem; background: #fff; border-radius: 22px; box-shadow: var(--shadow); }
+.film video { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px; background: #000; }
+.film video::cue { font: 500 clamp(1rem, 1.7vw, 1.4rem)/1.35 var(--sans); background: rgb(0 0 0 / .78); }
+.film-cap { text-align: center; color: var(--muted); font-size: .92rem; margin-top: 1rem; }
+.sound { font: 600 .92rem var(--sans); color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: .2em; margin-left: .6rem; }
+.reasons { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; }
+.reason { grid-column: span 2; background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 1.5rem; }
+.reason:nth-child(4), .reason:nth-child(5) { grid-column: span 3; }
+.reason .n { font: 800 .85rem var(--head); color: var(--accent); background: var(--accent-soft); width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1rem; }
+.reason h3 { font-size: 1.15rem; letter-spacing: -.015em; line-height: 1.3; margin-bottom: .4rem; }
+.reason p { margin: 0; color: var(--muted); font-size: .97rem; }
+.reason .say { color: var(--ink); font-weight: 600; }
+.side { text-align: center; color: var(--muted); margin: 1.8rem 0 0; }
+
+/* Install */
+.steps { list-style: none; counter-reset: step; margin: 0 auto; padding: 0; max-width: 48rem; display: grid; gap: 1rem; }
+.steps > li { counter-increment: step; position: relative; background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 1.5rem 1.6rem 1.3rem 4.5rem; scroll-margin-top: 5rem; }
+.steps > li::before { content: counter(step); position: absolute; left: 1.4rem; top: 1.4rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-items: center; font: 800 1rem/1 var(--head); color: #fff; background: var(--accent); }
+.steps h3 { font-size: 1.2rem; letter-spacing: -.015em; line-height: 1.3; }
+.steps p { margin: .6rem 0; color: var(--muted); }
+.steps b, .steps code { color: var(--ink); }
+.steps .cmd code { color: #e4e5ea; }
+.tabs { display: inline-flex; flex-wrap: wrap; gap: .25rem; margin: .9rem 0 0; padding: .25rem; background: var(--soft); border-radius: 999px; }
+.tabs button { font: 600 .88rem var(--sans); color: var(--muted); background: none; border: 0; padding: .45rem .9rem; border-radius: 999px; cursor: pointer; }
+.tabs button:hover { color: var(--ink); }
+.tabs button[aria-selected="true"] { color: var(--ink); background: #fff; box-shadow: 0 1px 3px rgb(0 0 0 / .1); }
+.panel { padding-top: .5rem; }
+.panel ol { margin: .6rem 0; padding-left: 1.2rem; color: var(--muted); }
+.panel ol li { margin-bottom: .45rem; }
+.cmd { position: relative; margin: .6rem 0; }
+.cmd pre { margin: 0; padding: 1rem 5.6rem 1rem 1rem; background: #15161c; color: #e4e5ea; border-radius: 12px; line-height: 1.6; white-space: pre-wrap; overflow-wrap: anywhere; }
+.copy { position: absolute; top: .55rem; right: .55rem; font: 600 .8rem var(--sans); color: #fff; background: rgb(255 255 255 / .14); border: 0; border-radius: 999px; padding: .4rem .8rem; cursor: pointer; }
+.copy:hover { background: rgb(255 255 255 / .24); }
+.inline-cmd { display: inline-flex; align-items: center; gap: .5rem; flex-wrap: wrap; }
+.inline-cmd code { background: var(--soft); padding: .15rem .45rem; border-radius: 6px; }
+.inline-cmd .copy { position: static; background: var(--ink); }
+.say-it { display: inline-block; margin: .15rem 0; padding: .4rem .8rem; border-radius: 12px; background: var(--accent-soft); color: var(--accent) !important; font-weight: 600; }
+.fine { font-size: .9rem; color: var(--faint) !important; }
+.final { margin: clamp(5rem, 10vw, 7.5rem) auto 0; text-align: center; position: relative; padding: clamp(3rem, 7vw, 5rem) 1.5rem; border-radius: 28px; overflow: hidden; background: #fff; box-shadow: var(--shadow); }
+.final::before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: .7; filter: blur(40px); background: radial-gradient(30% 50% at 30% 30%, #ffdcc7, transparent 70%), radial-gradient(30% 50% at 70% 70%, #dcd6ff, transparent 70%); }
+.final > * { position: relative; }
+.final h2 { max-width: 18ch; margin: 0 auto; }
+.final p { color: var(--muted); max-width: 34rem; margin: 1rem auto 2rem; }
+footer { margin-top: 4rem; border-top: 1px solid var(--line); }
+footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; padding-top: 1.6rem; padding-bottom: 2.4rem; font-size: .88rem; color: var(--faint); }
+footer p { margin: 0; max-width: 46rem; }
+
+@media (max-width: 56rem) {
+  .two, .pack { grid-template-columns: 1fr; }
+  .rules { grid-template-columns: 1fr; }
+  .reason, .reason:nth-child(n) { grid-column: span 6; }
+  .bar nav a:not(.btn) { display: none; }
+  .pane { min-height: 0; }
+  .dtabs { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding-bottom: .3rem; }
+  .dtabs button { flex: none; }
+}
+@media (max-width: 34rem) {
+  .rows li { grid-template-columns: 1fr; gap: .2rem; }
+  .rows .arrow { display: none; }
+  .dest { justify-content: flex-start; }
+  .ladder { grid-template-columns: 1fr 1fr; }
+  .steps > li { padding: 4rem 1.1rem 1.2rem; }
+  .steps > li::before { left: 1.1rem; top: 1.2rem; }
+  .cmd pre { padding: 1rem 1rem 3rem; }
+  .copy { top: auto; bottom: .55rem; }
+}
+@media (prefers-reduced-motion: reduce) { html { scroll-behavior: auto; } * { transition: none !important; } }
+</style>
+</head>
+<body>
+
+<header class="bar">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="../media/icon.svg" alt="" width="30" height="30">UniStudent</a>
+    <nav aria-label="Main">
+      <a href="#demo">See it work</a>
+      <a href="#notebooklm">vs NotebookLM</a>
+      <a href="https://github.com/NoamTuriel/unistudent">GitHub</a>
+      <a class="btn" href="#install">Install free</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+<div class="wrap">
+  <div class="aura" aria-hidden="true"></div>
+
+  <section class="hero" aria-labelledby="h-hero">
+    <span class="kicker"><i></i>Free, open-source plugin for your AI app</span>
+    <h1 id="h-hero">Study from your course, <span class="accent">not the internet.</span></h1>
+    <p class="sub">UniStudent makes your AI answer from your course's own files, with the exact page or lecture minute. It builds study packs with summaries, illustrations and an exercise guide, and you can ask it anything about your course.</p>
+    <div class="cta"><a class="btn" href="#install">Install in 3 steps</a><a class="btn ghost" href="#video">Watch 35 seconds</a></div>
+    <p class="works">Works in Claude, Claude Code, Cursor, VS Code, Codex, Gemini CLI and any MCP app.</p>
+
+    <div class="demo auto" id="demo" aria-label="What UniStudent does, shown with made-up examples">
+      <div class="dtabs" role="tablist" aria-label="Features" data-demo>
+        <button role="tab" id="d-ask" aria-controls="dp-ask" aria-selected="true">Ask anything</button>
+        <button role="tab" id="d-inbox" aria-controls="dp-inbox" aria-selected="false" tabindex="-1">Drop in files</button>
+        <button role="tab" id="d-pack" aria-controls="dp-pack" aria-selected="false" tabindex="-1">Study packs</button>
+        <button role="tab" id="d-rec" aria-controls="dp-rec" aria-selected="false" tabindex="-1">Recordings</button>
+        <button role="tab" id="d-prac" aria-controls="dp-prac" aria-selected="false" tabindex="-1">Practice</button>
+        <button role="tab" id="d-tools" aria-controls="dp-tools" aria-selected="false" tabindex="-1">Your AI's tools</button>
+      </div>
+      <div class="app">
+        <div class="app-top"><span class="dots" aria-hidden="true"><i></i><i></i><i></i></span><span>Your AI app, with UniStudent · Intro to Economics</span></div>
+
+        <div class="pane play" role="tabpanel" id="dp-ask" aria-labelledby="d-ask">
+          <div class="two">
+            <div class="chat">
+              <p class="q" style="--d:.2">Why does the demand curve slope down?</p>
+              <p style="--d:1">As the price rises, buyers purchase less of the good.<span class="chip ping" style="--d:1.2">Subject 2 · p. 14</span></p>
+              <p style="--d:3.4">Think of coffee: from 3 to 6 euros a cup, you start making it at home. The lecturer used the same example.<span class="chip min">Lecture 5 · 23:10</span></p>
+              <p class="warn" style="--d:4.6">⚠️ Not from your course material (general knowledge): economists also explain this through loss aversion.</p>
+            </div>
+            <div class="src" style="--d:2.2">
+              <div class="head"><span>Subject 2 · Demand</span><b>p. 14</b></div>
+              <h4>The law of demand</h4>
+              <p><mark>When the price of a good rises, and nothing else changes, buyers purchase less of it.</mark> Part of the drop comes from switching to a substitute: the substitution effect.</p>
+            </div>
+          </div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-inbox" aria-labelledby="d-inbox" hidden>
+          <h3 style="--d:.1">Drop files in the inbox. Each one lands in the right subject.</h3>
+          <p class="cap" style="--d:.3">Then say "Add my new files". PDFs, slides, Word, scans, photos of notes, recordings.</p>
+          <ul class="rows">
+            <li style="--d:.8"><span class="file"><span class="ext pdf">PDF</span><span>week3-slides.pdf</span></span><span class="arrow">→</span><span class="dest">Subject 2 · Demand</span></li>
+            <li style="--d:1.6"><span class="file"><span class="ext mp4">MP4</span><span>lecture-05.mp4</span></span><span class="arrow">→</span><span class="dest">Recordings · transcribed</span></li>
+            <li style="--d:2.4"><span class="file"><span class="ext jpg">JPG</span><span>photo-of-my-notes.jpg</span></span><span class="arrow">→</span><span class="dest">Subject 3 · Elasticity</span></li>
+            <li style="--d:3.2"><span class="file"><span class="ext docx">DOCX</span><span>assignment-2.docx</span></span><span class="arrow">→</span><span class="dest">Assignments</span></li>
+            <li style="--d:4"><span class="file"><span class="ext pdf">PDF</span><span>exam-2024-winter.pdf</span></span><span class="arrow">→</span><span class="dest">Past exams</span></li>
+          </ul>
+          <p class="fetched" style="--d:5"><span class="pulse"></span><span><b>From your university's site:</b> 2 new files downloaded and sorted, with a university plugin.</span></p>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-pack" aria-labelledby="d-pack" hidden>
+          <h3 style="--d:.1">Study pack · Subject 2: Demand</h3>
+          <p class="cap" style="--d:.3">A summary, the illustrations, and a guide to the exercises. Ready before you ask.</p>
+          <div class="pack">
+            <div class="box" style="--d:.7">
+              <h5>Know by heart</h5>
+              <ul><li>The law of demand, in the course's words</li><li>The notation: <i>Q<sub>d</sub></i>, <i>P</i>, <i>ε</i></li><li>The three things that shift the curve</li></ul>
+              <div class="mistake" style="--d:2.8"><b>Common mistake:</b> mixing a move along the curve with a shift of it.</div>
+            </div>
+            <div class="box" style="--d:1.2">
+              <h5>Understand</h5>
+              <ul><li>Why a price change moves you <em>along</em> the curve</li><li>Why income shifts the <em>whole</em> curve</li></ul>
+              <div class="guide" style="--d:3.4">
+                <h5>Exercise guide</h5>
+                <div><span>Shift or move along?</span><b>4 exercises</b></div>
+                <div><span>Reading a demand table</span><b>3 exercises</b></div>
+                <div><span>Must-do before the test</span><b>2 exercises</b></div>
+              </div>
+            </div>
+            <figure class="graph box" style="--d:1.2">
+              <h5>Illustration, redrawn</h5>
+              <svg viewBox="0 0 420 270" role="img" aria-label="A demand curve: price up, quantity across, the curve sloping down, with points at prices 6 and 3.">
+                <g fill="none" stroke-linecap="round">
+                  <path d="M50 20 V230 H400" stroke="#16171d" stroke-width="2"/>
+                  <path d="M44 28 L50 18 L56 28 M392 224 L402 230 L392 236" stroke="#16171d" stroke-width="2"/>
+                  <path class="curve" d="M80 40 C 170 115, 260 170, 370 210" stroke="#4f46e5" stroke-width="5"/>
+                  <path d="M50 152 H222 V230 M50 84 H133 V230" stroke="#8a8d97" stroke-width="1.2" stroke-dasharray="4 5"/>
+                </g>
+                <circle cx="133" cy="84" r="7" fill="#4f46e5"/><circle cx="222" cy="152" r="7" fill="#4f46e5"/>
+                <g font-family="Inter, sans-serif" font-size="15" fill="#16171d"><text x="58" y="22">Price</text><text x="346" y="256">Quantity</text><text x="376" y="204" font-weight="700">D</text><text x="22" y="89">6</text><text x="22" y="157">3</text></g>
+              </svg>
+              <figcaption>Graphs, flowcharts, circuits, molecules: whatever your course draws.</figcaption>
+            </figure>
+          </div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-rec" aria-labelledby="d-rec" hidden>
+          <h3 style="--d:.1">Lecture 5, with a table of contents</h3>
+          <p class="cap" style="--d:.3">What the lecturer said out loud is written down. Click a line to play from that minute.</p>
+          <div class="player" style="--d:.6">
+            <div class="t"><span>lecture-05.mp4</span><b>Playing from 41:12</b></div>
+            <div class="scrub"><span class="done"></span><span class="mark" style="left:64%"></span><span class="mark" style="left:83%"></span><span class="knob"></span></div>
+          </div>
+          <ol class="toc">
+            <li style="--d:1"><time>03:40</time><span>The demand curve, defined</span></li>
+            <li style="--d:1.4"><time>18:05</time><span>Worked example: coffee prices</span></li>
+            <li class="ann now" style="--d:1.8"><time>41:12</time><span><b>Announcement:</b> send me your project partner's name by next Tuesday.</span></li>
+            <li class="exam" style="--d:2.2"><time>52:30</time><span><b>"This will be on the exam":</b> a shift of the curve vs. a move along it.</span></li>
+          </ol>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-prac" aria-labelledby="d-prac" hidden>
+          <h3 style="--d:.1">Practice that builds up to the real exam</h3>
+          <p class="cap" style="--d:.3">Start easy, finish on real past exams.</p>
+          <div class="ladder">
+            <div class="step" style="--d:.7"><b>Warm-up</b><span>Check you know the terms</span></div>
+            <div class="step" style="--d:1.1"><b>Exercises</b><span>From the course</span></div>
+            <div class="step" style="--d:1.5"><b>Harder</b><span>Two ideas at once</span></div>
+            <div class="step" style="--d:1.9"><b>Past exams</b><span>The real thing</span></div>
+          </div>
+          <div class="methods">
+            <h5 class="box" style="--d:2.6;font:600 .72rem var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin:0 0 .4rem">Before the test: every past-exam question, grouped by method</h5>
+            <div style="--d:3"><span>Shift vs. move along the curve</span><a href="#demo">6 questions · solutions →</a></div>
+            <div style="--d:3.4"><span>Price elasticity from a table</span><a href="#demo">4 questions · solutions →</a></div>
+            <div style="--d:3.8"><span>Finding the new equilibrium</span><a href="#demo">5 questions · solutions →</a></div>
+          </div>
+        </div>
+
+        <div class="pane" role="tabpanel" id="dp-tools" aria-labelledby="d-tools" hidden>
+          <div class="two">
+            <div class="chat">
+              <p class="q" style="--d:.2">Make me a 3D model of the part in question 6.</p>
+              <span class="tool" style="--d:1">Using your 3D modelling plugin</span>
+              <p style="--d:1.2">Here's the bracket from question 6, with the measurements from the drawing.<span class="chip">Subject 4 · p. 31</span></p>
+              <p style="--d:2.6">UniStudent lives inside your AI app, so every other tool you've added there works with your course too.</p>
+            </div>
+            <div class="model" style="--d:1.4">
+              <svg viewBox="40 -6 160 165" role="img" aria-label="A 3D model of an L-shaped bracket with two holes.">
+                <path d="M110 61.2 L186.2 105.2 L129.1 138.2 L52.9 94.2 Z" fill="#c7d2fe"/>
+                <path d="M186.2 105.2 L129.1 138.2 L129.1 147 L186.2 114 Z" fill="#6366f1"/>
+                <path d="M52.9 94.2 L129.1 138.2 L129.1 147 L52.9 103 Z" fill="#818cf8"/>
+                <ellipse cx="110" cy="105.2" rx="11" ry="6.4" fill="#4338ca"/>
+                <path d="M102.4 65.6 L178.6 109.6 L178.6 52.4 L102.4 8.4 Z" fill="#a5b4fc"/>
+                <path d="M186.2 105.2 L178.6 109.6 L178.6 52.4 L186.2 48 Z" fill="#6366f1"/>
+                <path d="M110 4 L186.2 48 L178.6 52.4 L102.4 8.4 Z" fill="#c7d2fe"/>
+                <ellipse cx="140.5" cy="56.8" rx="6.5" ry="9" transform="rotate(30 140.5 56.8)" fill="#4338ca"/>
+              </svg>
+            </div>
+          </div>
+        </div>
+      </div>
+      <p class="made" style="text-align:center;margin-top:.9rem">Made-up examples. No real course material appears on this site.</p>
+    </div>
+  </section>
+
+  <section class="block" id="trust" aria-labelledby="h-trust">
+    <div class="head">
+      <p class="eyebrow">Why you can trust it</p>
+      <h2 id="h-trust">Every answer shows where it came from.</h2>
+      <p>A general AI answers from everywhere: methods your course doesn't teach, other notation, other courses. Your exam grades your course's way, so UniStudent keeps the AI inside your course, and tells you when it steps outside.</p>
+    </div>
+    <div class="rules">
+      <div class="rule"><span class="badge chip" style="margin-left:0">Subject 2 · p. 14</span><h3>From your course</h3><p>Linked to the exact page, or the exact minute of a recording. One click opens it.</p></div>
+      <div class="rule"><span class="badge warn" style="padding:.1rem .5rem">⚠️ Not from your course</span><h3>From somewhere else</h3><p>It says so, in plain words, and where it came from. When the usual way differs from your course's way, your course's way comes first.</p></div>
+    </div>
+  </section>
+
+  <section class="block" id="video" aria-labelledby="h-video">
+    <div class="head">
+      <p class="eyebrow">35 seconds</p>
+      <h2 id="h-video">See it from start to finish.</h2>
+    </div>
+    <figure class="film">
+      <video id="film" src="../media/unistudent-35s.mp4" poster="../media/unistudent-35s.jpg" controls muted playsinline preload="metadata" width="1920" height="1080">
+        <track kind="captions" src="../media/unistudent-35s.vtt" srclang="en" label="English" default>
+      </video>
+    </figure>
+    <p class="film-cap">Captions are on.<button class="sound" type="button" id="sound">Play with sound</button></p>
+  </section>
+
+  <section class="block" id="notebooklm" aria-labelledby="h-nblm">
+    <div class="head">
+      <p class="eyebrow">Compared</p>
+      <h2 id="h-nblm">Why not just use NotebookLM?</h2>
+      <p>NotebookLM is a good research notebook, and it also answers from the sources you give it. UniStudent is built for one job: studying your course for its exam.</p>
+    </div>
+    <div class="reasons">
+      <article class="reason"><span class="n">1</span><h3>Free, with no paid tiers</h3><p>No plan to upgrade to and no limits of its own. It runs on the AI app you already use, or its free plan.</p></article>
+      <article class="reason"><span class="n">2</span><h3>Your course's illustrations, redrawn</h3><p>Graphs, flowcharts, circuits and molecules come back as clean drawings in your study pack, not just described in words.</p></article>
+      <article class="reason"><span class="n">3</span><h3>It's your AI, with all its tools</h3><p>It lives inside the AI app you use, so every tool you've added there works with your course. Engineering student with a 3D plugin? Ask for <span class="say">a 3D model of the part in question 6</span>.</p></article>
+      <article class="reason"><span class="n">4</span><h3>It fetches and sorts your material</h3><p>With a plugin for your university, new files come in from the course site by themselves. Anything else goes in the inbox and lands in the right subject. No uploading sources one by one.</p></article>
+      <article class="reason"><span class="n">5</span><h3>Made for students, from the first minute</h3><p>Study packs per subject, recordings with the lecturer's announcements, practice up to past exams. Nothing to set up or prompt your way into.</p></article>
+    </div>
+    <p class="side">Like NotebookLM's audio overviews? Keep them. The two work fine side by side.</p>
+  </section>
+
+  <section class="block" id="install" aria-labelledby="h-install">
+    <div class="head">
+      <p class="eyebrow">Install</p>
+      <h2 id="h-install">Start in three steps.</h2>
+      <p>About five minutes, once. No coding: each step is a copy and a paste, or a few clicks.</p>
+    </div>
+    <ol class="steps">
+      <li>
+        <h3>Install uv, the one helper UniStudent needs</h3>
+        <div class="tabs" role="tablist" aria-label="Your computer">
+          <button role="tab" id="t-mac" aria-controls="p-mac" aria-selected="true">Mac</button>
+          <button role="tab" id="t-win" aria-controls="p-win" aria-selected="false" tabindex="-1">Windows</button>
+          <button role="tab" id="t-linux" aria-controls="p-linux" aria-selected="false" tabindex="-1">Linux</button>
+        </div>
+        <div class="panel" role="tabpanel" id="p-mac" aria-labelledby="t-mac">
+          <p>Open Terminal: press <kbd>⌘</kbd> and <kbd>Space</kbd>, type <i>Terminal</i>, press Enter. Paste this line and press Enter:</p>
+          <div class="cmd"><pre><code>curl -LsSf https://astral.sh/uv/install.sh | sh && echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshenv</code></pre><button class="copy" type="button">Copy</button></div>
+          <p class="fine">The second half makes sure your AI app can find uv. Restart the app afterwards.</p>
+        </div>
+        <div class="panel" role="tabpanel" id="p-win" aria-labelledby="t-win" hidden>
+          <p>Open PowerShell: press the Windows key, type <i>PowerShell</i>, press Enter. Paste this line and press Enter:</p>
+          <div class="cmd"><pre><code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</code></pre><button class="copy" type="button">Copy</button></div>
+          <p class="fine">Restart your AI app afterwards.</p>
+        </div>
+        <div class="panel" role="tabpanel" id="p-linux" aria-labelledby="t-linux" hidden>
+          <p>Open a terminal, paste this line and press Enter:</p>
+          <div class="cmd"><pre><code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></pre><button class="copy" type="button">Copy</button></div>
+        </div>
+      </li>
+      <li id="step-2">
+        <h3>Add UniStudent to your AI app</h3>
+        <div class="tabs" role="tablist" aria-label="Your AI app">
+          <button role="tab" id="t-claude" aria-controls="p-claude" aria-selected="true">Claude app</button>
+          <button role="tab" id="t-code" aria-controls="p-code" aria-selected="false" tabindex="-1">Claude Code</button>
+          <button role="tab" id="t-mcp" aria-controls="p-mcp" aria-selected="false" tabindex="-1">Cursor, VS Code, others</button>
+          <button role="tab" id="t-codex" aria-controls="p-codex" aria-selected="false" tabindex="-1">Codex</button>
+        </div>
+        <div class="panel" role="tabpanel" id="p-claude" aria-labelledby="t-claude">
+          <ol>
+            <li>In the Claude desktop app, open <b>Customize</b>, then <b>Plugins</b>.</li>
+            <li>Next to <b>Personal plugins</b>, click <b>+</b>, then <b>Add marketplace</b>.</li>
+            <li>Choose <b>Add from a repository</b> and paste:
+              <span class="inline-cmd"><code>NoamTuriel/unistudent</code><button class="copy" type="button" data-copy="NoamTuriel/unistudent">Copy</button></span></li>
+            <li>Find <b>unistudent</b> in the list and click <b>Install</b>.</li>
+          </ol>
+          <p class="fine">Button names can differ a little between app versions.</p>
+        </div>
+        <div class="panel" role="tabpanel" id="p-code" aria-labelledby="t-code" hidden>
+          <p>Type these two lines in Claude Code:</p>
+          <div class="cmd"><pre><code>/plugin marketplace add NoamTuriel/unistudent
+/plugin install unistudent@unistudent</code></pre><button class="copy" type="button">Copy</button></div>
+        </div>
+        <div class="panel" role="tabpanel" id="p-mcp" aria-labelledby="t-mcp" hidden>
+          <p>Add this to the app's MCP settings (Cursor, Claude Desktop chat, Windsurf, Gemini CLI's <code>~/.gemini/settings.json</code>):</p>
+          <div class="cmd"><pre><code>{
+  "mcpServers": {
+    "unistudent": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+    }
+  }
+}</code></pre><button class="copy" type="button">Copy</button></div>
+          <p class="fine">VS Code calls the top key <code>servers</code> and wants <code>"type": "stdio"</code>. On a Mac, if it doesn't start, put the full path from <code>which uvx</code> in <code>"command"</code>.</p>
+        </div>
+        <div class="panel" role="tabpanel" id="p-codex" aria-labelledby="t-codex" hidden>
+          <p>Paste this in your terminal:</p>
+          <div class="cmd"><pre><code>codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" unistudent-mcp</code></pre><button class="copy" type="button">Copy</button></div>
+        </div>
+      </li>
+      <li>
+        <h3>Set up your first course</h3>
+        <p>Open a new chat and say <span class="say-it">Set up my course with UniStudent.</span></p>
+        <p>In Claude Code you can also type <code>/unistudent:course-setup</code>. It asks one question at a time: your university, your course, where your files are. Then it reads your course and tells you what's next.</p>
+        <p>Later, when you get new files, drop them in the course's inbox folder and say <span class="say-it">Add my new files.</span></p>
+        <p class="fine">You can stop setup at any point; running it again picks up where you left off. Recordings also need ffmpeg, and setup offers to install it.</p>
+      </li>
+    </ol>
+  </section>
+
+  <div class="final">
+    <h2>Set it up once. <span style="color:var(--accent)">Study from it all semester.</span></h2>
+    <p>Free and open source, under the MIT license. Read the code, file an issue, or suggest a plugin for your university.</p>
+    <div class="cta"><a class="btn" href="#install">Start with step 1</a><a class="btn ghost" href="https://github.com/NoamTuriel/unistudent">See the code on GitHub</a></div>
+  </div>
+</div>
+</main>
+
+<footer>
+  <div class="wrap">
+    <p>UniStudent. Your course files stay in folders on your computer; your AI app reads them to answer you. Course material belongs to your university, so this site shows only made-up examples.</p>
+    <a href="https://github.com/NoamTuriel/unistudent/blob/main/LICENSE">MIT license</a>
+  </div>
+</footer>
+
+<script>
+const reduce = matchMedia('(prefers-reduced-motion: reduce)').matches;
+
+// Video: autoplay muted with captions, unless the visitor prefers reduced motion
+const film = document.getElementById('film');
+if (!reduce) film.play().catch(() => {});
+document.getElementById('sound').addEventListener('click', () => {
+  film.muted = false; film.currentTime = 0; film.play();
+});
+
+// Demo player: plays each feature in turn until the visitor picks one
+const demo = document.getElementById('demo');
+const dtabs = [...demo.querySelectorAll('[role=tab]')];
+const DUR = 9000;
+let cur = 0, timer = null, auto = !reduce;
+demo.style.setProperty('--dur', DUR + 'ms');
+if (!auto) demo.classList.remove('auto');
+function show(i) {
+  cur = (i + dtabs.length) % dtabs.length;
+  dtabs.forEach((t, j) => {
+    const on = j === cur;
+    t.setAttribute('aria-selected', on);
+    t.tabIndex = on ? 0 : -1;
+    const p = document.getElementById(t.getAttribute('aria-controls'));
+    p.hidden = !on;
+    p.classList.remove('play');
+    if (on) { void p.offsetWidth; p.classList.add('play'); }
+  });
+  clearTimeout(timer);
+  if (auto) timer = setTimeout(() => show(cur + 1), DUR);
+}
+function stopAuto() { auto = false; clearTimeout(timer); demo.classList.remove('auto'); }
+dtabs.forEach((t, i) => {
+  t.addEventListener('click', () => { stopAuto(); show(i); });
+  t.addEventListener('keydown', e => {
+    const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+    if (!d) return;
+    stopAuto(); show(cur + d); dtabs[cur].focus();
+  });
+});
+// Start playing when the demo comes into view
+new IntersectionObserver((entries, obs) => {
+  if (entries[0].isIntersecting) { show(0); obs.disconnect(); }
+}, { threshold: .35 }).observe(demo);
+
+// Install tabs
+document.querySelectorAll('[role=tablist]:not([data-demo])').forEach(list => {
+  const tabs = [...list.querySelectorAll('[role=tab]')];
+  const pick = tab => tabs.forEach(t => {
+    const on = t === tab;
+    t.setAttribute('aria-selected', on);
+    t.tabIndex = on ? 0 : -1;
+    document.getElementById(t.getAttribute('aria-controls')).hidden = !on;
+  });
+  tabs.forEach((t, i) => {
+    t.addEventListener('click', () => pick(t));
+    t.addEventListener('keydown', e => {
+      const d = e.key === 'ArrowRight' ? 1 : e.key === 'ArrowLeft' ? -1 : 0;
+      if (!d) return;
+      const next = tabs[(i + d + tabs.length) % tabs.length];
+      pick(next); next.focus();
+    });
+  });
+});
+if (/Win/.test(navigator.platform)) document.getElementById('t-win').click();
+else if (/Linux/.test(navigator.platform)) document.getElementById('t-linux').click();
+
+// Copy buttons
+document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', async () => {
+  const text = b.dataset.copy || b.parentElement.querySelector('code').textContent;
+  try { await navigator.clipboard.writeText(text); b.textContent = 'Copied'; }
+  catch { b.textContent = 'Select and copy'; }
+  setTimeout(() => b.textContent = 'Copy', 1800);
+}));
+</script>
+</body>
+</html>
