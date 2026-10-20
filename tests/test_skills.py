@@ -270,8 +270,15 @@ class OpenUSync(unittest.TestCase):
         self.assertIn("--no-wiki", recordings)
         self.assertLess(recordings.index("--no-wiki"), recordings.index("us wiki build"))
 
-    def test_site_notes_mark_the_live_unknowns_and_the_corrected_size(self):
+    def test_site_notes_hold_what_the_live_site_showed(self):
         self.assertIn("about 2.4 GB", self.SITE)
         self.assertNotIn("3 GB", self.SITE)
         self.assertIn("method: 'HEAD'", self.SITE)
-        self.assertGreaterEqual(self.SITE.count("Unverified"), 2)
+        self.assertNotIn("Unverified", self.SITE)  # checked on the live site, 2026-10-20
+        self.assertIn("&redirect=1", self.SITE)  # without it a HEAD answers with a page, not the file
+        self.assertIn("getDuration()", self.SITE)  # the length comes from the player, the page shows none
+        self.assertIn(".m3u8", self.SITE)  # the first link after the click is a placeholder
+
+    def test_listing_keeps_only_file_rows_and_names_each_file_with_its_type(self):
+        self.assertIn("['resource', 'url', 'folder'].includes(type)", self.SITE)
+        self.assertIn("real file type", self.TEXT)

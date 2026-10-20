@@ -29,8 +29,8 @@ Done when: you have the course id and number.
 
 Nothing downloads in this step, and no stream links are collected: they expire within hours.
 
-- **Documents:** run the listing snippet from `site.md` for the course id, then add folder contents (open each folder, list its file links). One item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, `file: "unistudent-<course number>-<date>__<name>"` (the name it will be downloaded under), and `unit_hint: "general"` for past exams, exam information and file stores. Then run the size snippet: it adds `size` where the site gives one without downloading the file.
-- **Recordings:** skip them when `recording_level` is 0 (the student chose to skip recordings; count them for the report). Otherwise run the recordings snippet in each video collection (links on the course page and in the "וידאו" section). One item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` when a length is shown next to it.
+- **Documents:** run the listing snippet from `site.md` for the course id, then add folder contents (open each folder, list its file links). One item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, and `unit_hint: "general"` for past exams, exam information and file stores. Then run the size and type snippet: it adds `size`, and `file` (`unistudent-<course number>-<date>__<name>.<real file type>`, the name it will be downloaded under), without downloading anything. Its last count must be 0: a `file` without its type can't be read into the Wiki.
+- **Recordings:** skip them when `recording_level` is 0 (the student chose to skip recordings; count them for the report). Otherwise run the recordings snippet in each video collection (links on the course page and in the "וידאו" section). One item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` as the snippet read it from the player (the length is what makes the Fetch plan's time real: 18 recordings of unknown length leave the student no time to plan around).
 
 Download the listing `{"course_site": ..., "items": [...]}` from the course tab with the in-page method, as `unistudent-<course number>-<date>__listing.json` (list everything: the Fetch plan leaves out what is already downloaded).
 
@@ -62,7 +62,7 @@ Done when: every approved document is ingested or listed as failed.
 
 For each recording item of the approved listing whose `url` is not in `us site-status` yet (a resumed run skips what is already in), in order, and only now:
 
-1. In its collection tab, run the stream snippet from `site.md` with the item: it collects that one recording's link and downloads a one-recording listing, `unistudent-<course number>-<date>__rec-<n>.json`.
+1. In its collection tab, run the stream snippet from `site.md` with the item copied exactly from the approved listing (rebuilding it from the page loses its `transcribe` tick): it collects that one recording's link and downloads a one-recording listing, `unistudent-<course number>-<date>__rec-<n>.json`.
 2. Run `us recordings fetch --json "<Downloads>/<that file>" "<Downloads>"` (it keeps the sound only when the Settings say so).
 3. If it failed (an expired link, usually), collect its link again once (`__rec-<n>-again.json`) and fetch again; if that fails too, skip the recording and add it to the report.
 4. Run `us ingest --json --no-wiki "<Downloads>/<that file>" "<Downloads>"`. A recording ticked for transcripts is approved for transcription as it lands.
