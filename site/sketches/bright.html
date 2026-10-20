@@ -1,0 +1,82 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UniStudent sketch: Bright</title>
+<link rel="icon" href="../media/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Bricolage+Grotesque:opsz,wght@12..96,400..800&display=swap" rel="stylesheet">
+<style>
+:root { --cream: #fff8ec; --ink: #141414; --cobalt: #2f48ff; --tomato: #ff5b37; --sun: #ffd23f; --mint: #8fe3c6; --lilac: #c9b8ff; --font: "Bricolage Grotesque", system-ui, sans-serif; }
+* { box-sizing: border-box; }
+body { margin: 0; background: var(--cream); color: var(--ink); font: 400 1.1rem/1.55 var(--font); -webkit-font-smoothing: antialiased; }
+a { color: inherit; }
+.wrap { max-width: 78rem; margin: 0 auto; padding: 0 clamp(1rem, 4vw, 2.5rem); }
+.bar { display: flex; justify-content: space-between; align-items: center; padding: 1.2rem 0; }
+.brand { display: flex; gap: .6rem; align-items: center; font-weight: 800; font-size: 1.25rem; text-decoration: none; }
+.brand img { width: 2rem; }
+.bar nav { display: flex; gap: 1.6rem; align-items: center; font-weight: 600; }
+.bar nav a { text-decoration: none; }
+.btn { display: inline-flex; align-items: center; gap: .5rem; font: 800 1.08rem/1 var(--font); text-decoration: none; padding: 1rem 1.4rem; border: 2.5px solid var(--ink); border-radius: 14px; background: var(--ink); color: var(--cream); box-shadow: 4px 4px 0 var(--cobalt); transition: transform .12s, box-shadow .12s; }
+.btn:hover { transform: translate(-2px, -2px); box-shadow: 6px 6px 0 var(--cobalt); }
+.btn.alt { background: var(--cream); color: var(--ink); box-shadow: 4px 4px 0 var(--ink); }
+.btn.small { padding: .6rem .9rem; font-size: .95rem; }
+.hero { display: grid; grid-template-columns: 1.05fr 1fr; gap: clamp(2rem, 4vw, 4rem); align-items: center; padding: clamp(2rem, 5vw, 4rem) 0 3rem; }
+.tag { display: inline-block; font-weight: 700; font-size: .95rem; background: var(--mint); border: 2px solid var(--ink); border-radius: 999px; padding: .3rem .9rem; transform: rotate(-2deg); }
+h1 { font-size: clamp(3rem, 6.6vw, 5.8rem); line-height: .95; letter-spacing: -.045em; font-weight: 800; margin: 1.2rem 0 0; }
+.blob { display: inline-block; background: var(--cobalt); color: var(--cream); padding: 0 .18em .06em; border-radius: .18em; transform: rotate(-1.5deg); }
+.strike { position: relative; white-space: nowrap; }
+.strike::after { content: ""; position: absolute; left: -2%; right: -2%; top: 52%; height: .12em; background: var(--tomato); border-radius: 99px; transform: rotate(-3deg); }
+.sub { font-size: 1.2rem; max-width: 34rem; margin: 1.6rem 0 2rem; }
+.cta { display: flex; gap: 1rem; flex-wrap: wrap; }
+.stage { position: relative; background: var(--cobalt); border: 2.5px solid var(--ink); border-radius: 28px; padding: clamp(1.4rem, 3vw, 2.4rem); box-shadow: 8px 8px 0 var(--ink); }
+.chat { background: #fff; border: 2.5px solid var(--ink); border-radius: 18px; padding: 1.2rem 1.3rem; font-size: 1rem; }
+.q { margin: 0 0 1rem auto; width: fit-content; background: var(--sun); border: 2px solid var(--ink); border-radius: 14px 14px 4px 14px; padding: .5rem .9rem; font-weight: 700; }
+.chat p { margin: 0 0 .8rem; }
+.cite { display: inline-block; font-weight: 800; font-size: .82rem; background: var(--mint); border: 2px solid var(--ink); border-radius: 8px; padding: 0 .4rem; margin-left: .3rem; }
+.warn { background: #ffe3da; border: 2px solid var(--tomato); border-radius: 10px; padding: .5rem .7rem; margin: 0 !important; }
+.sticker { position: absolute; font-weight: 800; border: 2.5px solid var(--ink); border-radius: 14px; padding: .55rem .9rem; box-shadow: 3px 3px 0 var(--ink); }
+.s1 { top: -1.4rem; right: 1.6rem; background: var(--sun); transform: rotate(4deg); }
+.s2 { bottom: -1.5rem; left: -1.2rem; background: var(--tomato); color: #fff; transform: rotate(-4deg); }
+.strip { display: grid; grid-template-columns: repeat(4, 1fr); gap: 1rem; padding: 1rem 0 4rem; }
+.strip div { border: 2.5px solid var(--ink); border-radius: 20px; padding: 1.2rem 1.3rem; font-weight: 800; font-size: 1.15rem; line-height: 1.2; }
+.strip span { display: block; font-weight: 400; font-size: .95rem; margin-top: .4rem; }
+.strip div:nth-child(1) { background: var(--sun); } .strip div:nth-child(2) { background: var(--mint); } .strip div:nth-child(3) { background: var(--lilac); } .strip div:nth-child(4) { background: #ffc9b8; }
+@media (max-width: 56rem) { .hero { grid-template-columns: 1fr; } .strip { grid-template-columns: 1fr 1fr; } .bar nav a:not(.btn) { display: none; } .s2 { left: .5rem; } }
+</style>
+</head>
+<body>
+<div class="wrap">
+  <header class="bar">
+    <a class="brand" href="#"><img src="../media/icon.svg" alt="">UniStudent</a>
+    <nav><a href="#">How it works</a><a href="#">vs NotebookLM</a><a href="#">GitHub</a><a class="btn small" href="#">Install free</a></nav>
+  </header>
+  <section class="hero">
+    <div>
+      <span class="tag">Free plugin for your AI app</span>
+      <h1>Study from <span class="blob">your course,</span> not <span class="strike">the internet.</span></h1>
+      <p class="sub">UniStudent makes your AI answer from your course's own files, with the exact page or lecture minute. It builds study packs with summaries, illustrations and an exercise guide, and you can ask it anything about your course.</p>
+      <div class="cta"><a class="btn" href="#">Install in 3 steps</a><a class="btn alt" href="#">Watch 35 seconds</a></div>
+    </div>
+    <div class="stage">
+      <span class="sticker s1">Exact page, every time</span>
+      <div class="chat">
+        <p class="q">Why does the demand curve slope down?</p>
+        <p>As the price rises, buyers purchase less of the good. <span class="cite">Subject 2 · p. 14</span></p>
+        <p>Think of coffee: from 3 to 6 euros a cup, you start making it at home. <span class="cite">p. 14</span></p>
+        <p class="warn">⚠️ Not from your course material (general knowledge): economists also explain this through loss aversion.</p>
+      </div>
+      <span class="sticker s2">Off-course? It tells you.</span>
+    </div>
+  </section>
+  <section class="strip">
+    <div>Study packs<span>Summaries, illustrations, an exercise guide.</span></div>
+    <div>Recordings<span>Every "this will be on the exam", with its minute.</span></div>
+    <div>Practice<span>From easy questions up to real past exams.</span></div>
+    <div>Any course<span>Any university, any AI app.</span></div>
+  </section>
+</div>
+</body>
+</html>
