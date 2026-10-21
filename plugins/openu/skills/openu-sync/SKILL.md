@@ -30,11 +30,11 @@ Done when: you have the course id and number.
 Nothing downloads in this step, and no stream links are collected: they expire within hours.
 
 - **Documents:** run the listing snippet from `site.md` for the course id, then add folder contents (open each folder, list its file links). One item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, and `unit_hint: "general"` for past exams, exam information and file stores. Then run the size and type snippet: it adds `size`, and `file` (`unistudent-<course number>-<date>__<name>.<real file type>`, the name it will be downloaded under), without downloading anything. Its last count must be 0: a `file` without its type can't be read into the Wiki.
-- **Recordings:** skip them when `recording_level` is 0 (the student chose to skip recordings; count them for the report). Otherwise run the recordings snippet in each video collection (links on the course page and in the "וידאו" section). One item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` as the snippet read it from the player (the length is what makes the Fetch plan's time real: 18 recordings of unknown length leave the student no time to plan around).
+- **Recordings and their attached files:** run the recordings snippet in each video collection (links on the course page and in the "וידאו" section), even when `recording_level` is 0: lecturers hang files on recordings (the class exercise file, the exam-prep file) that are in no other list. Every file in a recording's `attachments` is a document item. When `recording_level` is 0, add no recording items (count them for the report); otherwise one item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` as the snippet read it from the player (the length is what makes the Fetch plan's time real: recordings of unknown length leave the student no time to plan around).
 
 Download the listing `{"course_site": ..., "items": [...]}` from the course tab with the in-page method, as `unistudent-<course number>-<date>__listing.json` (list everything: the Fetch plan leaves out what is already downloaded).
 
-Done when: every row of the resources list, every file in every folder and every recording the Settings want is an item or already downloaded, and the listing file is in Downloads.
+Done when: every row of the resources list, every file in every folder, every file attached to a recording and every recording the Settings want is an item or already downloaded, and the listing file is in Downloads.
 
 ## 4. The Fetch plan
 

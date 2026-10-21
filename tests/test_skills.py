@@ -261,7 +261,8 @@ class OpenUSync(unittest.TestCase):
 
     def test_recordings_are_skipped_only_by_choice_and_the_sound_only_rule_lives_in_the_command(self):
         scan = self.step("Scan, without downloading")
-        self.assertIn("skip them when `recording_level` is 0", scan)
+        self.assertIn("When `recording_level` is 0, add no recording items", scan)
+        self.assertIn("`attachments` is a document item", scan)  # files hung on recordings are in no other list
         self.assertNotIn("keep_video", scan)
         self.assertNotIn("--audio-only", self.TEXT)  # `us recordings fetch` applies the Settings itself
 
