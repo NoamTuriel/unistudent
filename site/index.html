@@ -62,20 +62,17 @@ h1, h2, h3 { font-family: var(--head); margin: 0; letter-spacing: -.03em; line-h
 .bar nav .btn { padding: .6rem 1rem; font-size: .9rem; color: #fff; }
 
 /* Hero */
-.aura { position: absolute; left: 50%; top: -12rem; width: 110rem; height: 56rem; margin-left: -55rem; z-index: -1; filter: blur(60px); opacity: .8; pointer-events: none;
-  background: radial-gradient(22% 30% at 32% 42%, #ffdcc7, transparent 70%), radial-gradient(22% 28% at 60% 30%, #dcd6ff, transparent 70%), radial-gradient(22% 28% at 76% 62%, #c9f1e2, transparent 70%); }
-.hero { text-align: center; padding: clamp(2.5rem, 6vw, 4.5rem) 0 0; }
-.kicker { display: inline-flex; gap: .5rem; align-items: center; font-size: .9rem; color: var(--muted); background: rgb(255 255 255 / .75); box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: .35rem .95rem; }
-.kicker i { width: .5rem; height: .5rem; border-radius: 50%; background: var(--mint); }
-h1 { font-size: clamp(2.8rem, 6.8vw, 5.6rem); font-weight: 800; letter-spacing: -.045em; line-height: 1; margin: 1.3rem auto 0; max-width: 15ch; }
-h1 .accent { background: linear-gradient(95deg, var(--accent), #7c3aed 55%, #0e9f8a); -webkit-background-clip: text; background-clip: text; color: transparent; }
-.sub { color: var(--muted); font-size: clamp(1.08rem, 1.6vw, 1.2rem); max-width: 41rem; margin: 1.5rem auto 2rem; }
-.cta { display: flex; gap: .8rem; justify-content: center; flex-wrap: wrap; }
-.works { margin: 1.6rem 0 0; font-size: .88rem; color: var(--faint); }
+.hero { padding: clamp(2.5rem, 6vw, 4.5rem) 0 0; }
+.kicker { font-size: .95rem; color: var(--muted); margin: 0; }
+h1 { font-size: clamp(2.8rem, 6.8vw, 5.6rem); font-weight: 800; letter-spacing: -.045em; line-height: 1; margin: 1rem 0 0; max-width: 14ch; }
+h1 .accent { color: var(--accent); position: relative; white-space: nowrap; }
+h1 .accent::after { content: ""; position: absolute; left: -.04em; right: -.06em; bottom: -.2em; height: .3em; background: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 240 16' preserveAspectRatio='none'%3E%3Cpath d='M3 12 C 46 1, 92 16, 132 7 S 204 2, 237 11' fill='none' stroke='%234f46e5' stroke-width='4' stroke-linecap='round'/%3E%3C/svg%3E") no-repeat center / 100% 100%; }
+.sub { color: var(--muted); font-size: clamp(1.08rem, 1.6vw, 1.2rem); max-width: 38rem; margin: 1.5rem 0 2rem; }
+.cta { display: flex; gap: .8rem; flex-wrap: wrap; }
 
 /* The demo player */
-.demo { margin: clamp(3rem, 6vw, 4.5rem) auto 0; max-width: 64rem; text-align: left; scroll-margin-top: 5rem; }
-.dtabs { display: flex; gap: .35rem; justify-content: center; flex-wrap: wrap; margin-bottom: 1.1rem; }
+.demo { margin: clamp(3rem, 6vw, 4.5rem) 0 0; text-align: left; scroll-margin-top: 5rem; }
+.dtabs { display: flex; gap: .35rem; flex-wrap: wrap; margin-bottom: 1.1rem; }
 .dtabs button { position: relative; overflow: hidden; font: 600 .92rem var(--sans); color: var(--muted); background: rgb(255 255 255 / .75); border: 0; box-shadow: inset 0 0 0 1px var(--line); border-radius: 999px; padding: .55rem 1rem; cursor: pointer; }
 .dtabs button:hover { color: var(--ink); }
 .dtabs button[aria-selected="true"] { color: #fff; background: var(--ink); box-shadow: none; }
@@ -184,31 +181,28 @@ figure { margin: 0; }
 
 /* Sections */
 section.block { padding: clamp(5rem, 10vw, 7.5rem) 0 0; scroll-margin-top: 4rem; }
-.head { text-align: center; max-width: 42rem; margin: 0 auto clamp(2.2rem, 4vw, 3rem); }
-.eyebrow { font: 600 .82rem var(--sans); color: var(--accent); letter-spacing: .02em; margin: 0 0 .8rem; }
+.head { max-width: 42rem; margin: 0 0 clamp(2rem, 4vw, 2.6rem); }
 h2 { font-size: clamp(2rem, 4.2vw, 3.1rem); font-weight: 800; }
 .head p { color: var(--muted); font-size: 1.1rem; margin: 1rem 0 0; }
-.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 52rem; margin: 2.2rem auto 0; }
+.rules { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; max-width: 52rem; margin: 2.2rem 0 0; }
 .rule { background: #fff; border-radius: 16px; box-shadow: var(--shadow); padding: 1.3rem 1.4rem; }
 .rule h3 { font-size: 1.1rem; margin-bottom: .35rem; letter-spacing: -.015em; }
 .rule p { margin: 0; color: var(--muted); font-size: .97rem; }
 .badge { display: inline-block; font-size: .78rem; font-weight: 600; border-radius: 6px; padding: .1rem .5rem; margin-bottom: .7rem; }
-.film { max-width: 58rem; margin: 0 auto; padding: .5rem; background: #fff; border-radius: 22px; box-shadow: var(--shadow); }
+.film { max-width: 58rem; margin: 0; padding: .5rem; background: #fff; border-radius: 22px; box-shadow: var(--shadow); }
 .film video { width: 100%; height: auto; aspect-ratio: 16 / 9; border-radius: 16px; background: #000; }
 .film video::cue { font: 500 clamp(1rem, 1.7vw, 1.4rem)/1.35 var(--sans); background: rgb(0 0 0 / .78); }
-.film-cap { text-align: center; color: var(--muted); font-size: .92rem; margin-top: 1rem; }
+.film-cap { color: var(--muted); font-size: .92rem; margin-top: 1rem; }
 .sound { font: 600 .92rem var(--sans); color: var(--ink); background: none; border: 0; padding: 0; cursor: pointer; text-decoration: underline; text-underline-offset: .2em; margin-left: .6rem; }
-.reasons { display: grid; grid-template-columns: repeat(6, 1fr); gap: 1rem; }
-.reason { grid-column: span 2; background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 1.5rem; }
-.reason:nth-child(4), .reason:nth-child(5) { grid-column: span 3; }
-.reason .n { font: 800 .85rem var(--head); color: var(--accent); background: var(--accent-soft); width: 2rem; height: 2rem; border-radius: 50%; display: grid; place-items: center; margin-bottom: 1rem; }
+.reasons { display: grid; grid-template-columns: 1fr 1fr; gap: 0 3rem; max-width: 60rem; }
+.reason { border-top: 1px solid var(--line); padding: 1.3rem 0 1.6rem; }
 .reason h3 { font-size: 1.15rem; letter-spacing: -.015em; line-height: 1.3; margin-bottom: .4rem; }
 .reason p { margin: 0; color: var(--muted); font-size: .97rem; }
 .reason .say { color: var(--ink); font-weight: 600; }
-.side { text-align: center; color: var(--muted); margin: 1.8rem 0 0; }
+.side { color: var(--muted); margin: 1rem 0 0; }
 
 /* Install */
-.steps { list-style: none; counter-reset: step; margin: 0 auto; padding: 0; max-width: 48rem; display: grid; gap: 1rem; }
+.steps { list-style: none; counter-reset: step; margin: 0; padding: 0; max-width: 48rem; display: grid; gap: 1rem; }
 .steps > li { counter-increment: step; position: relative; background: #fff; border-radius: 18px; box-shadow: var(--shadow); padding: 1.5rem 1.6rem 1.3rem 4.5rem; scroll-margin-top: 5rem; }
 .steps > li::before { content: counter(step); position: absolute; left: 1.4rem; top: 1.4rem; width: 2.1rem; height: 2.1rem; border-radius: 50%; display: grid; place-items: center; font: 800 1rem/1 var(--head); color: #fff; background: var(--accent); }
 .steps h3 { font-size: 1.2rem; letter-spacing: -.015em; line-height: 1.3; }
@@ -231,11 +225,10 @@ h2 { font-size: clamp(2rem, 4.2vw, 3.1rem); font-weight: 800; }
 .inline-cmd .copy { position: static; background: var(--ink); }
 .say-it { display: inline-block; margin: .15rem 0; padding: .4rem .8rem; border-radius: 12px; background: var(--accent-soft); color: var(--accent) !important; font-weight: 600; }
 .fine { font-size: .9rem; color: var(--faint) !important; }
-.final { margin: clamp(5rem, 10vw, 7.5rem) auto 0; text-align: center; position: relative; padding: clamp(3rem, 7vw, 5rem) 1.5rem; border-radius: 28px; overflow: hidden; background: #fff; box-shadow: var(--shadow); }
-.final::before { content: ""; position: absolute; inset: 0; z-index: 0; opacity: .7; filter: blur(40px); background: radial-gradient(30% 50% at 30% 30%, #ffdcc7, transparent 70%), radial-gradient(30% 50% at 70% 70%, #dcd6ff, transparent 70%); }
-.final > * { position: relative; }
-.final h2 { max-width: 18ch; margin: 0 auto; }
-.final p { color: var(--muted); max-width: 34rem; margin: 1rem auto 2rem; }
+.letter { max-width: 40rem; margin: clamp(5rem, 10vw, 7.5rem) 0 0; padding-top: 2.4rem; border-top: 1px solid var(--line); }
+.letter h2 { font-size: clamp(1.8rem, 3.4vw, 2.4rem); margin-bottom: 1rem; }
+.letter p { font-size: 1.1rem; margin: 0 0 1rem; }
+.letter .sign { font-weight: 600; margin-bottom: 1.8rem; }
 footer { margin-top: 4rem; border-top: 1px solid var(--line); }
 footer .wrap { display: flex; flex-wrap: wrap; justify-content: space-between; gap: .6rem 2rem; padding-top: 1.6rem; padding-bottom: 2.4rem; font-size: .88rem; color: var(--faint); }
 footer p { margin: 0; max-width: 46rem; }
@@ -243,7 +236,7 @@ footer p { margin: 0; max-width: 46rem; }
 @media (max-width: 56rem) {
   .two, .pack { grid-template-columns: 1fr; }
   .rules { grid-template-columns: 1fr; }
-  .reason, .reason:nth-child(n) { grid-column: span 6; }
+  .reasons { grid-template-columns: 1fr; }
   .bar nav a:not(.btn) { display: none; }
   .pane { min-height: 0; }
   .dtabs { flex-wrap: nowrap; justify-content: flex-start; overflow-x: auto; padding-bottom: .3rem; }
@@ -278,14 +271,12 @@ footer p { margin: 0; max-width: 46rem; }
 
 <main id="top">
 <div class="wrap">
-  <div class="aura" aria-hidden="true"></div>
-
+  
   <section class="hero" aria-labelledby="h-hero">
-    <span class="kicker"><i></i>Free, open-source plugin for your AI app</span>
+    <p class="kicker">Free and open source. Works in Claude, Cursor, VS Code, Codex and other AI apps.</p>
     <h1 id="h-hero">Study from your course, <span class="accent">not the internet.</span></h1>
     <p class="sub">UniStudent makes your AI answer from your course's own files, with the exact page or lecture minute. It builds study packs with summaries, illustrations and an exercise guide, and you can ask it anything about your course.</p>
-    <div class="cta"><a class="btn" href="#install">Install in 3 steps</a><a class="btn ghost" href="#video">Watch 35 seconds</a></div>
-    <p class="works">Works in Claude, Claude Code, Cursor, VS Code, Codex, Gemini CLI and any MCP app.</p>
+    <div class="cta"><a class="btn" href="#install">Install in 3 steps</a><a class="btn ghost" href="#video">Watch the preview</a></div>
 
     <div class="demo auto" id="demo" aria-label="What UniStudent does, shown with made-up examples">
       <div class="dtabs" role="tablist" aria-label="Features" data-demo>
@@ -330,7 +321,7 @@ footer p { margin: 0; max-width: 46rem; }
 
         <div class="pane" role="tabpanel" id="dp-pack" aria-labelledby="d-pack" hidden>
           <h3 style="--d:.1">Study pack · Subject 2: Demand</h3>
-          <p class="cap" style="--d:.3">A summary, the illustrations, and a guide to the exercises. Ready before you ask.</p>
+          <p class="cap" style="--d:.3">A summary, the course's drawings, and a guide to the exercises.</p>
           <div class="pack">
             <div class="box" style="--d:.7">
               <h5>Know by heart</h5>
@@ -386,7 +377,7 @@ footer p { margin: 0; max-width: 46rem; }
             <div class="step" style="--d:.7"><b>Warm-up</b><span>Check you know the terms</span></div>
             <div class="step" style="--d:1.1"><b>Exercises</b><span>From the course</span></div>
             <div class="step" style="--d:1.5"><b>Harder</b><span>Two ideas at once</span></div>
-            <div class="step" style="--d:1.9"><b>Past exams</b><span>The real thing</span></div>
+            <div class="step" style="--d:1.9"><b>Past exams</b><span>Real exam questions</span></div>
           </div>
           <div class="methods">
             <h5 class="box" style="--d:2.6;font:600 .72rem var(--sans);letter-spacing:.07em;text-transform:uppercase;color:var(--faint);margin:0 0 .4rem">Before the test: every past-exam question, grouped by method</h5>
@@ -425,9 +416,8 @@ footer p { margin: 0; max-width: 46rem; }
 
   <section class="block" id="trust" aria-labelledby="h-trust">
     <div class="head">
-      <p class="eyebrow">Why you can trust it</p>
       <h2 id="h-trust">Every answer shows where it came from.</h2>
-      <p>A general AI answers from everywhere: methods your course doesn't teach, other notation, other courses. Your exam grades your course's way, so UniStudent keeps the AI inside your course, and tells you when it steps outside.</p>
+      <p>A general AI answers from the whole internet, so you get methods and notation your course never used. Your exam is graded your course's way. UniStudent keeps your AI on your course's files, and when it has to go beyond them, it says so.</p>
     </div>
     <div class="rules">
       <div class="rule"><span class="badge chip" style="margin-left:0">Subject 2 · p. 14</span><h3>From your course</h3><p>Linked to the exact page, or the exact minute of a recording. One click opens it.</p></div>
@@ -437,8 +427,8 @@ footer p { margin: 0; max-width: 46rem; }
 
   <section class="block" id="video" aria-labelledby="h-video">
     <div class="head">
-      <p class="eyebrow">35 seconds</p>
-      <h2 id="h-video">See it from start to finish.</h2>
+      <h2 id="h-video">Watch the preview</h2>
+      <p>35 seconds, from adding a course to studying for the exam.</p>
     </div>
     <figure class="film">
       <video id="film" src="media/unistudent-35s.mp4" poster="media/unistudent-35s.jpg" controls muted playsinline preload="metadata" width="1920" height="1080">
@@ -450,25 +440,23 @@ footer p { margin: 0; max-width: 46rem; }
 
   <section class="block" id="notebooklm" aria-labelledby="h-nblm">
     <div class="head">
-      <p class="eyebrow">Compared</p>
       <h2 id="h-nblm">Why not just use NotebookLM?</h2>
-      <p>NotebookLM is a good research notebook, and it also answers from the sources you give it. UniStudent is built for one job: studying your course for its exam.</p>
+      <p>Fair question. NotebookLM is good, and it also answers from the sources you give it. UniStudent does a narrower job, getting you through one course and its exam, so it does more of that job for you.</p>
     </div>
     <div class="reasons">
-      <article class="reason"><span class="n">1</span><h3>Free, with no paid tiers</h3><p>No plan to upgrade to and no limits of its own. It runs on the AI app you already use, or its free plan.</p></article>
-      <article class="reason"><span class="n">2</span><h3>Your course's illustrations, redrawn</h3><p>Graphs, flowcharts, circuits and molecules come back as clean drawings in your study pack, not just described in words.</p></article>
-      <article class="reason"><span class="n">3</span><h3>It's your AI, with all its tools</h3><p>It lives inside the AI app you use, so every tool you've added there works with your course. Engineering student with a 3D plugin? Ask for <span class="say">a 3D model of the part in question 6</span>.</p></article>
-      <article class="reason"><span class="n">4</span><h3>It fetches and sorts your material</h3><p>With a plugin for your university, new files come in from the course site by themselves. Anything else goes in the inbox and lands in the right subject. No uploading sources one by one.</p></article>
-      <article class="reason"><span class="n">5</span><h3>Made for students, from the first minute</h3><p>Study packs per subject, recordings with the lecturer's announcements, practice up to past exams. Nothing to set up or prompt your way into.</p></article>
+      <article class="reason"><h3>Free, with no paid tiers</h3><p>There's no plan to upgrade to, and it has no usage limits of its own. It runs on the AI app you already use.</p></article>
+      <article class="reason"><h3>Your course's drawings, redrawn</h3><p>The graphs, flowcharts, circuits and molecules from your course show up in your study pack as clean drawings you can look at.</p></article>
+      <article class="reason"><h3>It's your AI, with all its tools</h3><p>It lives inside the AI app you use, so every tool you've added there works with your course. Engineering student with a 3D plugin? Ask for <span class="say">a 3D model of the part in question 6</span>.</p></article>
+      <article class="reason"><h3>It fetches and sorts your files</h3><p>If there's a plugin for your university, new files come in from the course site on their own. Anything else you drop in the inbox folder goes into the right subject, so you never upload sources one at a time.</p></article>
+      <article class="reason"><h3>Made for students</h3><p>Every subject gets a study pack, every recording gets a table of contents with the lecturer's announcements, and practice goes all the way up to past exams. You don't have to write clever prompts to get any of it.</p></article>
     </div>
-    <p class="side">Like NotebookLM's audio overviews? Keep them. The two work fine side by side.</p>
+    <p class="side">If you like NotebookLM's audio overviews, keep using them. The two work fine together.</p>
   </section>
 
   <section class="block" id="install" aria-labelledby="h-install">
     <div class="head">
-      <p class="eyebrow">Install</p>
-      <h2 id="h-install">Start in three steps.</h2>
-      <p>About five minutes, once. No coding: each step is a copy and a paste, or a few clicks.</p>
+      <h2 id="h-install">Install it</h2>
+      <p>It takes about five minutes, once. You don't need to know how to code: every step is a copy and paste, or a few clicks.</p>
     </div>
     <ol class="steps">
       <li>
@@ -543,11 +531,13 @@ footer p { margin: 0; max-width: 46rem; }
     </ol>
   </section>
 
-  <div class="final">
-    <h2>Set it up once. <span style="color:var(--accent)">Study from it all semester.</span></h2>
-    <p>Free and open source, under the MIT license. Read the code, file an issue, or suggest a plugin for your university.</p>
-    <div class="cta"><a class="btn" href="#install">Start with step 1</a><a class="btn ghost" href="https://github.com/NoamTuriel/unistudent">See the code on GitHub</a></div>
-  </div>
+  <section class="letter" aria-labelledby="h-letter">
+    <h2 id="h-letter">Why I made this</h2>
+    <p>I'm a university student, and I built UniStudent for my own courses. The AI I studied with kept answering from the whole internet, with methods and notation my course didn't use, and I couldn't tell which parts I could trust for the exam.</p>
+    <p>Now every answer points to the page or the lecture minute it came from. It's free and open source. If it doesn't work well for your course or your university, open an issue on GitHub and tell me.</p>
+    <p class="sign">Noam</p>
+    <div class="cta"><a class="btn" href="#install">Install it</a><a class="btn ghost" href="https://github.com/NoamTuriel/unistudent">See the code on GitHub</a></div>
+  </section>
 </div>
 </main>
 
