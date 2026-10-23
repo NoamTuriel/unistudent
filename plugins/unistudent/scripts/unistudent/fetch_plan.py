@@ -12,6 +12,7 @@ import shutil
 from pathlib import Path
 
 from .common import UserError
+from .convert import DOCUMENTS, IMAGES, MARKITDOWN_ONLY, RECORDINGS
 from .course import parse_unit, safe_name
 from .sorting import detect_unit
 
@@ -19,6 +20,7 @@ RECORDING_BYTES_PER_SECOND = 1_800_000 / 8  # the site's documented 1.8 Mbit/s: 
 AUDIO_BYTES_PER_SECOND = 128_000 / 8  # the sound only (AAC, about 128 kbit/s): about 0.06 GB per hour
 ROUGH_DOWNLOAD_BYTES_PER_SECOND = 2_500_000  # ponytail: a fixed rough network speed until a download is measured
 ROUGH_REALTIME_FACTOR = {"mlx": 0.15, "faster": 0.5}  # hours of work per hour of audio, before a benchmark
+KNOWN = DOCUMENTS | MARKITDOWN_ONLY | RECORDINGS | IMAGES
 TICK = re.compile(r"^\s*[-*]\s*\[([ xX])\]\s*(\d+)\.", re.M)
 WARNING = ["KEEP THE COMPUTER ON, PLUGGED IN AND AWAKE.", "KEEP THIS APP AND CHROME OPEN."]
 NO_SITE_WARNING = [WARNING[0], "KEEP THIS APP OPEN."]  # no course site: Chrome isn't needed
@@ -43,7 +45,11 @@ def is_recording(item):
 def extension(item):
     if is_recording(item):
         return ".mp4"  # a recording's name is its title, often with a dotted date ("12.10.2025")
-    return Path(item.get("name") or item.get("file") or "").suffix.lower() or "(none)"
+    for name in (item.get("file"), item.get("name")):  # the downloaded name first: a title may hold "4.2.21"
+        suffix = Path(name or "").suffix.lower()
+        if suffix in KNOWN:
+            return suffix
+    return "(none)"
 
 
 def size_of(item, audio_only=False):

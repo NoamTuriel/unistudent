@@ -1,4 +1,5 @@
 """Ticket 22: whole-class lessons live in Recorded lessons, outside every unit; the recordings roadmap is slim."""
+import shutil
 import unittest
 
 from helpers import CourseTestCase, folders, mock_env, run, run_json, write
@@ -100,11 +101,48 @@ class RecordedLessons(CourseTestCase):
     def test_a_new_table_of_contents_marks_its_unit_page_stale_once(self):  # ticket 31
         run_json("assign", LESSON, "lessons", "--course", self.course)
         write(self.lesson / "recording-summary.md", "Lesson 9: a lesson about units 3-4.\n\nSources: [transcript](transcript.md)\n")
-        self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], ["unit-04"])
+        # unit 3 has no files, but the lesson teaches it: it gets its page too
+        self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], ["unit-03", "unit-04"])
         self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], [])
         write(self.question / "toc.md", "Sources: [transcript](transcript.md)\n\n| Time | Until | Type | What happens | Topic |\n"
                                         "|---|---|---|---|---|\n| [00:00:00](transcript.md#000000) | 00:05:00 | solution | Q1 | Unit 4 |\n")
         self.assertEqual(run_json("wiki", "build", "--course", self.course)["units_touched"], ["unit-04"])
+
+    def test_a_unit_with_no_files_gets_its_page_from_the_lesson_that_teaches_it(self):
+        # A course with a printed textbook: the site has exams and recordings, no unit files.
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        write(self.lesson / "recording-summary.md", "מפגש 4: שיעור על פרקים 2 ו-3.\n\nSources: [transcript](transcript.md)\n")
+        touched = run_json("wiki", "build", "--course", self.course)["units_touched"]
+        self.assertEqual(touched, ["unit-02", "unit-03"])
+        self.assertIn("lesson 9.mp4", (self.f.wiki / "units" / "unit-02.md").read_text("utf-8"))
+        self.assertEqual(self.wiki_problems(), [])
+
+    def test_only_numbers_right_after_the_unit_word_name_units(self):
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        for line, units in (("מפגש 3: שיעור על היחידה הראשונה, וסעיף ד' של שאלה 11.", []),  # "first" is no digit
+                            ("מפגש 8: חומר ממ\"ן 4, יחידות 1 ו-5.", ["unit-01", "unit-05"]),  # "ו-" is "and"
+                            ("Lesson 9: a lesson about units 7-9 and question 12.", ["unit-07", "unit-08", "unit-09"])):
+            write(self.lesson / "recording-summary.md", f"{line}\n\nSources: [transcript](transcript.md)\n")
+            shutil.rmtree(self.f.wiki / "units", ignore_errors=True)  # a unit page stays once made: start each case clean
+            run_json("wiki", "build", "--course", self.course)
+            pages = sorted(p.stem for p in (self.f.wiki / "units").glob("unit-*.md") if "lesson 9.mp4" in p.read_text("utf-8"))
+            self.assertEqual(pages, units, line)
+
+    def test_every_link_an_announcement_carries_still_works_on_the_unit_page(self):
+        write(self.f.wiki / "sources" / "general" / "exam topics.md", "# Exam topics\n\nSources: [exam topics](<exam topics.md>)\n")
+        write(self.f.wiki / "recordings" / "value (plans), monopoly" / "recording-summary.md", "Another lesson.\n")
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        write(self.lesson / "recording-summary.md", "Lesson 9: a lesson about units 7-9.\n\nSources: [transcript](transcript.md)\n\n"
+              "## Announcements\n\n- Read [the topic list](<../../sources/general/exam topics.md>) [00:01:00](transcript.md#000100)"
+              " and [the other lesson](<../value (plans), monopoly/recording-summary.md>)\n")
+        write(self.f.material / "official" / "Unit 8" / "notes.txt", "Unit 8 notes, long enough to be a page of text.")
+        run_json("wiki", "build", "--course", self.course)
+        unit8 = (self.f.wiki / "units" / "unit-08.md").read_text("utf-8")
+        self.assertIn("](<../sources/general/exam topics.md>)", unit8)
+        self.assertIn("](<../recordings/lesson 9/transcript.md#000100>)", unit8)
+        self.assertIn("](<../recordings/value (plans), monopoly/recording-summary.md>)", unit8)  # brackets in a name
+        self.assertNotIn("unit-08.md", [p.get("page", "").rsplit("/", 1)[-1] for p in
+                                        run_json("wiki", "check", "--course", self.course)["problems"]])
 
     def wiki_problems(self):
         run_json("wiki", "build", "--course", self.course)

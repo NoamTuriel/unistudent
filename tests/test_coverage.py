@@ -4,6 +4,7 @@ import unittest
 from unittest import mock
 
 from helpers import CourseTestCase, folders, run, run_json, write
+from unistudent import convert
 from unistudent.convert import Conversion
 
 
@@ -161,7 +162,7 @@ class SlidePictures(CourseTestCase):
         self.assertEqual([p.rsplit("/", 1)[-1] for p in item["pictures"]], ["slide-2-1.png"])
 
 
-@unittest.skipUnless(shutil.which("soffice") or shutil.which("libreoffice"), "LibreOffice not installed")
+@unittest.skipUnless(convert._soffice(), "LibreOffice not installed")
 class OfficeView(CourseTestCase):
     def test_an_office_file_keeps_its_pdf_so_a_worker_can_look_at_its_pages(self):
         own = self.tmp / "own" / "Unit 1"

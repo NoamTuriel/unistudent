@@ -62,6 +62,8 @@ class RecordingStreams(StreamListing):
         fetched = run_json("recordings", "fetch", "--course", self.course, self.listing, self.staged)
         self.assertEqual(fetched["downloaded"], ["Session 5.mp4"])
         self.assertEqual(fetched["failed"], ["Broken.mp4"])
+        self.assertIn("No such file", fetched["reasons"]["Broken.mp4"])  # ffmpeg's own words, to act on
+        self.assertIn("No such file", fetched["summary"])
 
 
 class KeepVideoSetting(CourseTestCase):

@@ -363,7 +363,7 @@ def fetch_streams(listing_path, folder, audio_only=False):
                            "Windows: winget install ffmpeg; Linux: your package manager).")
     listing_path, folder = Path(listing_path), Path(folder)
     data = json.loads(listing_path.read_text("utf-8"))
-    downloaded, failed = [], []
+    downloaded, failed, reasons = [], [], {}
     for item in data.get("items", []):
         if item.get("kind") != "recording" or not item.get("stream_url") or item.get("file"):
             continue
@@ -385,5 +385,8 @@ def fetch_streams(listing_path, folder, audio_only=False):
             if part.exists():
                 part.unlink()
             failed.append(item.get("name") or item["url"])
+            error = result.stderr.decode("utf-8", "replace").strip().splitlines()
+            reasons[failed[-1]] = (error[-1].replace(item["stream_url"], "<link>") if error
+                                   else f"ffmpeg exit code {result.returncode}")  # the link holds a token
     listing_path.write_text(json.dumps(data, ensure_ascii=False, indent=1), "utf-8")
-    return {"downloaded": downloaded, "failed": failed}
+    return {"downloaded": downloaded, "failed": failed, "reasons": reasons}

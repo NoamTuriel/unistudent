@@ -342,7 +342,8 @@ def register(add, with_course):
             result = recordings.fetch_streams(args.paths[0], args.paths[1],
                                                audio_only=args.audio_only or recordings.audio_only_fetch(course))
             result["summary"] = (f"Downloaded {len(result['downloaded'])} recording" + ("" if len(result["downloaded"]) == 1 else "s")
-                                 + (f"; failed: {', '.join(result['failed'])}" if result["failed"] else "") + ".")
+                                 + (f"; failed: {', '.join(n + ' (' + result['reasons'][n] + ')' for n in result['failed'])}"
+                                    if result["failed"] else "") + ".")
             return result
         if not args.paths:
             raise UserError("Name at least one recording (its path in the Material folder).")
@@ -397,6 +398,8 @@ def register(add, with_course):
                 source.unlink()
                 continue
             name = safe_name(item.get("name") or source.name)
+            if not name.lower().endswith(source.suffix.lower()):  # a site title rarely names the file type
+                name += source.suffix.lower()
             hint = item.get("unit_hint")
             rel = material.add_file(course, source, tier="official", origin="course-site", name=name,
                                     hint=f"{safe_name(item.get('section') or 'General')}/{name}", replace_rel=before,

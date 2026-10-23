@@ -52,8 +52,17 @@ def kind(path) -> str:
     return "other"
 
 
+WORKS = {}  # program path → whether it runs: a wrapper left after LibreOffice was removed does not
+
+
 def _soffice():
-    return shutil.which("soffice") or shutil.which("libreoffice")
+    path = shutil.which("soffice") or shutil.which("libreoffice")
+    if path and path not in WORKS:
+        try:
+            WORKS[path] = subprocess.run([path, "--version"], capture_output=True, timeout=60).returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            WORKS[path] = False
+    return path if path and WORKS[path] else None
 
 
 def _pdf_pages(path: Path) -> Conversion:
