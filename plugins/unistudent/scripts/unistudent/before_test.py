@@ -78,7 +78,8 @@ def _rows(course, rows, folder, t):
 def build(course, index, clusters, fmt, notes):
     rows = {r["id"]: r for r in json.loads(Path(index).read_text("utf-8"))}
     clusters = json.loads(Path(clusters).read_text("utf-8"))
-    t = TEXT.get(course.settings()["language"], TEXT["en"])
+    t = {**TEXT["en"], **TEXT.get(course.settings()["language"], {}),  # a translated course: its own wording (`test_`)
+         **{k[len("test_"):]: v for k, v in course.labels().items() if k.startswith("test_")}}
     name = course.label("before_test")
     folder = course.study / f"{name} - {course.label('question_pages')}"
     course.study.mkdir(exist_ok=True)
@@ -105,7 +106,7 @@ def build(course, index, clusters, fmt, notes):
     if fmt == "html":
         a = lambda u, x: f'<a href="{html.escape(u)}">{html.escape(x)}</a>' if u else html.escape(x)
         lang = course.settings()["language"]
-        direction = "rtl" if lang == "he" else "ltr"  # outside the f-string: nested quotes need Python 3.12
+        direction = "rtl" if lang in ("he", "ar", "fa", "ur", "yi") else "ltr"  # outside the f-string: nested quotes need Python 3.12
         out = [f'<!doctype html><html lang="{lang}" dir="{direction}"><meta charset="utf-8"><title>{name}</title>',
                "<style>body{font:17px/1.65 system-ui,Arial;max-width:900px;margin:24px auto;padding:0 16px}h2{background:#e8eef8;padding:6px 10px}"
                "li{margin:9px 0}details{margin:6px 0}summary{cursor:pointer;font-weight:bold}.n{background:#fff4d6;padding:8px 12px}</style>",

@@ -205,8 +205,8 @@ def check_pack_against_unit(page: Path, course):
     """Notation and quotes of a pack page against its unit's Wiki (ticket 30): every Latin symbol and assumption number
     is listed in the unit page's Notation or Assumptions sections; every quote in a Say it or Model answer block occurs
     in the unit's source pages. Course-language terms are left to the verifier (the glossary)."""
-    from .course import LABELS, parse_unit_folder, unit_dir
-    known, unit = parse_unit_folder(page.parent.name)
+    from .course import parse_unit_folder, unit_dir
+    known, unit = parse_unit_folder(page.parent.name, course.label_tables())
     if not known or not isinstance(unit, int) or not re.match(r"\d+\.\d", page.name):  # not the generated roadmap
         return []
     unit_page = course.wiki / "units" / f"{unit_dir(unit)}.md"
@@ -237,7 +237,7 @@ def check_pack_against_unit(page: Path, course):
             if hit.group(1) not in numbers:
                 problem("notation", hit.group(0))
 
-    labels = {_normal(table[key]) for table in LABELS.values() for key in ("model_answer", "say_it")}
+    labels = {_normal(table[key]) for table in course.label_tables() for key in ("model_answer", "say_it") if key in table}
     sources = None
     lines = text.split("\n")
     for i, line in enumerate(lines):

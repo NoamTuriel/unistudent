@@ -250,13 +250,13 @@ def _carry_sidecar(course, old_rel, new_rel):
         shutil.move(str(old), str(new))
 
 
-def _location(rel):
+def _location(rel, tables):
     """(tier, unit, in_slot, loose): what a file's place in the Material folder says. `in_slot` is False when the file
     isn't under <trust level>/<unit folder>/; `loose` when it sits straight in the Material folder or straight in a
     trust-level folder, which is where UniStudent sorts it into a unit folder (a folder the student made is left alone)."""
     parts = Path(rel).parts
-    tier = parse_tier_folder(parts[0]) if len(parts) > 1 else None
-    known, unit = parse_unit_folder(parts[1]) if tier and len(parts) > 2 else (False, None)
+    tier = parse_tier_folder(parts[0], tables) if len(parts) > 1 else None
+    known, unit = parse_unit_folder(parts[1], tables) if tier and len(parts) > 2 else (False, None)
     return tier, unit, known, len(parts) == 1 or (tier is not None and len(parts) == 2)
 
 
@@ -299,7 +299,7 @@ def scan(course):
                             f"{len(files)} files in it. Nothing was changed. If a sync or drive is not ready, wait and run this "
                             "again; if you really removed them all, restore them from the Trash first.")
         kept = {rel: e for rel, e in files.items() if rel not in gone}
-        misplaced = []
+        misplaced, tables = [], course.label_tables()
         for rel, path in sorted(found.items()):
             stat = path.stat()
             entry = kept.get(rel)
@@ -316,7 +316,7 @@ def scan(course):
                 else:
                     entry = {"origin": "material-folder"}
                     result["new"].append(rel)
-            tier, unit, known, loose = _location(rel)
+            tier, unit, known, loose = _location(rel, tables)
             entry["tier"] = tier or entry.get("tier", "added")
             if known:
                 if entry.get("unit") != unit:

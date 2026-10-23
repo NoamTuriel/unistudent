@@ -41,6 +41,24 @@ class VisibleFolders(CourseTestCase):
         run_json("setup", course, "--name", "Macro", "--language", "fr")
         self.assertEqual(top_level(course), [".unistudent", "1-inbox", "2-course-material"])
 
+    def test_a_language_with_no_table_uses_the_labels_translated_at_setup(self):
+        english = run_json("labels")["labels"]
+        self.assertEqual(english["unit"], "Unit {n}")
+        course = self.tmp / "Macro"
+        labels = {"inbox": "1-boite", "material": "2-cours", "added": "ajoute", "unit": "Unite {n}"}
+        for bad in ({"unit": "Unite"}, {"nonsense": "x"}, {"material": "2/cours"}, ["not", "an", "object"]):
+            code, out = run("setup", course, "--name", "Macro", "--language", "fr", "--labels", json.dumps(bad))
+            self.assertEqual(code, 1, bad)
+            self.assertFalse(course.exists(), bad)
+        run_json("setup", course, "--name", "Macro", "--language", "fr", "--labels", json.dumps(labels))
+        self.assertEqual(top_level(course), [".unistudent", "1-boite", "2-cours"])
+        write(course / "1-boite" / "Unit 3 notes.txt", "money")
+        run_json("add", "--course", course)
+        self.assertTrue((course / "2-cours" / "ajoute" / "Unite 3" / "Unit 3 notes.txt").is_file())
+        self.assertEqual(run_json("unsorted", "--course", course)["files"], [])  # the folder is read back as unit 3
+        run_json("setup", course, "--name", "Macro", "--language", "en")  # another language: its own names
+        self.assertTrue((course / "2-course-material" / "added" / "Unit 3" / "Unit 3 notes.txt").is_file())
+
     def test_a_new_course_needs_its_language_and_an_existing_one_keeps_it(self):
         course = self.tmp / "Macro"
         code, out = run("setup", course, "--name", "Macro")
