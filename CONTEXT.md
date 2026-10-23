@@ -21,6 +21,14 @@ _Avoid_: study folder, summaries folder, output folder
 The per-course, local-only record of the student's choices for that course folder.
 _Avoid_: course.yaml, config
 
+**Course language**:
+The one language a course folder speaks: its folder names, the Wiki's notes, the answers, the study packs and the recording summaries. Kept in the Settings (`language`); by default the language the course is taught in, confirmed with the student at setup, or another language the student chose. Hebrew and English have built-in labels; any other language gets its labels translated once at setup and kept in the Settings.
+_Avoid_: UI language, folder language, default language
+
+**Lecture language**:
+The language spoken in one recording, detected when it is transcribed and written in its transcript. Never a setting and never asked: one course may have lectures in several languages, and their summaries are still in the Course language.
+_Avoid_: recording language setting, transcription language
+
 **Registry**:
 The per-student list of all their course folders.
 _Avoid_: course list
