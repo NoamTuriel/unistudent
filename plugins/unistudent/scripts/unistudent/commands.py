@@ -36,6 +36,39 @@ def register(add, with_course):
     p.add_argument("--glossary", help="merge: a file of glossary entries (`### ` headings)")
     p.add_argument("--question-bank", help="merge: a file of question-bank entries (`### ` headings)")
 
+    def cmd_upright(args):
+        from . import material
+        from .fetch_plan import plural
+        course = resolve_course(args)
+        source = Path(args.file) if Path(args.file).is_file() else material.path_of(course, args.file)
+        if source.suffix.lower() != ".pdf":
+            raise UserError("Only a PDF's pages can be turned upright (for an Office file, use the PDF on its "
+                            "source page's `view:` line).")
+        try:
+            from pypdf import PdfReader, PdfWriter
+        except ImportError:
+            raise UserError("Turning pages upright needs pypdf: pip install pypdf")
+        reader, writer = PdfReader(str(source)), PdfWriter()
+        for number in args.pages:
+            if not 1 <= number <= len(reader.pages):
+                raise UserError(f"{source.name} has {plural(len(reader.pages), 'page')}: there is no page {number}.")
+            page = writer.add_page(reader.pages[number - 1])
+            if args.rotate:
+                page.rotate(int(args.rotate))
+            page.transfer_rotation_to_content()  # drawn upright, even where /Rotate is ignored
+        target = course.state / "visual" / "upright" / f"{safe_name(source.stem)}-{'-'.join(map(str, args.pages))}.pdf"
+        target.parent.mkdir(parents=True, exist_ok=True)
+        writer.write(str(target))
+        listed = ", ".join(f"page {i} is page {n}" for i, n in enumerate(args.pages, 1))
+        return {"path": str(target), "pages": args.pages,
+                "summary": f"Upright copy: {target} ({listed} of {source.name}). Read its pages."}
+
+    p = with_course(add("upright", cmd_upright, "write an upright copy of a sideways PDF's pages (a scan), to read them"))
+    p.add_argument("file", help="the PDF: its path in the Material folder (a build item's `source`) or a full path")
+    p.add_argument("pages", nargs="+", type=int, help="page numbers, e.g. 3 4")
+    p.add_argument("--rotate", choices=["90", "180", "270"],
+                   help="degrees clockwise that turn the page upright (default: only the page's own rotation)")
+
     def cmd_add(args):
         from . import material
         course = resolve_course(args)

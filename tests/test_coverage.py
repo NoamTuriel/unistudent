@@ -173,6 +173,44 @@ class NoiseTextLayer(CourseTestCase):
 
 
 try:
+    import pypdf  # optional: `us upright` needs it
+except ImportError:
+    pypdf = None
+
+
+@unittest.skipUnless(pypdf, "pypdf not installed")
+class UprightPages(CourseTestCase):
+    """#63: the source-reader (no shell) gets an upright copy of a sideways scan's pages to Read."""
+
+    def test_chosen_pages_are_turned_by_the_angle_given_or_by_the_page_s_own_rotation(self):
+        own = self.tmp / "own" / "Unit 1"
+        make_pdf(own / "scan.pdf", ["first page", "second page", "third page"])
+        turned = pypdf.PdfWriter(clone_from=str(make_pdf(self.tmp / "turned.pdf", ["shown turned"])))
+        turned.pages[0].rotate(90)  # a viewer turns it; a renderer that ignores /Rotate would not
+        turned.write(own / "turned.pdf")
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", self.tmp / "own", "--tier", "official")
+
+        copy = run_json("upright", "official/Unit 1/scan.pdf", "3", "1", "--rotate", "90", "--course", course)["path"]
+        pages = pypdf.PdfReader(copy).pages
+        self.assertTrue(Path(copy).is_absolute())
+        self.assertEqual([(p.rotation, float(p.mediabox.width)) for p in pages], [(0, 792.0)] * 2)  # landscape, upright
+        self.assertIn("third page", pages[0].extract_text())
+
+        stored = folders(course).material / "official" / "Unit 1" / "turned.pdf"
+        [page] = pypdf.PdfReader(run_json("upright", stored, "1", "--course", course)["path"]).pages
+        self.assertEqual((page.rotation, float(page.mediabox.width)), (0, 792.0))
+
+    def test_a_page_the_file_does_not_have_is_an_error(self):
+        make_pdf(self.tmp / "own" / "Unit 1" / "scan.pdf", ["only page"])
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", self.tmp / "own", "--tier", "official")
+        code, out = run("upright", "official/Unit 1/scan.pdf", "2", "--course", course)
+        self.assertEqual(code, 1)
+        self.assertIn("1 page", out)
+
+
+try:
     import pptx  # optional: the slides' pictures are only extracted when python-pptx is installed
 except ImportError:
     pptx = None
