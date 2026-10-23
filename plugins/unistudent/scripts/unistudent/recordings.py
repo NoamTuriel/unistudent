@@ -177,6 +177,8 @@ def backend_available(name):
 def model_for(name, language, fast=False):
     if name == "fake":
         return "fake"
+    if os.environ.get("UNISTUDENT_STT_MODEL"):  # a chosen model, e.g. "tiny" for the Windows check in CI
+        return os.environ["UNISTUDENT_STT_MODEL"]
     return (fast and FAST_MODELS.get((name, language))) or MODELS.get((name, language)) or MODELS[(name, None)]
 
 
