@@ -161,7 +161,7 @@ From here to step 10 there are no questions: the student is away. A step that fa
    - For each new transcript, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on (`frame_analysis` in `.unistudent/settings.json`: on only if `true`).
    - Frame analysis on and `keep_video` false: once a recording's summary is written, run `us recordings audio-only "<path>"` (the video is replaced by a sound-only copy under the same name, so the time links still work).
    - Where each recording belongs, as in `<this skill's base directory>/../course-recordings/SKILL.md` step 5: a whole class session goes to Recorded lessons (`us assign "<path>" lessons`); a recording that solves one question stays in its unit. One you can't judge from its name and the start of its transcript stays where the site put it and is named in the report.
-4. **Final Wiki update:** `us wiki build`, then **delegate** each unit in its `units_touched` to one `wiki-unit-writer` worker and merge the `question-bank.md` entries it returns, then `us wiki check` until it reports 0 problems.
+4. **Final Wiki update:** `us wiki build`, then **delegate** each unit in its `units_touched` to one `wiki-unit-writer` worker (it merges its own glossary and question-bank entries), then `us wiki check` until it reports 0 problems.
 
 Record it: `us setup-progress advance --course-name "<course>" --stage run`.
 

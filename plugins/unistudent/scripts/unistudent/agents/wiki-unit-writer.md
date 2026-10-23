@@ -1,6 +1,6 @@
 ---
 name: wiki-unit-writer
-description: Writes the understanding layer of one unit's Wiki page (methods, notation, assumptions, presentation) and returns its glossary and question-bank entries.
+description: Writes the understanding layer of one unit's Wiki page (methods, notation, assumptions, presentation) and merges its glossary and question-bank entries.
 tools: Read, Grep, Glob, Edit, Write, mcp__plugin_unistudent_unistudent
 ---
 
@@ -21,9 +21,11 @@ Below the generated block of `<wiki>/units/<unit>.md` (never edit inside `<!-- u
 
 Every bullet ends with `Sources:` and a link to the source page and page anchor (`../sources/<unit>/<file>.md#page-3`). A bullet with no source doesn't go in. A section the material has nothing for says so in one plain line, no bullet ("None stated in the material.", in the course language).
 
-## Return (don't write these files)
+## Merge the glossary and question-bank entries (don't edit those files)
+
+Other unit writers may be working at the same time, so never edit `<wiki>/glossary.md` or `<wiki>/question-bank.md` yourself. Write your entries (only the `### ` entries; their links relative to the Wiki, since both files sit at its top) into two files of your own in the course folder, `.unistudent/merge/<unit>-glossary.md` and `.unistudent/merge/<unit>-question-bank.md`, then run `us wiki merge --glossary <first file> --question-bank <second file> --course <course folder>`. It merges one writer at a time: a term already there keeps its entry and gains your citations; a question already there (same title) takes your text and keeps every unit tag.
 
 - Glossary entries for the unit's terms, in the format at the top of `<wiki>/glossary.md`.
-- Question-bank entries for every question in the unit's Q&A files, assignment and past exams, in the format at the top of `<wiki>/question-bank.md`, tagged `#unit-NN/<topic>` for each unit the question exercises (a question that needs two units carries both tags, `#unit-05/<topic> #unit-06/<topic>`, so it reaches both study packs), also for a question in a whole-course file (a past exam or exercise collection on the `general` page); `#general/<topic>` only for a question no unit teaches (the course as a whole). Fill "Solved in a recording" only from a covering recording's `toc.md` (a recording of this unit, or a Recorded lesson whose `recording-summary.md` first line says it covers this unit, both listed on the unit page): link its `## Solved in this recording` section with the time as the link text (`[00:40:00](../recordings/<rec>/toc.md#solved-in-this-recording)`), or write "no" when that `## Solved in this recording` section lists no such question. With no covering `toc.md` yet, leave the field out: it is not knowable yet, and the Wiki build hands you this unit again when a table of contents appears.
+- Question-bank entries for every question in the unit's Q&A files, assignment and past exams, in the format at the top of `<wiki>/question-bank.md`, tagged `#unit-NN/<topic>` for each unit the question exercises (a question that needs two units carries both tags, `#unit-05/<topic> #unit-06/<topic>`, so it reaches both study packs), also for a question in a whole-course file (a past exam or exercise collection on the `general` page); `#general/<topic>` only for a question no unit teaches (the course as a whole). Fill "Solved in a recording" only from a covering recording's `toc.md` (a recording of this unit, or a Recorded lesson whose `recording-summary.md` first line says it covers this unit, both listed on the unit page): link its `## Solved in this recording` section with the time as the link text (`[00:40:00](recordings/<rec>/toc.md#solved-in-this-recording)`), or write "no" when that `## Solved in this recording` section lists no such question. With no covering `toc.md` yet, leave the field out: it is not knowable yet, and the Wiki build hands you this unit again when a table of contents appears.
 
-Done when: every source page of the unit has been read, and every method, symbol, assumption and question found in them is written or returned, and every topic has its Presentation line. Return the entries, then one line: counts of each.
+Done when: every source page of the unit has been read, every method, symbol, assumption and question found in them is written on the unit page or merged with `us wiki merge`, and every topic has its Presentation line. Return one line: the counts of each, and the merge's added and updated counts.

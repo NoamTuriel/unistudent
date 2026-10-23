@@ -24,11 +24,9 @@ Done when: every listed item has a source page and the second build lists no `im
 
 ## 3. Write the understanding layer
 
-For each unit in the `units_touched` of step 1's build, plus any the second build in step 2 adds (all units on a first build), **delegate** to one `wiki-unit-writer` worker. Give it the course folder, the unit, and the student's language. Each returns glossary entries and question-bank entries for its unit, and edits only its own unit page.
+For each unit in the `units_touched` of step 1's build, plus any the second build in step 2 adds (all units on a first build), **delegate** to one `wiki-unit-writer` worker. Give it the course folder, the unit, and the student's language. Each edits only its own unit page and merges its glossary and question-bank entries itself with `us wiki merge` (one writer at a time, so writers in parallel lose nothing): never edit `<wiki>/glossary.md` or `<wiki>/question-bank.md` yourself.
 
-Then merge what they returned into `<wiki>/glossary.md` and `<wiki>/question-bank.md` (formats are in the comments at the top of each file). One entry per term: when two units define a term, keep one entry citing both. Remove the `<!-- unistudent:stub -->` line once a file has entries.
-
-Done when: every touched unit page has its methods, notation and assumptions sections, and every term and question the writers returned is merged.
+Done when: every touched unit page has its methods, notation and assumptions sections, and every writer reported its merge counts.
 
 ## 4. The course page
 

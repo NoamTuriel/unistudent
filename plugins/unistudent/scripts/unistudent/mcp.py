@@ -20,7 +20,8 @@ HIDDEN_COMMANDS = {"eval-grade", "manifest"}  # developer tools, and output too 
 ACTION_ARGS = {
     ("courses", "list"): [], ("courses", "current"): [], ("courses", "switch"): ["target"],
     ("prefs", "show"): ["course"], ("prefs", "add"): ["course", "scope", "text"],
-    ("wiki", "check"): ["course"], ("wiki", "build"): ["course", "force"],
+    ("wiki", "check"): ["course"], ("wiki", "build"): ["course", "force"], ("wiki", "coverage"): ["course"],
+    ("wiki", "merge"): ["course", "glossary", "question_bank"],
     ("recordings", "list"): ["course", "unit"], ("recordings", "estimate"): ["course", "unit"],
     ("recordings", "benchmark"): ["course", "paths"],
     ("recordings", "transcribe"): ["course", "paths", "background"],
