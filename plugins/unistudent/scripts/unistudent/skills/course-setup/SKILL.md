@@ -12,11 +12,11 @@ Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool 
 
 ## Start: explain the whole process first
 
-Before the first question of a new setup, tell the student the big picture in their language, in plain words, as a short list (a resumed setup gets one line instead: "We're continuing: here's where we are and what's left"):
+Before the first question of a new setup, tell the student the big picture in the language they write in (until you know the course, talk in that language), in plain words, as a short list (a resumed setup gets one line instead: "We're continuing: here's where we are and what's left"):
 
 - **What we're building:** a personal study assistant for this one course. Your course material goes into one organized place (the "Wiki": a hidden set of pages the AI searches, which you never need to open), so it answers from *your* course, not from the whole internet, and marks every paragraph with how far to trust it.
 - **How long:** about 10 minutes of questions, then you can leave for a few hours. Then 5 to 10 minutes to log in and approve what gets downloaded, then the slow part runs on its own (downloading, reading, transcribing recordings), then about 5 minutes when you come back.
-- **The steps (11):** 1. your university, 2. your course, 3. your language, 4. where to keep it and how you'll read it, 5. your material and exam date, 6. recordings, 7. creating the folder and installing, 8. approving the download, 9. the long run (you can leave), 10. your report, 11. how to use it.
+- **The steps (11):** 1. your language, 2. your university, 3. your course, 4. where to keep it and how you'll read it, 5. your material and exam date, 6. recordings, 7. creating the folder and installing, 8. approving the download, 9. the long run (you can leave), 10. your report, 11. how to use it.
 - **Adding more later is one move:** you'll get an "inbox" folder: drop any new file into it and run `course-add`. Setup shows you again at the end.
 - **It takes time once, and it's worth it.** After that every answer is fast, grounded in your material, and easy to check. You may stop at any point and run setup again: it picks up where it stopped.
 
@@ -30,13 +30,21 @@ Done when: the student has seen the overview (or the one-line recap), and none o
 
 ## 0. Resume, if setup was started before
 
-Run `us setup-progress status --course-name "<course, if you already know it>"` once you know the course name (step 2), or `us setup-progress list --json` before that if you don't. An entry whose course name is a university (its `university` answer equals its name) is the placeholder from step 1: resume at step 2 and ask for the course. If there's progress for this course, say so ("Picking up where we left off, after <stage>") and go to the step for its `next_stage`, using the answers already stored instead of asking again: `course` → 2, `language` → 3, `path` and `format` → 4, `material` → 5, `recordings` → 6, `installs` → 7, `plan` → 8, `run` → 9, `capabilities` → 10. After finishing each step, record it: `us setup-progress advance --course-name "<course>" --stage <stage> [--answer key=value ...]`. Progress is kept per course name; the answers of steps 5 and 6 wait there until step 7 creates the course folder. A progress file from an older setup (stages `fetch`, `sort`, `analyze`) is read as the matching new stage by the command itself, but may lack answers the new steps ask for: when `us setup-progress status` lists `missing_answers`, ask only those questions (one at a time, as worded in steps 5 and 6: `source` is step 5's material question, `transcribe`, `frame_analysis` and `keep_video` are step 6's three Recording questions), record them with `--answer`, and only then go on to step 7. Never guess a missing answer, `keep_video` least of all. Keep the overview's step count (11) equal to the numbered steps below. Recording the last stage (`capabilities`) clears the progress automatically.
+Run `us setup-progress status --course-name "<course, if you already know it>"` once you know the course name (step 3), or `us setup-progress list --json` before that if you don't. An entry named `new course` is the placeholder of steps 1 and 2: resume at its `next_stage` and use its answers. If there's progress for this course, say so ("Picking up where we left off, after <stage>") and go to the step for its `next_stage`, using the answers already stored instead of asking again: `university` → 2, `course` → 3, `path` and `format` → 4, `material` → 5, `recordings` → 6, `installs` → 7, `plan` → 8, `run` → 9, `capabilities` → 10. After finishing each step, record it: `us setup-progress advance --course-name "<course>" --stage <stage> [--answer key=value ...]`. Progress is kept per course name; the answers of steps 5 and 6 wait there until step 7 creates the course folder. A progress file from an older setup (stages `fetch`, `sort`, `analyze`) is read as the matching new stage by the command itself, but may lack answers the new steps ask for: when `us setup-progress status` lists `missing_answers`, ask only those questions (one at a time, as worded in steps 5 and 6: `source` is step 5's material question, `transcribe`, `frame_analysis` and `keep_video` are step 6's three Recording questions), record them with `--answer`, and only then go on to step 7. Never guess a missing answer, `keep_video` least of all. Keep the overview's step count (11) equal to the numbered steps below. Recording the last stage (`capabilities`) clears the progress automatically.
 
-## 1. University
+## 1. Language
+
+Ask which language they want for this course. Say why in a sentence: it names the folders you'll see, and it's the language of the notes, of the answers and of the recording summaries. Offer, in this order: "Same as my course (detected automatically)" (recommended), the language they are writing in, or another language they name. Don't ask what language the lectures are in: each recording's spoken language is detected when it is transcribed, and its summary is still written in the course language.
+
+Record it under the placeholder name: `us setup-progress advance --course-name "new course" --stage language --answer language=<auto, or the language code>`.
+
+Done when: you know whether the language follows the course (`auto`) or which language they chose, and `language` is recorded.
+
+## 2. University
 
 Ask which university. Say why in a sentence: the university decides where your official material lives and how it's organized, so the AI knows where to get it and how to sort it.
 
-Record the answer right away: `us setup-progress advance --course-name "<university name>" --stage university --answer university=<name>` (the placeholder name step 0 explains).
+Record the answer right away: `us setup-progress advance --course-name "new course" --stage university --answer university=<name>`.
 
 - None, "I'm learning on my own, no university" (offer this answer in plain words): record `university=none`, then skip the plugin recommendation and the interview: there is no course site to reach. Everything else works the same.
 - Otherwise run `us plugins recommend --university "<name>" --json`.
@@ -46,19 +54,21 @@ Record the answer right away: `us setup-progress advance --course-name "<univers
 
 Done when: `university` is recorded (with `plugin` when one is to be installed), and you know how the site will be reached: a plugin (installed or to be installed in step 7), a generated fallback, or no site.
 
-## 2. Course
+## 3. Course, and its language
 
 Ask which course. Say why in a sentence: each course gets its own folder and Wiki, so nothing from another course leaks into your answers.
 
-Record both stages now under the course's name: `us setup-progress advance --course-name "<course>" --stage university --answer university=<name> [--answer plugin=<name>]`, then `--stage course --answer course_name=<course>`; then drop the placeholder from step 1 with `us setup-progress clear --course-name "<university name>"`.
+Then settle the course language:
 
-Done when: you have the course name, and `university` and `course` are recorded.
+- `auto` (step 1): work out the language the course is taught in from the course name, the university and, if they already mentioned a folder of their files, those files. Confirm it in one line, for example "Your course is in Hebrew, so your course folder and notes will be in Hebrew. OK?". A no → ask which language they want.
+- A language they named: use it, even when the course is taught in another one: their notes and answers are in it.
+- Hebrew and English have ready-made folder and page names. For any other language, translate them once: run `us labels`, translate every value into the language (keep each `{n}`, `{course}` and other `{...}` exactly as it is), show the student the folder names in a short list, and change any they ask for.
 
-## 3. Language
+From here on, talk in the course language.
 
-Ask which language the course folder should speak. Say why in a sentence: it names the folders you'll see, and the units and trust-level folders inside them, in your language; it's also the language of the Wiki's notes, of the answers, and the one recordings are transcribed in. Offer Hebrew and English (recommend the language the course is taught in), or another language they name. Hebrew and English have ready-made folder and page names. For any other language, translate them once: run `us labels`, translate every value into their language (keep each `{n}`, `{course}` and other `{...}` exactly as it is), show the student the folder names in a short list, and change any they ask for. Record it: `us setup-progress advance --course-name "<course>" --stage language --answer language=<he|en|other code> [--answer labels=<the translated JSON object>]`.
+Record it all now under the course's name: `us setup-progress advance --course-name "<course>" --stage course --answer course_name=<course> --answer university=<name> [--answer plugin=<name>] --answer language=<the language code> [--answer labels=<the translated JSON object>]`; then drop the placeholder with `us setup-progress clear --course-name "new course"`.
 
-Done when: you have a language code and the student knows what it changes, a language other than Hebrew or English has its translated labels, which the student saw, and `language` is recorded.
+Done when: you have the course name and a language code the student confirmed, a language other than Hebrew or English has its translated labels, which the student saw, and `course` is recorded with every answer so far.
 
 ## 4. Where to keep it, and how you'll read it
 
@@ -81,7 +91,7 @@ Ask where the material comes from:
 - A University plugin (installed, or to be installed in step 7): the course website, a folder they already have, both, or nothing yet.
 - A generated fallback only: the same choices; say the website is tried by following its saved notes, and may not work.
 - Neither: a folder they already have, or nothing yet (they'll drop files in the inbox later).
-- No university (`none`, step 1): offer "my own folder" and "nothing yet" only, and setup passes `--university none` to `us setup` in step 7.
+- No university (`none`, step 2): offer "my own folder" and "nothing yet" only, and setup passes `--university none` to `us setup` in step 7.
 - Their own folder: ask which folder, and whether it is official or added: the lecturer's and university's material (official), or other material (added). Tell them it is copied in once and their original files stay exactly where they are; nothing of theirs is moved or changed. Step 7 tells them how many files and how much that is.
 
 Then ask once for anything else the course gave them that hasn't come up: other books, solution sets, past exams. They can add it now to their folder, or later through the inbox.
@@ -98,7 +108,7 @@ Say why in a sentence: recorded lessons hold what the lecturer *said*: explanati
 
 **Question 1 of 3: transcribe and summarise the recordings?** Recommended.
 - **What it gives:** a written transcript of each recording, and a summary with a table of contents that links every topic, example and announcement to the exact minute it was said. The AI can then answer from what the lecturer said.
-- **What it costs, per hour of recording:** about 10 minutes of this computer's time on a Mac with Apple silicon, on other computers about 25 minutes with a fast new processor, longer with an older one, less with an NVIDIA graphics card; almost no disk; some Claude usage, to read the transcript and write the summary. It needs a free speech-to-text tool on this computer (downloaded once: about 1.6 GB, or about 3 GB for Hebrew on a Mac; it runs here and sends nothing anywhere).
+- **What it costs, per hour of recording:** about 10 minutes of this computer's time on a Mac with Apple silicon, on other computers about 25 minutes with a fast new processor, longer with an older one, less with an NVIDIA graphics card; almost no disk; some Claude usage, to read the transcript and write the summary. It needs a free speech-to-text tool on this computer (downloaded once: about 1.6 GB, or about 3 GB on a Mac for lectures spoken in Hebrew; it runs here and sends nothing anywhere).
 - Ask yes or no. The recordings you approve in step 8's download list are transcribed then: you won't be asked again recording by recording. No → they are still downloaded (sound only, if you don't keep the video), so you can have them transcribed any time later with `/unistudent:course-recordings`.
 
 **Question 2 of 3: frame analysis (looking at the screen)?** Recommended for courses taught from slides, graphs, formulas or drawings (economics, maths, science); fine to skip for talking-only lectures.
@@ -127,7 +137,7 @@ No more questions about the course after this. First create the course folder, s
 
 Then install what only works after the app is restarted (frame analysis needs no install: it is built in):
 
-- **The University plugin** recorded in step 1: install it with its `install` command if your app lets you, otherwise give the student that command to run.
+- **The University plugin** recorded in step 2: install it with its `install` command if your app lets you, otherwise give the student that command to run.
 
 Record it before any restart: `us setup-progress advance --course-name "<course>" --stage installs`. If anything was installed above, say once, plainly: "Please close and reopen the app (where it reads the course folder's settings, open it in the course folder), then run setup again: it continues from here." Nothing installed → say so in one line and go straight on.
 

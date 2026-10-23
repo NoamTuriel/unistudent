@@ -284,8 +284,8 @@ class SetupSkill(CourseTestCase):
         self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"], "installs")
 
     def test_the_university_is_recorded_before_the_install_stop_and_a_restart_is_explained(self):  # S2, ADR 0013
-        one = step(1)
-        self.assertLess(one.index("--stage university"), one.index("us plugins recommend"))
+        two = step(2)
+        self.assertLess(two.index("--stage university"), two.index("us plugins recommend"))
         seven = step(7)
         self.assertRegex(seven, r"(?i)close and reopen|reload|restart")
         self.assertIn("run setup again", seven)

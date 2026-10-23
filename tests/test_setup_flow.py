@@ -43,14 +43,14 @@ class SetupFlow(CourseTestCase):
         write(own / "Unit 1 - intro" / "slides.txt", "GDP is output.")
         write(own / "past exam.txt", "Question 1")
         name = ["--course-name", "Macro"]
-        self.assertEqual(run_json("setup-progress", "status", *name)["next_stage"], "university")
+        self.assertEqual(run_json("setup-progress", "status", *name)["next_stage"], "language")
         # Block 1: questions only; the answers wait in the progress file until the course folder exists.
         run_json("university", "save", "--university", "Test U", "--url", "https://example.invalid", "--organizing", "by unit")
         self.assertTrue(run_json("university", "status", "--university", "Test U")["generated"])
+        run_json("setup-progress", "advance", *name, "--stage", "language", "--answer", "language=auto")
         run_json("setup-progress", "advance", *name, "--stage", "university", "--answer", "university=Test U")
         self.assertEqual(run_json("plugins", "recommend", "--university", "Test U")["plugins"], [])
-        run_json("setup-progress", "advance", *name, "--stage", "course")
-        run_json("setup-progress", "advance", *name, "--stage", "language", "--answer", "language=en")
+        run_json("setup-progress", "advance", *name, "--stage", "course", "--answer", "language=en")
         run_json("setup-progress", "advance", *name, "--stage", "path", "--answer", f"path={folder}")
         run_json("setup-progress", "advance", *name, "--stage", "format", "--answer", "format=markdown")
         run_json("setup-progress", "advance", *name, "--stage", "material", "--answer", "source=own",
@@ -135,11 +135,19 @@ class SetupSkillStatic(unittest.TestCase):
                 continue
             self.assertIn("Done when", step, step.splitlines()[0])
 
-    def test_step_1_names_the_none_answer_and_what_it_skips(self):
-        step1 = self.text.split("## 1. University")[1].split("## 2.")[0]
-        self.assertIn("university=none", step1)
-        self.assertRegex(step1, r"(?i)learning on my own")
-        self.assertRegex(step1, r"(?i)skip the plugin recommendation and the interview")
+    def test_the_language_comes_first_follows_the_course_and_never_asks_the_lecture_language(self):
+        one, three = step(self.text, 1), step(self.text, 3)
+        self.assertTrue(one.startswith("1. Language"))
+        self.assertLess(one.index("Same as my course (detected automatically)"), one.index("the language they are writing in"))
+        self.assertIn("Don't ask what language the lectures are in", one)
+        self.assertIn("--answer language=", three)
+        self.assertIn("us setup-progress clear --course-name \"new course\"", three)
+
+    def test_step_2_names_the_none_answer_and_what_it_skips(self):
+        step2 = self.text.split("## 2. University")[1].split("## 3.")[0]
+        self.assertIn("university=none", step2)
+        self.assertRegex(step2, r"(?i)learning on my own")
+        self.assertRegex(step2, r"(?i)skip the plugin recommendation and the interview")
         material = self.text.split("## 5.")[1].split("## 6.")[0]
         self.assertIn("No university (`none`", material)
         self.assertIn("\"nothing yet\" only", material)
@@ -189,7 +197,8 @@ class WalkAwaySetup(unittest.TestCase):
 
     def test_block_1_asks_in_the_spec_order_then_creates_the_folder(self):
         block = self.text[self.text.index("## 1."):self.text.index("## 8.")]
-        marks = ["Ask which university", "Ask which course", "Ask which language", "Ask where to keep",
+        marks = ["Ask which language", "Same as my course", "Ask which university", "Ask which course",
+                 "Confirm it in one line", "us labels", "Ask where to keep",
                  "ask which app", "Ask where the material comes from", "official or added",
                  "anything else the course gave", "ask for the exam date", "Question 1 of 3", "Question 2 of 3",
                  "Question 3 of 3", "consent", "`us setup \"", "`us import --dry-run"]
@@ -227,9 +236,9 @@ class WalkAwaySetup(unittest.TestCase):
         self.assertIn("close and reopen", seven)
         self.assertIn("University plugin", seven)
         self.assertNotIn("mcp-video-analyzer", self.text)  # frame analysis is built in: no install, no restart
-        one = step(self.text, 1)
-        self.assertIn("recorded, not installed yet", one)
-        self.assertLess(one.index("--stage university"), one.index("us plugins recommend"))
+        two = step(self.text, 2)
+        self.assertIn("recorded, not installed yet", two)
+        self.assertLess(two.index("--stage university"), two.index("us plugins recommend"))
 
     def test_block_2_has_the_fetch_plan_the_unit_question_and_the_box_as_the_command_prints_it(self):
         eight = step(self.text, 8)
