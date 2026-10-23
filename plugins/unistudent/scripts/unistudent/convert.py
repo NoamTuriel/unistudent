@@ -1,13 +1,15 @@
 """Turning course documents into text pages. Best available tool first, pure-Python fallback.
 
 Returns a Conversion: a list of page texts, the method used, and warnings.
-Pages whose text layer is (almost) empty, and slides with a picture, are reported, so Claude can read them visually.
+Pages whose text layer is (almost) empty or OCR noise, and slides with a picture, are reported, so Claude can read
+them visually.
 """
 import logging
 import re
 import shutil
 import subprocess
 import tempfile
+import unicodedata
 import warnings
 from dataclasses import dataclass, field
 from pathlib import Path
@@ -159,8 +161,35 @@ def slide_pictures(path, pages, folder) -> list:
     return out
 
 
+ANSWER_LINES = re.compile(r"([^\w\s]|_)\1{2,}")  # a question's ____ lines, a contents page's .... leaders
+WORD = re.compile(r"[^\W\d_]+|\d+")
+EAST_ASIAN = {"CJK", "HIRAGANA", "KATAKANA", "HANGUL", "IDEOGRAPHIC"}  # written without spaces, several scripts in one run
+
+
+def _script(char):
+    name = unicodedata.name(char, "?").split()[0].split("-")[0]  # KATAKANA-HIRAGANA PROLONGED SOUND MARK
+    return "CJK" if name in EAST_ASIAN else name
+
+
+def is_noise(text) -> bool:
+    """A text layer that is OCR noise, as a handwritten scan's ("'fr Eg- I d 4 Lh tL"): under half of its characters
+    are in numbers or words (2+ letters of one script; 3+ for Latin, since noise is short Latin runs). Bidi marks and
+    vowel points are left out first: a Hebrew table is full of them."""
+    text = "".join(c for c in text if unicodedata.category(c) not in ("Cf", "Mn"))
+    text = ANSWER_LINES.sub(" ", text)
+    total = sum(not c.isspace() for c in text)
+    words = 0
+    for word in WORD.findall(text):
+        scripts = {_script(c) for c in word}
+        if word[0].isdigit() or (len(scripts) == 1 and len(word) >= (3 if scripts == {"LATIN"} else 2)):
+            words += len(word)
+    return words < total / 2
+
+
 def convert(path) -> Conversion:
     conversion = _convert(Path(path))
+    if conversion.method not in NOT_PAGED:  # an unreadable text layer is no text layer: the page is read visually
+        conversion.pages = ["" if is_noise(text) else text for text in conversion.pages]
     if conversion.pages:
         conversion.picture_pages = sorted(n for n in _pictures(path) if n <= len(conversion.pages))
     return conversion
