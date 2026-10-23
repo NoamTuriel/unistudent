@@ -1,13 +1,16 @@
 """MCP server (stdio, JSON-RPC 2.0): every command line command becomes a tool, every skill a prompt.
 
 Tools are generated from the command line parser, so the CLI stays the single source of truth:
-`us wiki build --force` is the tool `wiki_build` with {"force": true}. Standard library only.
+`us wiki build --force` is the tool `wiki_build` with {"force": true}. The files a result names in
+`"images": [<absolute path>, ...]` come back as image content after its text. Standard library only.
 Works in any MCP client: Claude Desktop/Code, Cursor, VS Code, Codex, Gemini CLI.
 """
 import argparse
+import base64
 import contextlib
 import io
 import json
+import mimetypes
 import re
 import sys
 from pathlib import Path
@@ -134,13 +137,20 @@ def call_tool(tools, name, arguments):
         code = 1
         err.write(f"{type(error).__name__}: {error}")
     text = out.getvalue().strip() or err.getvalue().strip() or "{}"
+    data = None
     try:
         data = json.loads(text)
         if isinstance(data, dict) and "error" in data:
             text, code = data["error"], code or 1
     except ValueError:
         pass
-    return {"content": [{"type": "text", "text": text}], "isError": bool(code)}
+    content = [{"type": "text", "text": text}]
+    for path in (data.get("images") or []) if isinstance(data, dict) else []:  # e.g. a recording's frames: shown, not named
+        mime = mimetypes.guess_type(path)[0] or ""
+        if mime.startswith("image/") and Path(path).is_file():
+            content.append({"type": "image", "mimeType": mime,
+                            "data": base64.b64encode(Path(path).read_bytes()).decode("ascii")})
+    return {"content": content, "isError": bool(code)}
 
 
 def _skills():
