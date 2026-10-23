@@ -30,7 +30,7 @@ OLD_LABELS = [{"official": "רשמי", "added": "נוסף", "unit": "יחידה 
 
 DEFAULT_SETTINGS = {
     "course_name": "",
-    "language": "he",
+    "language": "en",            # the course language; `us setup` asks for it, so no course gets it by default
     "format": "obsidian",          # obsidian | markdown
     "university": None,            # e.g. "openu"; None → core only
     "recording_level": None,       # None (not asked yet) | 0 skip | 1 download only | 3 transcript + summary
@@ -277,8 +277,7 @@ class Course:
         _write_json(self.state / name, data)
 
     def label(self, key, **kw):
-        lang = self.settings().get("language", "he")
-        return LABELS.get(lang, LABELS["en"])[key].format(**kw)
+        return LABELS.get(self.settings()["language"], LABELS["en"])[key].format(**kw)
 
     def unit_folder(self, unit):
         """Folder name for a unit (in the Material folder and the Study vault), in the course language."""

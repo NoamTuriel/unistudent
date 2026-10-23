@@ -17,7 +17,7 @@ class CourseFromOwnFolder(CourseTestCase):
     def test_setup_creates_course_folder_and_registers_it(self):
         own = self.make_own_folder()
         course = self.tmp / "Macro"
-        code, out = run("setup", course, "--name", "מבוא למקרו-כלכלה", "--import", own, "--tier", "official")
+        code, out = run("setup", course, "--name", "מבוא למקרו-כלכלה", "--language", "he", "--import", own, "--tier", "official")
         self.assertEqual(code, 0, out)
 
         settings = json.loads((course / ".unistudent" / "settings.json").read_text("utf-8"))

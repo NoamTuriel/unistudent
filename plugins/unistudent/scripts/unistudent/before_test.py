@@ -78,7 +78,7 @@ def _rows(course, rows, folder, t):
 def build(course, index, clusters, fmt, notes):
     rows = {r["id"]: r for r in json.loads(Path(index).read_text("utf-8"))}
     clusters = json.loads(Path(clusters).read_text("utf-8"))
-    t = TEXT.get(course.settings().get("language", "he"), TEXT["en"])
+    t = TEXT.get(course.settings()["language"], TEXT["en"])
     name = course.label("before_test")
     folder = course.study / f"{name} - {course.label('question_pages')}"
     course.study.mkdir(exist_ok=True)
@@ -104,7 +104,7 @@ def build(course, index, clusters, fmt, notes):
     out = []
     if fmt == "html":
         a = lambda u, x: f'<a href="{html.escape(u)}">{html.escape(x)}</a>' if u else html.escape(x)
-        lang = course.settings().get("language", "he")
+        lang = course.settings()["language"]
         direction = "rtl" if lang == "he" else "ltr"  # outside the f-string: nested quotes need Python 3.12
         out = [f'<!doctype html><html lang="{lang}" dir="{direction}"><meta charset="utf-8"><title>{name}</title>',
                "<style>body{font:17px/1.65 system-ui,Arial;max-width:900px;margin:24px auto;padding:0 16px}h2{background:#e8eef8;padding:6px 10px}"

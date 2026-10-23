@@ -41,6 +41,16 @@ class VisibleFolders(CourseTestCase):
         run_json("setup", course, "--name", "Macro", "--language", "fr")
         self.assertEqual(top_level(course), [".unistudent", "1-inbox", "2-course-material"])
 
+    def test_a_new_course_needs_its_language_and_an_existing_one_keeps_it(self):
+        course = self.tmp / "Macro"
+        code, out = run("setup", course, "--name", "Macro")
+        self.assertEqual(code, 1)
+        self.assertIn("--language", out)
+        self.assertFalse(course.exists())
+        run_json("setup", course, "--name", "Macro", "--language", "he")
+        run_json("setup", course, "--name", "Macro")  # setting up again without a language changes nothing
+        self.assertEqual(top_level(course), [".unistudent", "1-קבצים-חדשים", "2-חומרי-הקורס"])
+
     def test_the_wiki_and_everything_else_live_in_the_hidden_folder(self):
         course = self.tmp / "Macro"
         run_json("setup", course, "--name", "Macro", "--language", "en")

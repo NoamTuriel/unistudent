@@ -51,7 +51,7 @@ def write_context_files(course: Course):
     other_lines = [f"- {c['name']}: `{Course(c['path']).wiki}`" for c in others] or ["- None."]
     context = render("context.md",
                      course_name=settings["course_name"],
-                     language=settings.get("language", "he"),
+                     language=settings["language"],
                      official=course.label("official"), added=course.label("added"),
                      wiki=_rel(course, course.wiki), inbox=_rel(course, course.inbox),
                      study=_rel(course, course.study), material=_rel(course, course.material),
@@ -99,6 +99,8 @@ def cmd_setup(args):
     course = Course(args.path)
     if course.exists():
         material.require_new_layout(course)
+    elif not args.language:  # no language is assumed: an existing course keeps the one it stored
+        raise UserError("Say which language the course is in: --language he, en, or another language code.")
     before = course.settings() if course.exists() else None
     settings = course.settings()
     settings.update({k: v for k, v in {
