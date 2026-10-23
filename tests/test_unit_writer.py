@@ -153,6 +153,19 @@ class UnitWriter(CourseTestCase):
             self.assertTrue(page.startswith("# "))  # the page's title and format comment stay on top
         self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
 
+    def test_questions_citing_a_file_that_was_missing_go_to_the_writer_of_the_unit_it_arrives_in(self):
+        entry = ('### Lesson example  #unit-04/supply\n- Where: the file "Class exercises" (not in the course folder)\n')
+        write(self.f.wiki / "question-bank.md", "# Question bank\n\n" + entry)
+        self.assertNotIn("Lesson example", self.context("3"))
+        write(self.f.material / "official" / "Unit 3" / "Class exercises.txt", "Exercise 1: shift the demand curve.")
+        self.assertIn("unit-03", self.touched())
+        relink = self.context("3").split("to relink")[1]
+        self.assertIn("### Lesson example", relink)
+        self.assertIn("sources/unit-03/Class exercises.md", relink)
+        write(self.f.wiki / "question-bank.md", "# Question bank\n\n" + entry.replace(
+            '"Class exercises" (not in the course folder)', "[Class exercises](<sources/unit-03/Class exercises.md>)"))
+        self.assertNotIn("Lesson example", self.context("3").split("to relink")[1])
+
 
 if __name__ == "__main__":
     unittest.main()
