@@ -10,6 +10,7 @@ import json
 import math
 import os
 import platform
+import re
 import shutil
 import subprocess
 import tempfile
@@ -226,9 +227,29 @@ def benchmark(course, rel):
     return factor
 
 
+DATE = re.compile(r"(\d{4})-(\d{2})-(\d{2})|(\d{1,2})[./](\d{1,2})[./](\d{4})")
+
+
+def oldest_first(course, rels):
+    """Recordings in the order they were made: the last date in the name (a site title ends with it, 2026-07-16 or
+    16.07.2026), else the file's time; the same day by the numbers in the name ("session 2" before "session 10")."""
+    def key(rel):
+        found = DATE.findall(Path(rel).name)
+        if found:
+            y, m, d, d2, m2, y2 = found[-1]
+            day = f"{y or y2}-{int(m or m2):02d}-{int(d or d2):02d}"
+        else:
+            path = material.path_of(course, rel)
+            day = time.strftime("%Y-%m-%d", time.localtime(path.stat().st_mtime)) if path.exists() else "9999"
+        return day, [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", Path(rel).name)]
+    return sorted(rels, key=key)
+
+
 def listing(course, unit=None):
     rows = []
-    for rel, info in recording_pages(course).items():
+    pages = recording_pages(course)
+    for rel in oldest_first(course, pages):
+        info = pages[rel]
         if unit is not None and unit_dir(info["unit"]) != unit_dir(unit):
             continue
         path = material.path_of(course, rel)

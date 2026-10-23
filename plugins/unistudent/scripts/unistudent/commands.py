@@ -424,7 +424,7 @@ def register(add, with_course):
             job = recordings.start_background(course, args.paths)
             return {**job, "summary": f"Transcribing {len(args.paths)} recordings in the background. "
                                       f"Progress: {job['log']}. Check with `recordings list`."}
-        done = [str(recordings.transcribe(course, rel)) for rel in args.paths]
+        done = [str(recordings.transcribe(course, rel)) for rel in recordings.oldest_first(course, args.paths)]
         return {"transcripts": done, "summary": "Transcribed:\n" + "\n".join(done)}
 
     p = with_course(add("recordings", cmd_recordings, "list, estimate, benchmark, approve or transcribe recordings (transcribe only runs what the student approved); audio-only: once a recording's analysis is done and the course's keep_video is 0, replace its video by an audio-only copy"))

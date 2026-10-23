@@ -28,13 +28,13 @@ Done when: the student named recordings by number, or said none; and, if relevan
 
 ## 3. Transcribe
 
-Run `us recordings approve "<path>" ...` with exactly the recordings the student numbered: `transcribe` refuses any recording not approved. Tell the student "Sit back and relax, this might take a while.", then run `us recordings transcribe "<path>" ... --background`: it returns at once and writes progress to a log. Tell the student they can keep working, and check with `us recordings list` until every chosen recording has a transcript.
+Run `us recordings approve "<path>" ...` with exactly the recordings the student numbered: `transcribe` refuses any recording not approved. Tell the student "Sit back and relax, this might take a while.", then run `us recordings transcribe "<path>" ... --background`: it returns at once and writes progress to a log. It transcribes oldest first. Tell the student they can keep working, and check with `us recordings list` until every chosen recording has a transcript, doing step 4 for each transcript as soon as it lands (its line reads `partial`): the oldest recordings are summarised while the newer ones are still being transcribed.
 
 Done when: every chosen recording has a `transcript.md`.
 
 ## 4. Table of contents and summary
 
-For each transcript, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `recording-summary.md` next to the transcript (in the hidden Wiki) and returns a three-line summary. Only those three lines come back to you.
+For each transcript, as soon as it lands, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `recording-summary.md` next to the transcript (in the hidden Wiki) and returns a three-line summary. Only those three lines come back to you.
 
 If frame analysis is on and the course's `keep_video` is `false`, run `us recordings audio-only "<path>"` for each recording once its summary is written: the video is replaced by a sound-only copy under the same name, so the time links still work.
 
