@@ -191,10 +191,12 @@ class GraphicsCardWithoutItsLibraries(CourseTestCase):
                 self.device = device
 
             def transcribe(self, audio, **options):
+                heard.append(audio)
                 if self.device != "cpu":
                     raise RuntimeError("Library cublas64_12.dll is not found or cannot be loaded")
                 return iter([types.SimpleNamespace(start=0.0, end=1.5, text=" hello")]), None
 
+        heard = []
         own = self.tmp / "own"
         (own / "Unit 4").mkdir(parents=True)
         subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=duration=2", str(own / "Unit 4" / "a.m4a")],
@@ -209,6 +211,12 @@ class GraphicsCardWithoutItsLibraries(CourseTestCase):
             run_json("recordings", "transcribe", "--course", course, "official/Unit 4/a.m4a")
         self.assertIn("hello", (folders(course).wiki / "recordings" / "a" / "transcript.md").read_text("utf-8"))
         self.assertIn("processor", said.getvalue())
+        try:
+            import numpy  # noqa: F401  (installed with faster-whisper)
+        except ImportError:
+            return
+        # The sound is decoded here, not by faster-whisper's own reader, which fails with PyAV 19.
+        self.assertTrue(all(not isinstance(a, str) for a in heard))
 
 
 class OldestFirst(CourseTestCase):

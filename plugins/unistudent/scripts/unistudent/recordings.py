@@ -16,6 +16,7 @@ import subprocess
 import sys
 import tempfile
 import time
+import wave
 from pathlib import Path
 
 from . import material
@@ -231,10 +232,16 @@ def transcribe_audio(audio: Path, name: str, language: str, fast=False):
                                         condition_on_previous_text=False)
         return [(s["start"], s["end"], s["text"].strip()) for s in result["segments"]]
     from faster_whisper import WhisperModel
+    try:  # decoded here: faster-whisper's own reader fails with PyAV 19 (open() has no metadata_errors any more)
+        import numpy  # installed with faster-whisper
+        with wave.open(str(audio)) as pcm:
+            sound = numpy.frombuffer(pcm.readframes(pcm.getnframes()), numpy.int16).astype(numpy.float32) / 32768
+    except ImportError:
+        sound = str(audio)
 
     def run(device):
         whisper = WhisperModel(model, device=device, compute_type="auto")
-        segments, _ = whisper.transcribe(str(audio), language=language, vad_filter=True)
+        segments, _ = whisper.transcribe(sound, language=language, vad_filter=True)
         return [(s.start, s.end, s.text.strip()) for s in segments]  # the work happens here, so its errors too
     try:
         return run("auto")
