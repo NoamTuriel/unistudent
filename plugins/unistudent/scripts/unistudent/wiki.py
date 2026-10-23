@@ -291,9 +291,14 @@ def build(course, force=False):
     course.write_state("covering.json", lessons)
     if "unsorted" not in by_unit and (wiki / "units" / "unsorted.md").exists():
         (wiki / "units" / "unsorted.md").unlink()  # every file got its unit (a unit page keeps what was written on it)
+    unit_of = lambda folder: {"unsorted": None, "general": "general", "lessons": "lessons"}.get(folder, folder[len("unit-"):])
+    for page in sorted((wiki / "units").glob("*.md")):  # no file or lesson covers this unit any more: what the writer
+        if page.stem not in by_unit:                    # wrote stays, the generated block says so
+            _write_generated(page, f"# {course.unit_label(unit_of(page.stem))}\n\n"
+                                   f"No material yet: no file or recording of the course covers this unit now.\n\n{STUB_MARK}")
     unit_pages = []
     for folder in sorted(by_unit):
-        unit = {"unsorted": None, "general": "general", "lessons": "lessons"}.get(folder, folder[len("unit-"):])
+        unit = unit_of(folder)
         lines = [f"# {course.unit_label(unit)}", "", "Sources:", ""]
         for rel, page in sorted(by_unit[folder], key=lambda item: item[1]):
             lines.append(f"- {_link(Path(page).stem, '../' + page)} ({manifest[rel].get('tier')}, {manifest[rel].get('origin')})")
