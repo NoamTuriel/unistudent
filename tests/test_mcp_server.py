@@ -1,11 +1,13 @@
 """The MCP server: any MCP client (Claude, Cursor, VS Code, Codex, Gemini) gets the same commands as tools."""
+import base64
 import json
 import os
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
-from helpers import SCRIPTS, CourseTestCase
+from helpers import SCRIPTS, CourseTestCase, write
 
 
 class McpServer(CourseTestCase):
@@ -116,6 +118,25 @@ class McpServer(CourseTestCase):
         text = got["messages"][0]["content"]["text"]
         self.assertIn("inbox", text)
         self.assertNotIn("disable-model-invocation", text)  # frontmatter stripped
+
+
+class ImagesFromTools(CourseTestCase):
+    """Q17: a command whose result names `images` shows them to the AI as images, not as paths it can't open."""
+
+    def test_the_images_a_result_names_come_after_its_text(self):
+        from unistudent import mcp
+        frame = write(self.tmp / "frame.jpg", b"\xff\xd8\xff a frame")
+
+        def main(argv):
+            print(json.dumps({"images": [str(frame), str(self.tmp / "gone.jpg")], "summary": "1 frame"}))
+            return 0
+
+        with mock.patch("unistudent.cli.main", main):
+            result = mcp.call_tool(mcp.build_tools(), "courses_list", {})
+        text, image = result["content"]
+        self.assertEqual(json.loads(text["text"])["images"], [str(frame), str(self.tmp / "gone.jpg")])
+        self.assertEqual(image, {"type": "image", "mimeType": "image/jpeg",
+                                 "data": base64.b64encode(frame.read_bytes()).decode("ascii")})
 
 
 if __name__ == "__main__":
