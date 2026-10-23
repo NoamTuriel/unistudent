@@ -384,11 +384,67 @@ def covering(course, folder, recordings):
             if unit_dir(info["unit"]) == folder or folder in lesson_units(course, info)}
 
 
-def entries(text):
-    """Each `### ` entry of a glossary or question bank (the example in the page's comment is none)."""
+def _split(text):
+    """(what comes before the first entry, each `### ` entry) of a glossary or question bank; the example in the
+    page's format comment is no entry."""
     masked = re.sub(r"<!--.*?-->", lambda m: re.sub(r"[^\n]", " ", m.group()), text, flags=re.S)
     starts = [m.start() for m in re.finditer(r"(?m)^### ", masked)]
-    return [text[a:b].strip() for a, b in zip(starts, starts[1:] + [len(text)])]
+    return (text[:starts[0]] if starts else text), [text[a:b].strip() for a, b in zip(starts, starts[1:] + [len(text)])]
+
+
+def entries(text):
+    return _split(text)[1]
+
+
+TAG = re.compile(r"#(?:unit-\d+|general)(?:/\S*)?")
+
+
+def _heading(entry):
+    return entry.split("\n", 1)[0]
+
+
+def _merge_term(old, new):
+    """One glossary entry per term: the first definition stays and gains the citations it lacked."""
+    missing = [f"[{label}]({target})" for label, target in MD_LINK.findall(new) if target not in old]
+    return old + "".join(" " + link for link in missing)
+
+
+def _merge_question(old, new):
+    """One question-bank entry per question: the latest text, with every unit tag either one carried."""
+    tags = dict.fromkeys(TAG.findall(_heading(old)) + TAG.findall(_heading(new)))
+    heading, _, body = new.partition("\n")
+    return f"{' '.join(TAG.sub('', heading).split())}  {' '.join(tags)}" + (f"\n{body}" if body else "")
+
+
+def merge_entries(course, glossary=None, question_bank=None):
+    """Merge a unit writer's entries (files of `### ` entries) into the Wiki's glossary and question bank, one writer
+    at a time, so writers working in parallel never overwrite each other's entries."""
+    counts = {}
+    with course.locked("wiki.lock"):
+        for name, path, key, combine in (
+                ("glossary.md", glossary, lambda e: " ".join(_heading(e).split()), _merge_term),
+                ("question-bank.md", question_bank, lambda e: " ".join(TAG.sub("", _heading(e)).split()), _merge_question)):
+            if not path:
+                continue
+            page = course.wiki / name
+            head, have = _split(page.read_text("utf-8") if page.is_file() else STUBS[name].replace("{stub}", STUB_MARK))
+            where = {key(e): i for i, e in enumerate(have)}
+            added = updated = 0
+            for entry in entries(Path(path).read_text("utf-8")):
+                if key(entry) in where:
+                    have[where[key(entry)]] = combine(have[where[key(entry)]], entry)
+                    updated += 1
+                else:
+                    where[key(entry)] = len(have)
+                    have.append(entry)
+                    added += 1
+            if have:
+                head = head.replace(STUB_MARK, "")
+            page.parent.mkdir(parents=True, exist_ok=True)
+            page.write_text(re.sub(r"\n{3,}", "\n\n", head).rstrip() + "\n\n" + "\n\n".join(have) + "\n", "utf-8")
+            counts[name] = {"added": added, "updated": updated}
+    return {**counts, "summary": "Merged: " + "; ".join(f"{name} {c['added']} added, {c['updated']} updated"
+                                                       for name, c in counts.items()) + "."}
 
 
 def tagged(entry, folder):

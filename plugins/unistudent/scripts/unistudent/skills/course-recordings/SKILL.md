@@ -48,7 +48,7 @@ Done when: every class session is assigned to `lessons` or the student deferred 
 
 ## 6. Update
 
-Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, and the Recorded lessons roadmap, with the announcements and exam hints, is written into the student's Study vault), then **delegate** each unit in its `units_touched` to one `wiki-unit-writer` worker (a new table of contents lets it fill "Solved in a recording"; update the matching entries of `question-bank.md` in the Wiki, the `wiki` folder in `us courses current`, with the entries it returns), then `us wiki check`.
+Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, and the Recorded lessons roadmap, with the announcements and exam hints, is written into the student's Study vault), then **delegate** each unit in its `units_touched` to one `wiki-unit-writer` worker (a new table of contents lets it fill "Solved in a recording"; it merges its own glossary and question-bank entries), then `us wiki check`.
 
 Done when: every unit in `units_touched` was rewritten and `us wiki check` reports 0 problems. If a new recorded lesson covers a unit that has a study pack (`us study changes --unit N` lists the lesson's summary and table of contents as `new`), offer `/unistudent:study-pack N recordings page`, which names the page so it rebuilds that unit's Recordings index page.
 

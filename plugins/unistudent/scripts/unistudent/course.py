@@ -243,8 +243,17 @@ class Course:
     def edit_manifest(self):
         """Read, change and save the Manifest holding a lock file, so two commands running at once (a recording
         ingested during a document ingest) never lose each other's entries. Saved only when the block ends without an
-        error. A lock older than MANIFEST_LOCK_STALE was left by a run that died, and is taken over."""
-        lock = self.state / "manifest.lock"
+        error."""
+        with self.locked("manifest.lock"):
+            manifest = self.manifest()
+            yield manifest
+            self.save_manifest(manifest)
+
+    @contextlib.contextmanager
+    def locked(self, name):
+        """Hold the lock file `name` in the Hidden folder for the block. A lock older than MANIFEST_LOCK_STALE was left
+        by a run that died, and is taken over."""
+        lock = self.state / name
         while True:
             try:
                 os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
@@ -257,9 +266,7 @@ class Course:
                     pass
                 time.sleep(0.05)
         try:
-            manifest = self.manifest()
-            yield manifest
-            self.save_manifest(manifest)
+            yield
         finally:
             lock.unlink(missing_ok=True)
 

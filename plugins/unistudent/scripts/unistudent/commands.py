@@ -21,13 +21,20 @@ def register(add, with_course):
             return wiki.check(course)
         if args.action == "coverage":
             return wiki.coverage(course)
+        if args.action == "merge":
+            if not (args.glossary or args.question_bank):
+                raise UserError("Give --glossary or --question-bank (a file of entries), or both.")
+            return wiki.merge_entries(course, args.glossary, args.question_bank)
         from . import material
         material.require_new_layout(course)
         return wiki.build(course, force=args.force)
 
-    p = with_course(add("wiki", cmd_wiki, "build or check the Wiki, or show which files it did and did not read"))
-    p.add_argument("action", choices=["build", "check", "coverage"])
+    p = with_course(add("wiki", cmd_wiki, "build or check the Wiki, show which files it did and did not read, or merge "
+                                          "a unit writer's glossary and question-bank entries (one writer at a time)"))
+    p.add_argument("action", choices=["build", "check", "coverage", "merge"])
     p.add_argument("--force", action="store_true", help="convert every file again")
+    p.add_argument("--glossary", help="merge: a file of glossary entries (`### ` headings)")
+    p.add_argument("--question-bank", help="merge: a file of question-bank entries (`### ` headings)")
 
     def cmd_add(args):
         from . import material

@@ -1,5 +1,7 @@
 """Seam 2 (Wiki build): what the Wiki hands a unit writer, and when it hands it a unit."""
 import json
+import threading
+import time
 import unittest
 
 from helpers import CourseTestCase, folders, mock_env, run_json, write
@@ -118,6 +120,38 @@ class UnitWriter(CourseTestCase):
         write(self.f.wiki / "question-bank.md", (self.f.wiki / "question-bank.md").read_text("utf-8").replace("Q12", "Q12b"))
         for unit in ("3", "4"):
             self.assertEqual(run_json("study", "changes", "--unit", unit, "--course", self.course)["changed"], ["question-bank.md"])
+
+    def merge(self, unit, glossary, questions):
+        files = [write(self.tmp / f"unit-{unit}-glossary.md", glossary), write(self.tmp / f"unit-{unit}-questions.md", questions)]
+        return run_json("wiki", "merge", "--glossary", files[0], "--question-bank", files[1], "--course", self.course)
+
+    def test_unit_writers_merge_their_entries_one_at_a_time_without_losing_any(self):
+        self.merge(3, "### Price (P)\nWhat a unit costs. Sources: [d](sources/unit-03/demand.md#page-1)\n",
+                   "### Exam Q12  #unit-03/demand\n- Where: [d](sources/unit-03/demand.md)\n\n"
+                   "### Exam Q1  #unit-03/demand\n- Where: [d](sources/unit-03/demand.md)\n")
+        lock = self.course / ".unistudent" / "wiki.lock"
+        write(lock, "")  # another writer is merging right now
+        waiting = threading.Thread(target=self.merge, args=(4, "### Price (P)\nWhat a unit costs. Sources: [s](sources/unit-04/supply.md)\n",
+                                                              "### Exam Q12  #unit-04/supply\n- Where: [s](sources/unit-04/supply.md)\n"
+                                                              "- Solved in a recording: no\n"))
+        waiting.start()
+        time.sleep(0.3)
+        self.assertNotIn("unit-04", (self.f.wiki / "glossary.md").read_text("utf-8"))  # it waits for the lock
+        lock.unlink()
+        waiting.join(10)
+        glossary = (self.f.wiki / "glossary.md").read_text("utf-8")
+        bank = (self.f.wiki / "question-bank.md").read_text("utf-8")
+        self.assertEqual(glossary.count("### Price"), 1)  # one entry per term, citing both units
+        self.assertIn("sources/unit-03/demand.md#page-1", glossary)
+        self.assertIn("sources/unit-04/supply.md", glossary)
+        self.assertEqual(bank.count("### Exam Q12"), 1)
+        self.assertIn("### Exam Q12  #unit-03/demand #unit-04/supply\n", bank)  # every unit's tag kept
+        self.assertIn("Solved in a recording: no", bank)  # the later text
+        self.assertIn("### Exam Q1  #unit-03/demand", bank)
+        for page in (glossary, bank):
+            self.assertNotIn("unistudent:stub", page)
+            self.assertTrue(page.startswith("# "))  # the page's title and format comment stay on top
+        self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
 
 
 if __name__ == "__main__":
