@@ -131,6 +131,11 @@ class PagesReadVisually(CourseTestCase):
         files = {r["path"]: r for r in run_json("wiki", "coverage", "--course", self.course)["files"]}
         self.assertNotEqual(files["official/Unit 1/diagram.png"]["status"], "analyzed")
 
+    def test_each_item_names_its_file_by_a_full_path(self):  # the worker needn't know where the Material folder is
+        built = self.build()
+        for item in built["images"] + built["needs_visual"]:
+            self.assertTrue(Path(item["path"]).is_absolute() and Path(item["path"]).is_file(), item)
+
     def test_an_image_item_carries_the_frontmatter_its_page_needs(self):
         item = self.build()["images"][0]
         self.assertEqual((item["origin"], item["tier"], item["unit"]), ("student-folder", "official", 1))
