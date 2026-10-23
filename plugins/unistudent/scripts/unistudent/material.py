@@ -151,7 +151,7 @@ def add_file(course, path, tier="added", origin="inbox", hint=None, replace_rel=
             if (course.material / rel).exists():
                 rel = f"{os.path.dirname(rel)}/{_free_name((course.material / rel).parent, Path(rel).name)}"
     else:
-        unit, reason = (site_unit, "site listing") if site_unit is not None else detect_unit(hint or name, path)
+        unit, reason = (site_unit, "site listing") if site_unit is not None else detect_unit(hint or name, course.labels()["unit"], path)
         slot = _slot(course, tier, unit)
         target = course.material / slot / name
         if target.exists() and fingerprint(target) == fingerprint(path):
@@ -322,7 +322,7 @@ def scan(course):
                 if entry.get("unit") != unit:
                     entry.update(unit=unit, sort_reason="folder")
             elif rel in result["new"]:
-                entry["unit"], entry["sort_reason"] = detect_unit(rel, path)
+                entry["unit"], entry["sort_reason"] = detect_unit(rel, tables[-1]["unit"], path)
                 if loose:
                     misplaced.append(rel)
             entry.update(fingerprint=fp, size=stat.st_size, mtime=stat.st_mtime_ns)

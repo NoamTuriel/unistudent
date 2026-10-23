@@ -27,8 +27,10 @@ class VisibleFolders(CourseTestCase):
         run_json("setup", course, "--name", "מקרו", "--language", "he")
         self.assertEqual(top_level(course), [".unistudent", "1-קבצים-חדשים", "2-חומרי-הקורס"])
         write(course / "1-קבצים-חדשים" / "Unit 3 notes.txt", "money")
+        write(course / "1-קבצים-חדשים" / "סיכום יחידה 5.txt", "prices")  # the Hebrew unit word, in a Hebrew course
         run_json("add", "--course", course)
         self.assertTrue((course / "2-חומרי-הקורס" / "חומר-לא-רשמי" / "יחידה 3" / "Unit 3 notes.txt").is_file())
+        self.assertTrue((course / "2-חומרי-הקורס" / "חומר-לא-רשמי" / "יחידה 5" / "סיכום יחידה 5.txt").is_file())
 
     def test_the_closing_suggestion_to_use_the_hebrew_inbox_needs_no_label(self):
         course = self.tmp / "Macro"
@@ -45,7 +47,7 @@ class VisibleFolders(CourseTestCase):
         english = run_json("labels")["labels"]
         self.assertEqual(english["unit"], "Unit {n}")
         course = self.tmp / "Macro"
-        labels = {"inbox": "1-boite", "material": "2-cours", "added": "ajoute", "unit": "Unite {n}"}
+        labels = {"inbox": "1-boite", "material": "2-cours", "added": "ajoute", "unit": "Unite {n}", "from": "Extrait de"}
         for bad in ({"unit": "Unite"}, {"nonsense": "x"}, {"material": "2/cours"}, ["not", "an", "object"]):
             code, out = run("setup", course, "--name", "Macro", "--language", "fr", "--labels", json.dumps(bad))
             self.assertEqual(code, 1, bad)
@@ -56,6 +58,13 @@ class VisibleFolders(CourseTestCase):
         run_json("add", "--course", course)
         self.assertTrue((course / "2-cours" / "ajoute" / "Unite 3" / "Unit 3 notes.txt").is_file())
         self.assertEqual(run_json("unsorted", "--course", course)["files"], [])  # the folder is read back as unit 3
+        write(course / "1-boite" / "Unite 4 resume.txt", "prices")  # the course's own unit word names a unit
+        run_json("add", "--course", course)
+        notes = course / "2-cours" / "ajoute" / "Unite 4" / "Unite 4 resume.txt"
+        self.assertTrue(notes.is_file())
+        page = write(course / "3-Macro-study-from-here" / "Unite 4" / "4.2 Walkthrough.md",
+                     f"## Prix\n\n### Prix — Price\n\nLe prix monte.\n\nExtrait de: [notes]({notes.as_uri()})\n")
+        self.assertEqual(run_json("check", page, "--course", course)["problems"], [])  # its "From:" word counts
         run_json("setup", course, "--name", "Macro", "--language", "en")  # another language: its own names
         self.assertTrue((course / "2-course-material" / "added" / "Unit 3" / "Unit 3 notes.txt").is_file())
 

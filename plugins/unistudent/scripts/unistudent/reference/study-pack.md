@@ -38,7 +38,7 @@ A formula, an arrow chain or any run of Latin letters or symbols (`r↑`, `Y↑ 
 The text of a topic has no links and no source names: nothing breaks the reading. At the end of each topic, one **folded** block holds the sources, closed by default (a good summary means the student rarely opens it). In Obsidian format it is a foldable callout (`> [!note]- <Sources, in the course language>`); in plain Markdown a `<details>` block. Inside it two lines:
 
 - **In the recordings:** each recording linked once, then the times it is taught or solved as plain text after the link (Links, below). A topic no recording covered has no such line. A recording without a transcript is shown by its file name alone, with no time.
-- **From:** the source files the topic rests on. Link text is the file's plain name ("the slides of lectures 8–9"), never a page or slide number. A file with no link is named by its file name.
+- **From:** the source files the topic rests on. The line opens with `From:` or the course language's own word for it (`מתוך:` in Hebrew; for a language set up with translated labels, its `from` label in `.unistudent/settings.json`): `us check` finds the line only by these words. Link text is the file's plain name ("the slides of lectures 8–9"), never a page or slide number. A file with no link is named by its file name.
 
 Chat answers keep a link on every claim.
 

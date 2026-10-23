@@ -30,9 +30,11 @@ class PackShape(CourseTestCase):
         self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + closing), [])
 
     def test_sources_folded_into_a_callout_pass_and_a_pack_needs_no_labels(self):
-        text = "## נושא\n\n### כסף — Money\n\nהכסף הוא מה שמקובל לשלם בו.\n\n> [!note]- מקורות\n> בהרצאות: [שיעור 3, 00:12:47](" + self.slides.as_uri() + "#t=767)\n>\n> מתוך: [השקפים](" + self.slides.as_uri() + ")\n"
-        write(self.pack / "4.2 Walkthrough.md", text)
-        self.assertEqual(run_json("check", self.pack / "4.2 Walkthrough.md", "--labels", "--course", self.course)["problems"], [])
+        run_json("setup", self.course, "--name", "Macro", "--language", "he")  # a Hebrew course's own words
+        pack, slides = folders(self.course).study / "יחידה 4", next(folders(self.course).material.rglob("slides*"))
+        text = "## נושא\n\n### כסף — Money\n\nהכסף הוא מה שמקובל לשלם בו.\n\n> [!note]- מקורות\n> בהרצאות: [שיעור 3, 00:12:47](" + slides.as_uri() + "#t=767)\n>\n> מתוך: [השקפים](" + slides.as_uri() + ")\n"
+        write(pack / "4.2 Walkthrough.md", text)
+        self.assertEqual(run_json("check", pack / "4.2 Walkthrough.md", "--labels", "--course", self.course)["problems"], [])
 
     def test_a_wikilink_to_a_numbered_page_resolves(self):
         write(self.pack / "4.3 Practice.md", "- [x](" + self.slides.as_uri() + ")\n")

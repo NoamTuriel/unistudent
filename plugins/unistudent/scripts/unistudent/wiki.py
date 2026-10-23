@@ -18,7 +18,7 @@ from . import material
 from .common import problems_summary
 from .convert import convert, kind, picture_files
 from .course import safe_name, unit_dir
-from .links_check import FRONTMATTER, MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources
+from .links_check import FRONTMATTER, MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources, opening_words
 
 GEN_START = "<!-- unistudent:generated:start -->"
 GEN_END = "<!-- unistudent:generated:end -->"
@@ -550,12 +550,12 @@ def _for_the_vault(text: str, video=None) -> str:
     return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(keep, text)).strip()
 
 
-def description_line(text):
+def description_line(text, sources_line=SOURCES_LINE):
     """The one line a recording summary opens with (what the recording is), or None when it opens with a heading or
-    its Sources line instead."""
+    its Sources line (`sources_line`: the course's, default English) instead."""
     body = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S).strip()
     first = body.split("\n", 1)[0].strip() if body else ""
-    return None if not first or first.startswith("#") or SOURCES_LINE.match(first) else first
+    return None if not first or first.startswith("#") or sources_line.match(first) else first
 
 
 def _without_sections(text, *titles):
@@ -588,7 +588,7 @@ def write_roadmaps(course, recordings):
     for rel, info in recordings.items():
         if info["processed"]:
             by_unit.setdefault(unit_dir(info["unit"]), []).append((rel, info))
-    written = []
+    written, sources_line = [], opening_words(course.line_words("sources"))
     for folder, recs in sorted(by_unit.items()):
         unit = recs[0][1]["unit"]
         page = course.pack_folder(unit) / f"{course.label('roadmap')}.md"
@@ -599,8 +599,8 @@ def write_roadmaps(course, recordings):
             summary = (where / SUMMARY).read_text("utf-8") if (where / SUMMARY).exists() else ""
             toc = (where / "toc.md").read_text("utf-8") if (where / "toc.md").exists() else ""
             lines += [f"## {Path(rel).name}", "", _link("recording", video), ""]
-            if description_line(summary):
-                lines += [description_line(summary), ""]
+            if description_line(summary, sources_line):
+                lines += [description_line(summary, sources_line), ""]
             for part in (_only_sections(summary, "Announcements", "This will be on the exam"),
                          _without_type_column(_without_sections(toc, "Solved in this recording"))):
                 if part.strip():
@@ -750,13 +750,13 @@ def coverage(course, write=False):
 
 
 def check(course):
-    problems = []
+    problems, sources_line = [], opening_words(course.line_words("sources"))
     for page in sorted(course.wiki.rglob("*.md")):
         problems += check_links(page, course.wiki)
-        if page.name not in ("index.md", "coverage.md") and not has_sources(page):
+        if page.name not in ("index.md", "coverage.md") and not has_sources(page, sources_line):
             problems.append({"kind": "no-sources", "page": str(page)})
         if page.name == SUMMARY and page.parent.parent.name == "recordings" \
-                and not description_line(page.read_text("utf-8")):
+                and not description_line(page.read_text("utf-8"), sources_line):
             problems.append({"kind": "no-description", "page": str(page)})
     return {"problems": problems,
             "summary": problems_summary(problems, lambda p: f"{p['kind']}: {p['page']} {p.get('link', '')}")}
