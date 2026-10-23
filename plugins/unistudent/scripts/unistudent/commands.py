@@ -277,9 +277,7 @@ def register(add, with_course):
         entries = lessons_page.read_text("utf-8") if lessons_page.is_file() else ""
         lessons_without_roadmap = sorted(  # the lessons whose one-line description names this unit
             rel for rel, info in wiki.recording_pages(course).items()
-            if info["unit"] == "lessons" and info["processed"] and f"## {Path(rel).name}\n" not in entries
-            and folder in {unit_dir(n) for n in wiki._units_named(wiki.description_line(
-                wiki.summary_file(course, info["folder"]).read_text("utf-8")) or "")})
+            if f"## {Path(rel).name}\n" not in entries and folder in wiki.lesson_units(course, info))
         base = packs.get(folder)
         if base is None:
             return {"has_study_pack": False, "pack_folder": pack, "pages_present": pages_present,
@@ -296,6 +294,19 @@ def register(add, with_course):
         n = len(result["new"]) + len(result["changed"]) + len(result["removed"])
         result["summary"] = f"{n} change{'' if n == 1 else 's'} since the study pack was built ({base['built']})."
         return result
+
+    def cmd_unit(args):
+        course = resolve_course(args)
+        if not (course.state / "context.md").exists():
+            from .cli import write_context_files
+            write_context_files(course)  # an older course folder: make the context it never got
+        return wiki.unit_context(course, args.unit)
+
+    p = with_course(add("unit", cmd_unit, "a unit writer's starting set: the unit page, the course rules, the unit's "
+                                          "glossary and question-bank entries and past-exam questions, its recordings' "
+                                          "tables of contents and summaries, and the other units' methods and notation"))
+    p.add_argument("action", choices=["context"])
+    p.add_argument("unit", help="unit number or 'general'")
 
     p = with_course(add("study", cmd_study, "track which sources a study pack was built from"))
     p.add_argument("action", choices=["mark-built", "changes"])

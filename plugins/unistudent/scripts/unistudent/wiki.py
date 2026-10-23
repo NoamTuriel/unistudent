@@ -5,6 +5,7 @@ unit page. Claude writes the rest (glossary, question bank, course page, the
 methods/notation/assumptions of each unit) through the wiki skill; those parts are
 never touched by a rebuild.
 """
+import json
 import os
 import posixpath
 import re
@@ -269,24 +270,18 @@ def build(course, force=False):
     for rel, page in pages.items():  # documents, and images once the source-reader wrote their page
         if rel in plan or (wiki / page).exists():
             by_unit.setdefault(unit_dir(manifest[rel].get("unit")), []).append((rel, page))
+    covers = {rel: lesson_units(course, info) for rel, info in recordings.items()}
     for rel, info in recordings.items():
         by_unit.setdefault(unit_dir(info["unit"]), [])
-        summary = wiki / info["folder"] / SUMMARY
-        if info["unit"] == "lessons" and info["processed"] and summary.exists():  # a unit taught only in a
-            for n in _units_named(description_line(summary.read_text("utf-8")) or ""):  # lesson (a printed
-                by_unit.setdefault(unit_dir(n), [])  # textbook, no files on the site) still gets its page
+        for folder in covers[rel]:  # a unit taught only in a lesson (a printed textbook, no files on the site)
+            by_unit.setdefault(folder, [])  # still gets its page
     # A new table of contents makes its units' pages stale: the unit writer can now fill "Solved in a recording".
     seen = set(course.read_state("tocs.json", []))
     for rel, info in recordings.items():
         if info["processed"] and (wiki / info["folder"] / "toc.md").exists() and info["folder"] not in seen:
             seen.add(info["folder"])
-            line = description_line((wiki / info["folder"] / SUMMARY).read_text("utf-8")) or ""
-            touched |= ({unit_dir(n) for n in _units_named(line)} & set(by_unit) if info["unit"] == "lessons"
-                        else {unit_dir(info["unit"])})
+            touched |= covers[rel] & set(by_unit) if info["unit"] == "lessons" else {unit_dir(info["unit"])}
     course.write_state("tocs.json", sorted(seen))
-    covers = {rel: {unit_dir(n) for n in _units_named(description_line((wiki / i["folder"] / SUMMARY).read_text("utf-8"))
-                                                         or "")}
-              for rel, i in recordings.items() if i["unit"] == "lessons" and i["processed"]}
     if "unsorted" not in by_unit and (wiki / "units" / "unsorted.md").exists():
         (wiki / "units" / "unsorted.md").unlink()  # every file got its unit (a unit page keeps what was written on it)
     unit_pages = []
@@ -361,6 +356,67 @@ def build(course, force=False):
         "summary": f"Wiki: {converted} converted, {len(plan)} source pages, {len(recordings)} recordings, "
                    f"{len(images)} images and {len(needs_visual)} files needing visual reading. {covered['summary']}",
     }
+
+
+def lesson_units(course, info):
+    """The unit folders a processed Recorded lesson covers, from its summary (none for any other recording)."""
+    if info["unit"] != "lessons" or not info["processed"]:
+        return set()
+    return {unit_dir(n) for n in _units_named(description_line(summary_file(course, info["folder"]).read_text("utf-8")) or "")}
+
+
+def covering(course, folder, recordings):
+    """The recordings that cover a unit: its own, and the Recorded lessons whose summary names it."""
+    return {rel: info for rel, info in recordings.items()
+            if unit_dir(info["unit"]) == folder or folder in lesson_units(course, info)}
+
+
+def entries(text):
+    """Each `### ` entry of a glossary or question bank (the example in the page's comment is none)."""
+    masked = re.sub(r"<!--.*?-->", lambda m: re.sub(r"[^\n]", " ", m.group()), text, flags=re.S)
+    starts = [m.start() for m in re.finditer(r"(?m)^### ", masked)]
+    return [text[a:b].strip() for a, b in zip(starts, starts[1:] + [len(text)])]
+
+
+def tagged(entry, folder):
+    """Whether a question-bank entry's heading carries the unit's tag (`#unit-03/<topic>`)."""
+    return re.search(rf"#{re.escape(folder)}(?![\w-])", entry.split("\n", 1)[0]) is not None
+
+
+def unit_context(course, unit):
+    """A unit writer's whole starting set, as one text: the course rules, the unit page, the unit's glossary and
+    question-bank entries and indexed past-exam questions, the table of contents and summary of every recording that
+    covers it, and only the methods and notation of the other units."""
+    folder, wiki = unit_dir(unit), course.wiki
+    read = lambda path: path.read_text("utf-8").strip() if path.is_file() else "(none yet)"
+    recs = covering(course, folder, recording_pages(course))
+    places = (f"sources/{folder}/", *(f"{i['folder']}/" for i in recs.values()))
+    glossary = [e for e in entries(read(wiki / "glossary.md")) if any(p in e for p in places)]
+    bank = [e for e in entries(read(wiki / "question-bank.md")) if tagged(e, folder)]
+    index = course.state / "before-test" / "index.json"
+    exams = []
+    for row in json.loads(index.read_text("utf-8")) if index.is_file() else []:
+        try:
+            if unit_dir(row.get("unit")) == folder:
+                exams.append(f"- {row.get('exam')}, question {row.get('q')}: {row.get('topic')}; {row.get('skill')}"
+                             f" ({row.get('points')} points)")
+        except ValueError:  # an indexer's unit that names no unit
+            pass
+    parts = [("../context.md: the course rules", read(course.state / "context.md")),
+             (f"units/{folder}.md: the unit page (it links the unit's source pages)", read(wiki / "units" / f"{folder}.md")),
+             ("glossary.md: the entries citing this unit", "\n\n".join(glossary) or "(none yet)"),
+             (f"question-bank.md: the entries tagged #{folder}", "\n\n".join(bank) or "(none yet)"),
+             ("../before-test/index.json: past-exam questions indexed to this unit", "\n".join(exams) or "(none yet)")]
+    for rel, info in recs.items():
+        parts += [(f"{info['folder']}/{name}: {Path(rel).name}", read(wiki / info["folder"] / name))
+                  for name in ("toc.md", SUMMARY)]
+    for page in sorted((wiki / "units").glob("*.md")):
+        if page.stem not in (folder, "unsorted"):
+            parts.append((f"units/{page.name}: only its methods and notation",
+                          _only_sections(page.read_text("utf-8"), "Approved methods", "Notation") or "(none yet)"))
+    text = f"Unit context for {folder}. Paths are relative to the Wiki: {wiki}\n\n" + "\n\n".join(
+        f"==> {title} <==\n{body}" for title, body in parts)
+    return {"unit": folder, "wiki": str(wiki), "summary": text}
 
 
 def _units_named(line):

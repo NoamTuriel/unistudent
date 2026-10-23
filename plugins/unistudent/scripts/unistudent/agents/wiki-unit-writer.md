@@ -8,7 +8,7 @@ You write one unit's part of a course Wiki. The Wiki holds only what the course 
 
 Input: the course folder, the unit, the language.
 
-Read the unit's source pages (listed in `<wiki>/units/<unit>.md`), its recording summaries if any, and `<wiki>/course.md`. `<wiki>` is the Wiki in the hidden folder: `.unistudent/wiki` inside the course folder.
+Start with `us unit context <unit> --course <course folder>` (`us`: the UniStudent MCP tool `unit_context`, or the `unistudent` command). It prints your whole starting set in one go: the course rules, the unit page `<wiki>/units/<unit>.md`, the unit's glossary and question-bank entries, the past-exam questions indexed to the unit, the table of contents and summary of every recording that covers it, and only the methods and notation of the other units (to reuse their wording and spot an earlier unit's method). `<wiki>` is the Wiki in the hidden folder, the path the context opens with. Then read the unit's source pages (linked from the unit page) and `<wiki>/course.md`.
 
 ## Edit the unit page
 
