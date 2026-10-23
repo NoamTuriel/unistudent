@@ -117,7 +117,24 @@ class RecordedLessons(CourseTestCase):
         self.assertIn("lesson 9.mp4", (self.f.wiki / "units" / "unit-02.md").read_text("utf-8"))
         self.assertEqual(self.wiki_problems(), [])
 
-    def test_only_numbers_right_after_the_unit_word_name_units(self):
+    def test_the_summarys_units_line_names_the_units_in_any_language(self):
+        run_json("assign", LESSON, "lessons", "--course", self.course)
+        lesson = "official/Recorded lessons/lesson 9.mp4"
+        changes = lambda unit: run_json("study", "changes", "--course", self.course, "--unit", unit)["lessons_without_roadmap"]
+        for front, line, units in (("units: [2, 3]", "Leçon 4 : l'offre et la demande.", ["unit-02", "unit-03"]),
+                                   ("units: []", "Lesson 9: a lesson about units 7-9.", [])):  # the line wins over words
+            write(self.lesson / "recording-summary.md", f"---\n{front}\n---\n{line}\n\nSources: [transcript](transcript.md)\n")
+            self.assertEqual(changes("2"), [lesson] if units else [], front)
+            shutil.rmtree(self.f.wiki / "units", ignore_errors=True)
+            run_json("wiki", "build", "--course", self.course)
+            pages = sorted(p.stem for p in (self.f.wiki / "units").glob("unit-*.md") if "lesson 9.mp4" in p.read_text("utf-8"))
+            self.assertEqual(pages, units, front)
+        roadmap = (self.f.study / "Recorded lessons" / "Recordings roadmap.md").read_text("utf-8")
+        self.assertIn("Lesson 9: a lesson about units 7-9.", roadmap)
+        self.assertNotIn("units: []", roadmap)
+        self.assertEqual(self.wiki_problems(), [])
+
+    def test_only_numbers_right_after_the_unit_word_name_units(self):  # summaries written before the units line
         run_json("assign", LESSON, "lessons", "--course", self.course)
         for line, units in (("מפגש 3: שיעור על היחידה הראשונה, וסעיף ד' של שאלה 11.", []),  # "first" is no digit
                             ("מפגש 8: חומר ממ\"ן 4, יחידות 1 ו-5.", ["unit-01", "unit-05"]),  # "ו-" is "and"

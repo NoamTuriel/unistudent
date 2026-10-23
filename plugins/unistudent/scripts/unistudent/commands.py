@@ -323,7 +323,7 @@ def register(add, with_course):
         pages_present = [keys[m.group(1)] for m in found if m]
         lessons_page = course.pack_folder("lessons") / f"{course.label('roadmap')}.md"
         entries = lessons_page.read_text("utf-8") if lessons_page.is_file() else ""
-        lessons_without_roadmap = sorted(  # the lessons whose one-line description names this unit
+        lessons_without_roadmap = sorted(  # the lessons whose summary lists this unit
             rel for rel, info in wiki.recording_pages(course).items()
             if f"## {Path(rel).name}\n" not in entries and folder in wiki.lesson_units(course, info))
         base = packs.get(folder)

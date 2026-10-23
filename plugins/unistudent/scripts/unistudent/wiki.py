@@ -18,7 +18,7 @@ from . import material
 from .common import problems_summary
 from .convert import convert, kind, picture_files
 from .course import safe_name, unit_dir
-from .links_check import MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources
+from .links_check import FRONTMATTER, MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources
 
 GEN_START = "<!-- unistudent:generated:start -->"
 GEN_END = "<!-- unistudent:generated:end -->"
@@ -377,10 +377,16 @@ def build(course, force=False):
 
 
 def lesson_units(course, info):
-    """The unit folders a processed Recorded lesson covers, from its summary (none for any other recording)."""
+    """The unit folders a processed Recorded lesson covers (none for any other recording): the `units: [3, 4]` line
+    the recording-summarizer writes in its summary's frontmatter (ADR 0015). A summary written before that line
+    existed: the units its first line names in words."""
     if info["unit"] != "lessons" or not info["processed"]:
         return set()
-    return {unit_dir(n) for n in _units_named(description_line(summary_file(course, info["folder"]).read_text("utf-8")) or "")}
+    text = summary_file(course, info["folder"]).read_text("utf-8")
+    front = FRONTMATTER.match(text)
+    listed = re.search(r"(?m)^units:\s*\[([^\]]*)\]\s*$", front.group(1)) if front else None
+    numbers = {int(n) for n in re.findall(r"\d+", listed.group(1))} if listed else _units_named(description_line(text) or "")
+    return {unit_dir(n) for n in numbers}
 
 
 def covering(course, folder, recordings):
@@ -503,8 +509,8 @@ def unit_context(course, unit):
 
 
 def _units_named(line):
-    """The unit numbers a lesson's one-line description says it covers ("a lesson about units 7-9")."""
-    # ponytail: English and Hebrew unit words only; add a language's word when it gets a LABELS table
+    """The unit numbers an old summary's one-line description says it covers ("a lesson about units 7-9"). Only for
+    summaries written before the `units:` line; English and Hebrew words, as they were written then."""
     units = set()  # only numbers right after a unit word: "היחידה הראשונה ... שאלה 11" names no unit
     for numbers in re.findall(r"(?i)(?<![a-z])(?:unit|chapter|יחיד|פרק)\w*\s+(\d+(?:\s*(?:[-–,]|עד|to|through|and|ו-?)\s*\d+)*)",
                               line):  # OpenU books say "פרק" (chapter)
