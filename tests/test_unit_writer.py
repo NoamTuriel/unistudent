@@ -58,6 +58,40 @@ class UnitWriter(CourseTestCase):
         for absent in ("### Supply (S)", "### Shift supply", "compute", "Ceteris paribus"):  # another unit's rows, assumptions
             self.assertNotIn(absent, text)
 
+    def touched(self):
+        return run_json("wiki", "build", "--course", self.course)["units_touched"]
+
+    def test_a_unit_is_touched_when_the_lessons_covering_it_change(self):
+        self.assertEqual(self.touched(), [])
+        self.summary("unit 3")  # the lesson no longer covers unit 4: its writer must take that lesson out
+        self.assertEqual(self.touched(), ["unit-04"])
+        self.summary("units 3 and 7")  # unit 7 has no files: the lesson gives it a page, and its writer the unit
+        self.assertEqual(self.touched(), ["unit-07"])
+        self.summary("units 3 and 7, with corrections")  # the same lessons: nothing to hand on
+        self.assertEqual(self.touched(), [])
+
+    def test_study_changes_sees_covering_lessons_and_the_units_questions(self):
+        changes = lambda: run_json("study", "changes", "--unit", "3", "--course", self.course)
+        run_json("study", "mark-built", "--unit", "3", "--course", self.course)
+        self.assertEqual(changes()["changed"], [])
+        self.summary("units 3-4, corrected from the board")
+        write(self.lesson / "toc.md", TOC.replace("Intro", "Opening"))
+        write(self.f.wiki / "question-bank.md", "# Question bank\n\n### Shift demand  #unit-03/shifts\n- Where: [d](sources/unit-03/demand.md)\n")
+        self.assertEqual(changes()["changed"], ["recordings/lesson 9/recording-summary.md", "recordings/lesson 9/toc.md"])
+        self.assertEqual(changes()["new"], ["question-bank.md"])
+        run_json("study", "mark-built", "--unit", "3", "--course", self.course)
+        write(self.f.wiki / "question-bank.md", "# Question bank\n\n### Shift demand  #unit-03/shifts\n- Where: [d](sources/unit-03/demand.md)\n\n"
+                                                "### Shift supply  #unit-04/shifts\n- Where: [s](sources/unit-04/supply.md)\n")
+        self.assertEqual(changes()["changed"], [])  # another unit's question
+        packs = self.course / ".unistudent" / "studypacks.json"
+        data = json.loads(packs.read_text("utf-8"))
+        sources = data["unit-03"]["sources"]
+        for key in [k for k in sources if k.startswith("recordings/")]:
+            del sources[key]
+        sources["recordings/lesson 9/summary.md"] = "processed"  # how a pack built by an older version recorded it
+        write(packs, json.dumps(data))
+        self.assertEqual([changes()[k] for k in ("new", "changed", "removed")], [[], [], []])
+
 
 if __name__ == "__main__":
     unittest.main()

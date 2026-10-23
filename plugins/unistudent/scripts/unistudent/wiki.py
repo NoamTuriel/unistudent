@@ -282,6 +282,13 @@ def build(course, force=False):
             seen.add(info["folder"])
             touched |= covers[rel] & set(by_unit) if info["unit"] == "lessons" else {unit_dir(info["unit"])}
     course.write_state("tocs.json", sorted(seen))
+    # A unit whose covering lessons changed (a lesson now covers it, or no longer does) goes back to its writer too.
+    lessons = {folder: sorted(i["folder"] for r, i in recordings.items()
+                              if i["processed"] and (unit_dir(i["unit"]) == folder or folder in covers[r]))
+               for folder in by_unit}
+    before = course.read_state("covering.json", None)  # None: the first build that keeps it, nothing to compare
+    touched |= {folder for folder in by_unit if before is not None and lessons[folder] != before.get(folder, [])}
+    course.write_state("covering.json", lessons)
     if "unsorted" not in by_unit and (wiki / "units" / "unsorted.md").exists():
         (wiki / "units" / "unsorted.md").unlink()  # every file got its unit (a unit page keeps what was written on it)
     unit_pages = []
