@@ -36,7 +36,7 @@ Then `Sources: [transcript](transcript.md)`, then:
 
 Keep the three headings below exactly as written, in English, whatever the course language: the roadmap builder finds the sections by them (write everything under them in the course language).
 
-- `## Announcements`: what the lecturer asks of the student or says about dates, assignments, who to work with and the exam. They usually come in the first and last minutes, so note them closely there in your one read, then Grep the whole transcript for cues ("tomorrow", "next week", "I want you to…", "send the exercise by…"). Quote the lecturer's words, short, each with its time link. A solution video (one question) usually has none: write only what is really said.
+- `## Announcements`: what the lecturer asks of the student or says about dates, assignments, who to work with and the exam. Only what the student must act on or know after the lesson: leave out the lesson's own running (a 15-minute break, "let's start", "can you see my screen?"). They usually come in the first and last minutes, so note them closely there in your one read, then Grep the whole transcript for cues ("tomorrow", "next week", "I want you to…", "send the exercise by…"). Quote the lecturer's words, short, each with its time link. A solution video (one question) usually has none: write only what is really said.
 - `## "This will be on the exam"`: every moment the lecturer stresses for the exam, with its time link.
 
 A section with nothing in it says `None in this recording.` (in the course language), so the roadmap never shows an empty heading.
