@@ -103,7 +103,7 @@ Say why in a sentence: recorded lessons hold what the lecturer *said*: explanati
 
 **Question 2 of 3: frame analysis (looking at the screen)?** Recommended for courses taught from slides, graphs, formulas or drawings (economics, maths, science); fine to skip for talking-only lectures.
 - **What it gives:** a transcript has only the words. When the lecturer says "as you can see here", frame analysis looks at the video at that moment, so the slide, graph or formula ends up in the summary, linked to the minute.
-- **What it costs, per hour of recording:** about 60 extra AI calls (one per minute of video), on top of question 1. This uses a lot of your Claude usage: on a smaller Claude plan the run may pause at your usage limit; it continues when you run setup again. It needs a free video-analysis tool next to UniStudent, installed in step 7.
+- **What it costs, per hour of recording:** about 60 extra AI calls (one per minute of video), on top of question 1. This uses a lot of your Claude usage: on a smaller Claude plan the run may pause at your usage limit; it continues when you run setup again. It is built in: it uses ffmpeg, the free tool from question 1, so there is nothing more to install.
 - Ask yes or no, only if they said yes to question 1 (it works on the transcript); otherwise record no.
 
 **Question 3 of 3: keep the video files to watch?** Recommended, if the disk has room.
@@ -125,10 +125,9 @@ No more questions about the course after this. First create the course folder, s
 2. Apply the stored answers: `us context --recording-level <3 if transcribe, else 1> --frame-analysis <1|0> --keep-video <1|0> [--exam-date <date>]`.
 3. Their own folder (step 5): run `us import --dry-run "<own folder>" --tier <official|added>` and say its one-line `summary` (how many files and how much will be copied). Nothing is copied yet.
 
-Then install, all together, what only works after the app is restarted:
+Then install what only works after the app is restarted (frame analysis needs no install: it is built in):
 
 - **The University plugin** recorded in step 1: install it with its `install` command if your app lets you, otherwise give the student that command to run.
-- **The video-analysis tool**, when frame analysis is on and you can't see such a tool yet: set up the `mcp-video-analyzer` MCP server (its start command is on https://github.com/guimatheus92/mcp-video-analyzer) the way the generic rules' "Recommended tools" section says (its Harness table: `<this skill's base directory>/../../reference/study-pack.md`, or `us doc study-pack`): in the course folder's own MCP config file where your app reads one, otherwise name it and give the exact steps. If it can't be set up, run `us context --frame-analysis 0` and say so in one sentence.
 
 Record it before any restart: `us setup-progress advance --course-name "<course>" --stage installs`. If anything was installed above, say once, plainly: "Please close and reopen the app (where it reads the course folder's settings, open it in the course folder), then run setup again: it continues from here." Nothing installed → say so in one line and go straight on.
 

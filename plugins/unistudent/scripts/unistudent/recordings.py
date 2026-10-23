@@ -172,10 +172,14 @@ def model_for(name, language):
     return MODELS.get((name, language)) or MODELS[(name, None)] if name != "fake" else "fake"
 
 
-def extract_audio(path: Path, out: Path, start=None, seconds=None):
+def _require_ffmpeg():
     if not shutil.which("ffmpeg"):
         raise RuntimeError("ffmpeg is needed for recordings. Install it (macOS: brew install ffmpeg; "
                            "Windows: winget install ffmpeg; Linux: your package manager).")
+
+
+def extract_audio(path: Path, out: Path, start=None, seconds=None):
+    _require_ffmpeg()
     cmd = ["ffmpeg", "-y", "-v", "error"]
     if start is not None:
         cmd += ["-ss", str(start)]
@@ -309,7 +313,7 @@ def write_transcript(course, rel, segments, name):
     (folder / "transcript.md").write_text("\n".join(lines), "utf-8")
     vtt = _vtt(segments)
     (folder / "transcript.vtt").write_text(vtt, "utf-8")
-    # A sidecar next to the video lets video tools (e.g. mcp-video-analyzer) use this transcript,
+    # A sidecar next to the video lets video players show this transcript as subtitles,
     # but only where the video lives in a folder the plugin owns.
     real = source.resolve()
     owned = [course.material.resolve()] + ([Path(course.settings()["recordings_dir"]).resolve()]
@@ -364,15 +368,47 @@ def keep_audio_only(course, rel):
         raise UserError(f"Not a recording in this course: {rel}")
     if not info["processed"]:
         raise UserError(f"{rel} has no summary yet: replace its video only once its analysis is done.")
-    if not shutil.which("ffmpeg"):
-        raise RuntimeError("ffmpeg is needed for recordings. Install it (macOS: brew install ffmpeg; "
-                           "Windows: winget install ffmpeg; Linux: your package manager).")
+    _require_ffmpeg()
     source = material.path_of(course, rel)
     with tempfile.TemporaryDirectory(dir=source.parent) as tmp:  # same disk, so the swap is one rename
         audio = Path(tmp) / source.name
         subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(source), "-vn", "-c:a", "copy", str(audio)], check=True)
         os.replace(audio, source)
     return rel
+
+
+FRAME_WIDTH = 1280  # a 720p lesson's own width: its whiteboard handwriting reads well at it (checked on a real lesson)
+TIME = re.compile(r"^\d{1,2}:\d{2}:\d{2}(\.\d+)?$")
+
+
+def frames(course, rel, times):
+    """The screen of a recording at these times (HH:MM:SS), as JPEG files at most FRAME_WIDTH wide. They wait in the
+    Hidden folder until the recording's summary is written: the next Wiki build deletes them (a frame can show the
+    lecturer's private screen)."""
+    info = recording_pages(course).get(rel)
+    if info is None:
+        raise UserError(f"Not a recording in this course: {rel}")
+    bad = [t for t in times if not TIME.match(t)]
+    if bad or not times:
+        raise UserError("Give each time as HH:MM:SS (for example 00:12:30), not: " + ", ".join(bad or ["nothing"]))
+    _require_ffmpeg()
+    source = material.path_of(course, rel)
+    folder = course.state / "frames" / Path(info["folder"]).name
+    folder.mkdir(parents=True, exist_ok=True)
+    images = []
+    for at in times:
+        target = folder / (at.replace(":", "") + ".jpg")
+        if target.exists():
+            target.unlink()
+        result = subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", at, "-i", str(source), "-frames:v", "1",
+                                 "-vf", f"scale='min({FRAME_WIDTH},iw)':-2", "-q:v", "4", str(target)],
+                                capture_output=True, text=True)
+        if not target.is_file():
+            raise UserError(f"No picture at {at} in {rel}: " + (
+                "the recording has sound only." if "does not contain any stream" in result.stderr
+                else "the time may be past its end."))
+        images.append(str(target.resolve()))
+    return images
 
 
 def fetch_streams(listing_path, folder, audio_only=False):

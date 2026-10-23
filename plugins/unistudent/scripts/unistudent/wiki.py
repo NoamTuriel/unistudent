@@ -264,6 +264,9 @@ def build(course, force=False):
               for rel, page in pages.items()
               if kind(rel) == "image" and not _read_visually(course, rel, manifest[rel].get("fingerprint"), page)]
     recordings = recording_pages(course)
+    for info in recordings.values():  # `us recordings frame` pictures can show a private screen: gone after the summary
+        if info["processed"]:
+            shutil.rmtree(course.state / "frames" / Path(info["folder"]).name, ignore_errors=True)
     for name, template in STUBS.items():
         if not (wiki / name).exists():
             (wiki / name).write_text(template.replace("{stub}", STUB_MARK), "utf-8")

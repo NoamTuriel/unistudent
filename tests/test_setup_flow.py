@@ -225,8 +225,8 @@ class WalkAwaySetup(unittest.TestCase):
         self.assertEqual(self.text.count("close and reopen"), 1)
         seven = step(self.text, 7)
         self.assertIn("close and reopen", seven)
-        for words in ("University plugin", "video-analysis tool", "Recommended tools", "Harness table"):
-            self.assertIn(words, seven)
+        self.assertIn("University plugin", seven)
+        self.assertNotIn("mcp-video-analyzer", self.text)  # frame analysis is built in: no install, no restart
         one = step(self.text, 1)
         self.assertIn("recorded, not installed yet", one)
         self.assertLess(one.index("--stage university"), one.index("us plugins recommend"))

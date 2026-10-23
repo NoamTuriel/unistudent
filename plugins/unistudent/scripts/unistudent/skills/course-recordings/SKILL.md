@@ -22,7 +22,7 @@ If `realtime_factor` is empty and a recording exists, offer a one-minute benchma
 
 Show the totals: number of recordings, hours of audio, GB, estimated time on this machine, and that Claude will also read each transcript (tokens). Then show **one numbered list** of the recordings still without a transcript (`files` from the estimate), each as `N. <full path> - X min, estimated Y on this machine`. Ask which to transcribe: the student answers with numbers ("1, 4, 7") or "none". "All" is not an answer: ask for numbers. Record "none" with `us context --recording-level 0` and a choice with `us context --recording-level 3`.
 
-Then ask a **separate** question about frame analysis (looking at what's on screen, e.g. slides), only if a video-analysis tool is installed: show `frame_analysis_segments` from the same estimate (one extra AI call per segment — real cost, distinct from transcription) and ask yes/no. Default to no unless the student asks for it. Record with `us context --frame-analysis <0 off|1 on>`. Skip this question (and never turn it on) if no video-analysis tool is installed, or if it was already answered for this course.
+Then ask a **separate** question about frame analysis (looking at what's on screen, e.g. slides; built in, it needs only ffmpeg): show `frame_analysis_segments` from the same estimate (one extra AI call per segment — real cost, distinct from transcription) and ask yes/no. Default to no unless the student asks for it. Record with `us context --frame-analysis <0 off|1 on>`. Skip this question if it was already answered for this course.
 
 Done when: the student named recordings by number, or said none; and, if relevant, frame analysis is explicitly on or off.
 

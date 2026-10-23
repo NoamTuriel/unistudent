@@ -104,7 +104,7 @@ args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plu
 Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It takes about 10 minutes of questions, then you can leave for a few hours:
 
 1. **Questions (about 10 minutes).** Your university, course, language, folder, the app you'll read in, where your material comes from, anything else the course gave you, the exam date, and three separate recording questions (transcribe and summarise, look at the screen, keep the video files), each with what it gives and what it costs. If your university has a plugin (like `openu` above), setup tells you which one; if not, it interviews you once (course site URL, how you organize material) and remembers the answer for your next course there. No university? Answer "none": you get the same course folder, Wiki and study packs from your own files.
-2. **One restart at most.** Anything that only works after the app restarts (the university plugin, the video-analysis tool) is installed together, after the last question.
+2. **One restart at most.** Anything that only works after the app restarts (the university plugin) is installed after the last question.
 3. **Approve the download (5 to 10 minutes).** You log in to your course site in Chrome. Setup scans it without downloading and shows the **Fetch plan**: what would be downloaded, how big it is, whether it fits on your disk and roughly how long it takes. Nothing downloads until you say OK. A box then tells you to keep the computer on, plugged in and awake, keep the app and Chrome open, and roughly how many hours it needs.
 4. **The run (hours; you can leave).** It installs what recordings need, downloads the documents and builds the Wiki from them first, then downloads, transcribes and summarises the recordings, and updates the Wiki. It asks nothing; a failure is tried once more, then reported.
 5. **Come back (about 5 minutes).** A short report (what's in, what failed and what to do), one question about gaps worth fixing, and how to use it.
@@ -119,7 +119,7 @@ UniStudent uses existing tools instead of reinventing them:
 
 - **[MarkItDown](https://github.com/microsoft/markitdown)** (Microsoft): converts Word, PowerPoint, Excel, HTML and EPUB files when installed. PDFs are converted page by page so answers can cite a page.
 - **[ivrit.ai](https://huggingface.co/ivrit-ai) Whisper models**: Hebrew speech-to-text, run locally through faster-whisper or mlx-whisper.
-- **[mcp-video-analyzer](https://github.com/guimatheus92/mcp-video-analyzer)**: add it next to UniStudent to let the AI look at the slides on screen while indexing a recording. Every transcript is also saved as WebVTT, which it (and video players) can use.
+- Looking at the screen while indexing a recording (frame analysis) is built in: `us recordings frame` takes the picture at a given minute with ffmpeg. Every transcript is also saved as WebVTT, which video players can use.
 - **A browser tool** (Claude in Chrome, or a browser MCP server) for downloading from your course site with your own login.
 - **[Obsidian](https://obsidian.md)**: the best way to read the Wiki and study packs (links between pages, callouts). Setup also offers Word, OneNote and Google Docs: the packs stay Markdown and you copy a finished pack into them.
 
