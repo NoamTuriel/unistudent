@@ -127,6 +127,34 @@ class Recordings(CourseTestCase):
         self.assertIn(f"source: {moved}\nunit: lessons\n", transcript)
 
 
+class TranscriptionProgress(CourseTestCase):
+    def test_a_running_transcription_shows_in_the_list_and_the_box(self):
+        import time
+        own = self.tmp / "own"
+        write(own / "Unit 4" / "session 5.mp4", b"\x00" * 4096)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
+        rec = "official/Unit 4/session 5.mp4"
+        with mock_env(UNISTUDENT_STT_BACKEND="fake", UNISTUDENT_FAKE_STT_SECONDS="3"):
+            run_json("recordings", "approve", "--course", course, rec)
+            job = run_json("recordings", "transcribe", "--course", course, rec, "--background")
+            for _ in range(50):
+                row = run_json("recordings", "list", "--course", course)["recordings"][0]
+                if row["transcribing"]:
+                    break
+                time.sleep(0.1)
+            self.assertTrue(row["state"].startswith("transcribing (started "), row)
+            self.assertIn("Transcribing one now: started", run_json("fetch-plan", "status", "--course", course)["box"])
+            transcript = folders(course).wiki / "recordings" / "session 5" / "transcript.md"
+            for _ in range(100):
+                if transcript.exists() and file_is_released(Path(job["log"])):
+                    break
+                time.sleep(0.1)
+        row = run_json("recordings", "list", "--course", course)["recordings"][0]
+        self.assertEqual((row["state"], row["transcribing"]), ("partial", False))
+        self.assertNotIn("Transcribing one now", (course / "progress.txt").read_text("utf-8"))
+
+
 class OldestFirst(CourseTestCase):
     """Recordings are listed and transcribed oldest first (by the date in their name), so unit 1 is usable first."""
 

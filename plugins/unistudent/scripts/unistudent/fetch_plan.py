@@ -19,9 +19,9 @@ from .sorting import detect_unit
 RECORDING_BYTES_PER_SECOND = 1_800_000 / 8  # the site's documented 1.8 Mbit/s: about 0.81 GB per hour
 AUDIO_BYTES_PER_SECOND = 128_000 / 8  # the sound only (AAC, about 128 kbit/s): about 0.06 GB per hour
 ROUGH_DOWNLOAD_BYTES_PER_SECOND = 2_500_000  # ponytail: a fixed rough network speed until a download is measured
-ROUGH_REALTIME_FACTOR = {"mlx": 0.15, "faster": 0.5}  # hours of work per hour of audio, before a benchmark
 KNOWN = DOCUMENTS | MARKITDOWN_ONLY | RECORDINGS | IMAGES
 TICK = re.compile(r"^\s*[-*]\s*\[([ xX])\]\s*(\d+)\.", re.M)
+PROGRESS_FILE = "progress.txt"  # the box, in the course folder: it reaches the student even when nobody pastes it
 WARNING = ["KEEP THE COMPUTER ON, PLUGGED IN AND AWAKE.", "KEEP THIS APP AND CHROME OPEN."]
 NO_SITE_WARNING = [WARNING[0], "KEEP THIS APP OPEN."]  # no course site: Chrome isn't needed
 
@@ -126,19 +126,11 @@ def _ticks(course, plan_id):
     return {int(number): mark != " " for mark, number in TICK.findall(text)}
 
 
-def realtime_factor():
-    """(hours of transcription per hour of audio, measured?)."""
-    from .recordings import _benchmark_file, backend_name
-    try:
-        return json.loads(_benchmark_file().read_text("utf-8"))["realtime_factor"], True
-    except (FileNotFoundError, KeyError, ValueError):
-        return ROUGH_REALTIME_FACTOR.get(backend_name(), 0.5), False
-
-
-def time_left(download_bytes, lengths):
+def time_left(course, download_bytes, lengths):
     """(hours, rough) to download `download_bytes` and transcribe recordings of these `lengths` in seconds (None: not
     known yet). Rough whenever a part of it comes from a fixed constant rather than a measurement, or is unknown."""
-    factor, measured = realtime_factor()
+    from .recordings import realtime_factor
+    factor, measured = realtime_factor(course)
     known = sum(s for s in lengths if s is not None)
     seconds = download_bytes / ROUGH_DOWNLOAD_BYTES_PER_SECOND + known * factor
     rough = download_bytes > 0 or None in lengths or (known > 0 and not measured)
@@ -211,7 +203,7 @@ def show(course, listing_path):
                     "(change [x] to [ ]) to skip that file. Sizes with ~ are estimates.\n\n"
                     f"<!-- fetch-plan {plan_id} -->\n" + "\n".join(lines) + f"\n\n{total_line}\n", "utf-8")
     free = shutil.disk_usage(course.root).free
-    hours, rough = time_left(download, lengths)
+    hours, rough = time_left(course, download, lengths)
     fits = total <= free
     by_ext = ", ".join(f"{ext} " + ("size unknown" if t["files"] == t["unknown_size"]
                                     else ("~" if t["estimated"] else "") + human(t["bytes"]))
@@ -265,7 +257,7 @@ def _bar(done, total, width=20):
 
 
 def status(course):
-    from .recordings import approved, recording_seconds
+    from .recordings import approved, recording_seconds, transcribing
     from .wiki import recording_pages
     path = approved_file(course)
     files = course.manifest()["files"]
@@ -293,7 +285,10 @@ def status(course):
     to_download = sum(size_of(i)[0] or 0 for i in items if i.get("url") not in by_url)  # what crosses the network
     lengths = [(i in downloaded and recording_seconds(course, by_url[i.get("url")])) or _length(i)  # the real length
                for i in recs if i.get("transcribe") and i not in transcribed]                      # once it is here
-    hours, rough = time_left(to_download, lengths)
+    hours, rough = time_left(course, to_download, lengths)
+    now = transcribing(course)
+    if now:  # the part of the running transcription already done
+        hours = max(0.0, round(hours - now["elapsed"] / 3600, 2))
     wanted = sum(1 for i in recs if i.get("transcribe"))
     steps = len(recs) + 2 * wanted  # a transcript or summary nobody ticked for is not a step of this run
     done = len(downloaded) + sum(1 for i in transcribed + summarised if i.get("transcribe"))
@@ -302,9 +297,12 @@ def status(course):
                       f"Recordings  {_bar(done, steps)}  "
                       f"{len(downloaded)} of {len(recs)} downloaded, {len(transcribed)} transcribed, "
                       f"{len(summarised)} summarised"]
+    if now:
+        rows.append(f"Transcribing one now: started {now['started']}, about {plural(now['minutes_left'], 'minute')} left")
     width = max(len(row) for row in rows) + 2
     box = "\n".join(["+" + "-" * width + "+"] + [f"| {row.ljust(width - 2)} |" for row in rows]
                     + ["+" + "-" * width + "+"])
+    (course.root / PROGRESS_FILE).write_text(box + "\n", "utf-8")
     return {"documents": {"done": docs_done, "total": len(docs)},
             "recordings": {"downloaded": len(downloaded), "transcribed": len(transcribed),
                            "summarised": len(summarised), "total": len(recs)},

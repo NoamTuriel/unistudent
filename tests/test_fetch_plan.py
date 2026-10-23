@@ -238,6 +238,8 @@ class FetchPlanStatus(CourseTestCase):
         self.assertIn("2 of 2", box)
         self.assertTrue(box.startswith("+") and box.rstrip().endswith("+"))
         self.assertEqual(len({len(line) for line in box.splitlines()}), 1)  # a closed box
+        # Also kept in the course folder, so it reaches the student even when nobody pastes it.
+        self.assertEqual((self.course / "progress.txt").read_text("utf-8"), box + "\n")
 
     def test_the_time_left_is_rough_until_the_machine_is_benchmarked(self):
         self.assertIn("rough", run_json("fetch-plan", "status", "--course", self.course)["box"].lower())
@@ -346,6 +348,28 @@ class StatusWithoutASite(CourseTestCase):
             run_json("recordings", "transcribe", "--course", course, recording)  # no longer waiting: not "wanted"
         box = run_json("fetch-plan", "status", "--course", course)["box"]
         self.assertIn("Recordings  [" + "#" * 20 + "]  1 of 1", box)  # full, and no wider than the other bar
+
+
+class TimeLeftFromRealSpeed(CourseTestCase):
+    """The time left follows how fast this machine really transcribed, not an old benchmark."""
+
+    def test_a_finished_transcript_replaces_the_old_benchmark_in_the_time_left(self):
+        own = self.tmp / "own"
+        write(own / "Lesson 1 2026-07-01.mp4", b"\x01" * 4096)
+        write(own / "Lesson 2 2026-07-08.mp4", b"\x02" * 4096)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--university", "none",
+            "--import", own, "--tier", "official")
+        write(self.home / "benchmark.json", json.dumps({"backend": "fake", "realtime_factor": 0.25}))
+        lessons = [r["path"] for r in run_json("recordings", "list", "--course", course)["recordings"]]
+        with mock.patch("unistudent.recordings.duration", return_value=3600.0), \
+                mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "approve", "--course", course, *lessons)
+            self.assertEqual(run_json("fetch-plan", "status", "--course", course)["hours"], 0.5)  # 2 h at 0.25
+            run_json("recordings", "transcribe", "--course", course, lessons[0])  # far faster than 0.25
+            status = run_json("fetch-plan", "status", "--course", course)
+        self.assertEqual(status["hours"], 0.0)
+        self.assertFalse(status["rough"])
 
 
 class ImportDryRun(CourseTestCase):

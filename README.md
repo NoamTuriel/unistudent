@@ -132,6 +132,7 @@ You see two folders at setup, and a third once you ask for a study pack. They ar
   AGENTS.md / CLAUDE.md          course context: grounding rules, exam facts, other courses
   README.md                      how it works, for the student
   course-preferences.md
+  progress.txt                   during a long run (downloads, transcripts): how far it got, and the time left
   1-inbox/                       drop new material here; it is moved out once it's added
   2-course-material/             the real files: official/ and added/, then by unit
   3-<course>-study-from-here/    your Study vault: appears with your first study pack; study packs and a recordings roadmap per unit

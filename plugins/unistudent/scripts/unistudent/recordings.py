@@ -210,6 +210,7 @@ def transcribe_audio(audio: Path, name: str, language: str):
     """[(start, end, text)] from the chosen backend."""
     model = model_for(name, language)
     if name == "fake":
+        time.sleep(float(os.environ.get("UNISTUDENT_FAKE_STT_SECONDS", 0)))
         return [(t, t + 20, f"segment at {hms(t)}") for t in range(0, 150, 20)]
     if name == "mlx":
         import mlx_whisper
@@ -242,9 +243,53 @@ def benchmark(course, rel):
         transcribe_audio(audio, name, course.settings().get("language"))
         spent = time.monotonic() - began
     factor = spent / SAMPLE_SECONDS
-    _benchmark_file().parent.mkdir(parents=True, exist_ok=True)
-    _benchmark_file().write_text(json.dumps({"backend": name, "realtime_factor": factor}), "utf-8")
+    _save_speeds({**_speeds(), "backend": name, "realtime_factor": factor})
     return factor
+
+
+ROUGH_REALTIME_FACTOR = {"mlx": 0.15, "faster": 0.5}  # hours of work per hour of audio, before anything is measured
+
+
+def _speeds():
+    try:
+        return json.loads(_benchmark_file().read_text("utf-8"))
+    except (FileNotFoundError, ValueError):
+        return {}
+
+
+def _save_speeds(data):
+    _benchmark_file().parent.mkdir(parents=True, exist_ok=True)
+    _benchmark_file().write_text(json.dumps(data), "utf-8")
+
+
+def realtime_factor(course):
+    """(hours of work per hour of audio, measured?): from the transcripts this machine finished with this model, else
+    the one-minute benchmark, else a rough guess."""
+    name = backend_name()
+    data = _speeds()
+    done = data.get("transcripts", {}).get(model_for(name, course.settings().get("language")))
+    if done and done["audio"]:
+        return done["spent"] / done["audio"], True
+    if data.get("realtime_factor") is not None:
+        return data["realtime_factor"], True
+    return ROUGH_REALTIME_FACTOR.get(name, 0.5), False
+
+
+def _running_file(course):
+    return course.state / "transcribing.json"
+
+
+def transcribing(course):
+    """The recording being transcribed right now: {path, started (HH:MM), minutes_left, elapsed}, or None."""
+    try:
+        job = json.loads(_running_file(course).read_text("utf-8"))
+    except (FileNotFoundError, ValueError):
+        return None
+    elapsed = time.time() - job["started"]
+    if elapsed > max(2 * job["expected"], 3600):  # ponytail: a job killed hard (a restart) leaves its file; stale by time
+        return None
+    return {"path": job["path"], "started": time.strftime("%H:%M", time.localtime(job["started"])),
+            "minutes_left": max(0, round((job["expected"] - elapsed) / 60)), "elapsed": elapsed}
 
 
 DATE = re.compile(r"(\d{4})-(\d{2})-(\d{2})|(\d{1,2})[./](\d{1,2})[./](\d{4})")
@@ -269,6 +314,7 @@ def listing(course, unit=None):
     rows = []
     pages = recording_pages(course)
     files, source_pages = course.manifest()["files"], course.read_state("wiki.json", {})
+    now = transcribing(course)
     for rel in oldest_first(course, pages):
         info = pages[rel]
         if unit is not None and unit_dir(info["unit"]) != unit_dir(unit):
@@ -279,6 +325,7 @@ def listing(course, unit=None):
                        for a, entry in files.items() if site and entry.get("attached_to") == site]
         rows.append({"path": rel, "unit": info["unit"], "processed": info["processed"],
                      "has_transcript": (course.wiki / info["folder"] / "transcript.md").exists(),
+                     "transcribing": (now or {}).get("path") == rel,
                      "wiki_folder": info["folder"], "seconds": recording_seconds(course, rel),
                      "bytes": path.stat().st_size if path.exists() else None, "attachments": attachments})
     return rows
@@ -289,10 +336,8 @@ def estimate(course, unit=None):
     seconds = sum(r["seconds"] or 0 for r in rows)
     unknown = sum(1 for r in rows if r["seconds"] is None)
     size = sum(r["bytes"] or 0 for r in rows)
-    try:
-        factor = json.loads(_benchmark_file().read_text("utf-8"))["realtime_factor"]
-    except (FileNotFoundError, KeyError, ValueError):
-        factor = None
+    factor, measured = realtime_factor(course)
+    factor = factor if measured else None
     name = backend_name()
     # One vision call per ~PARAGRAPH_SECONDS segment (toc.md's row spacing): a separate,
     # explicit opt-in (ticket 04), never triggered just because a video-analysis tool is installed.
@@ -358,19 +403,44 @@ def transcribe(course, rel):
     if not backend_available(name):
         raise RuntimeError(install_hint(name))
     source = material.path_of(course, rel)
-    with tempfile.TemporaryDirectory() as tmp:
-        audio = Path(tmp) / "audio.wav"
-        if name == "fake":
-            audio.write_bytes(b"")
-        else:
-            extract_audio(source, audio)
-        segments = transcribe_audio(audio, name, course.settings().get("language"))
+    seconds = recording_seconds(course, rel)
+    _running_file(course).write_text(json.dumps({"path": rel, "started": time.time(),
+                                                 "expected": (seconds or 0) * realtime_factor(course)[0]}), "utf-8")
+    _write_progress(course)
+    began = time.monotonic()
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = Path(tmp) / "audio.wav"
+            if name == "fake":
+                audio.write_bytes(b"")
+            else:
+                extract_audio(source, audio)
+            segments = transcribe_audio(audio, name, course.settings().get("language"))
+    finally:
+        _running_file(course).unlink()
+    if seconds:  # the time estimates follow this machine's real speed from now on
+        data = _speeds()
+        done = data.setdefault("transcripts", {}).setdefault(model_for(name, course.settings().get("language")),
+                                                             {"audio": 0, "spent": 0})
+        done["audio"] += seconds
+        done["spent"] += time.monotonic() - began
+        _save_speeds(data)
     quiet = silences(source)  # Whisper invents text over a silent break ("Thank you." again and again): drop it
     segments = [s for s in segments if not any(a <= s[0] and s[1] <= b for a, b in quiet)]  # wholly inside only
     path = write_transcript(course, rel, segments, name)
     left = [r for r in approved(course) if r != rel]
     _approved_file(course).write_text(json.dumps(left, ensure_ascii=False), "utf-8")
+    _write_progress(course)
     return path
+
+
+def _write_progress(course):
+    """Refresh the progress box file in the course folder, so the student sees it even when nobody pastes it."""
+    from .fetch_plan import status
+    try:
+        status(course)
+    except (OSError, ValueError, KeyError):
+        pass  # the box is a courtesy: never let it stop a transcription
 
 
 def audio_only_fetch(course):

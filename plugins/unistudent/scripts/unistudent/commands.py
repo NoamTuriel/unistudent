@@ -385,9 +385,13 @@ def register(add, with_course):
         course = resolve_course(args)
         if args.action == "list":
             rows = recordings.listing(course, args.unit)
-            return {"recordings": rows, "summary": "\n".join(
-                f"{'done' if r['processed'] else ('partial' if r['has_transcript'] else 'none')}  {r['path']}" for r in rows)
-                or "No recordings."}
+            now = recordings.transcribing(course)
+            for r in rows:
+                r["state"] = ("done" if r["processed"] else "partial" if r["has_transcript"] else
+                              f"transcribing (started {now['started']}, about {now['minutes_left']} min left)"
+                              if r["transcribing"] else "none")
+            return {"recordings": rows, "summary": "\n".join(f"{r['state']}  {r['path']}" for r in rows)
+                    or "No recordings."}
         if args.action == "estimate":
             est = recordings.estimate(course, args.unit)
             timing = (f"about {est['estimated_hours']} h on this machine" if est["estimated_hours"] is not None
