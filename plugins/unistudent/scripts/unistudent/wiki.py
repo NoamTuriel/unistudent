@@ -17,7 +17,7 @@ from urllib.request import url2pathname
 from . import material
 from .common import problems_summary
 from .convert import convert, kind, picture_files
-from .course import LABELS, safe_name, unit_dir
+from .course import safe_name, unit_dir
 from .links_check import MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources
 
 GEN_START = "<!-- unistudent:generated:start -->"
@@ -648,7 +648,7 @@ def relink_vault(course):
             if parsed.scheme != "file" or local.exists():
                 return match.group(0)
             parts = local.parts  # a moved course folder: the same place under the Material folder now
-            names = {course.material.name, *(t["material"] for t in LABELS.values())}
+            names = {course.material.name, *(t["material"] for t in course.label_tables() if "material" in t)}
             for i, part in enumerate(parts):
                 if part in names and (course.material / Path(*parts[i + 1:])).exists():
                     return _link(label, (course.material / Path(*parts[i + 1:])).as_uri() + (("#" + anchor) if anchor else ""))
@@ -665,7 +665,7 @@ def relink_vault(course):
 def _remove_stale_roadmaps(course, written):
     """A roadmap whose recordings are gone, or lost their summaries, is removed (what the student added around the
     generated block stays)."""
-    names = {table["roadmap"] + ".md" for table in LABELS.values()}
+    names = {table["roadmap"] + ".md" for table in course.label_tables() if "roadmap" in table}
     keep = {course.root / w for w in written}
     for page in sorted(course.study.rglob("*.md")) if course.study.is_dir() else []:
         if page.name not in names or page in keep:

@@ -8,13 +8,14 @@ import argparse
 import json
 import os
 import re
+import string
 import sys
 from pathlib import Path
 
 from . import material
 from .common import UserError, resolve_course
 from .links_check import MD_LINK
-from .course import Course, Registry, find_course, general_preferences_file, safe_name
+from .course import LABELS, Course, Registry, find_course, general_preferences_file, safe_name
 from .recordings import is_synced_folder, recordings_root
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
@@ -93,7 +94,45 @@ def refresh_other_contexts(course: Course):
             write_context_files(other)
 
 
+def translatable_labels():
+    """Every label UniStudent writes, in English: the folder and page names (LABELS) and the Before-the-test page's
+    wording (`test_` keys). Setup has the AI translate them once for a language with no built-in table."""
+    from .before_test import TEXT
+    return {**LABELS["en"], **{f"test_{k}": v for k, v in TEXT["en"].items()}}
+
+
+def parse_labels(text):
+    """The student's labels from `us setup --labels`: known keys, the English value's {placeholders} kept, and names
+    that are valid file names. Raises ValueError, so nothing is saved."""
+    try:
+        labels = json.loads(text)
+    except ValueError:
+        labels = None
+    if not isinstance(labels, dict):
+        raise ValueError('--labels must be a JSON object of label: translation, e.g. {"inbox": "1-boite"}.')
+    english = translatable_labels()
+    fields = lambda value: {f for _, f, _, _ in string.Formatter().parse(value) if f}
+    for key, value in labels.items():
+        if key not in english:
+            raise ValueError(f"Unknown label {key!r}: the labels are those `us labels` prints.")
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"The label {key!r} needs a text.")
+        if fields(value) != fields(english[key]):
+            raise ValueError(f"The label {key!r} must keep {sorted(fields(english[key]))} exactly, as in {english[key]!r}.")
+        if key in LABELS["en"] and safe_name(value) != value:
+            raise ValueError(f'The label {key!r} names a folder or file: leave out \\ / : * ? " < > | # ^ [ ].')
+    return labels
+
+
 # --- commands ---------------------------------------------------------------
+
+def cmd_labels(args):
+    table = translatable_labels()
+    return {"labels": table,
+            "summary": "Translate each value into the course language once (keep every {placeholder} as it is), show "
+                       "the student, then pass the JSON object with `us setup --labels`.\n"
+                       + "\n".join(f"{k}: {v}" for k, v in table.items())}
+
 
 def cmd_setup(args):
     course = Course(args.path)
@@ -103,6 +142,9 @@ def cmd_setup(args):
         raise UserError("Say which language the course is in: --language he, en, or another language code.")
     before = course.settings() if course.exists() else None
     settings = course.settings()
+    labels = parse_labels(args.labels) if args.labels else None
+    if labels is not None or (args.language and args.language != settings["language"]):
+        settings["labels"] = labels or {}  # another language's labels never carry over
     settings.update({k: v for k, v in {
         "course_name": args.name or settings["course_name"] or course.root.name,
         "language": args.language,
@@ -114,7 +156,7 @@ def cmd_setup(args):
         settings["recordings_dir"] = str(recordings_root() / safe_name(settings["course_name"]))
     course.save_settings(settings)
     try:
-        renamed = course.ensure_layout()
+        renamed = course.ensure_layout(before and before.get("labels"))
     except UserError:
         if before is not None:
             course.save_settings(before)  # the choice that couldn't be carried out is not remembered
@@ -236,11 +278,15 @@ def build_parser():
     p = add("setup", cmd_setup, "create or update a course folder")
     p.add_argument("path")
     p.add_argument("--name")
-    p.add_argument("--language")
+    p.add_argument("--language", help="the course language (he, en, or another code); required for a new course")
+    p.add_argument("--labels", help="JSON object: the labels `us labels` prints, translated into a course language "
+                                    "that has no built-in table")
     p.add_argument("--format", choices=["obsidian", "markdown"])
     p.add_argument("--university")
     p.add_argument("--import", dest="import_dir")
     p.add_argument("--tier", choices=["official", "added"], default="added")
+
+    add("labels", cmd_labels, "the folder, page and label names in English, for translating into a new course language")
 
     p = with_course(add("import", cmd_import, "copy a folder's files into the Material folder (the originals stay where they are)"))
     p.add_argument("folder")

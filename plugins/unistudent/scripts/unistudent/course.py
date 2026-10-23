@@ -11,8 +11,9 @@ MANIFEST_LOCK_STALE = 120  # seconds; the lock is held only while the Manifest i
 
 LAYOUT = 2
 
-# The visible folder names and the labels inside them, one table per language (ADR 0007). A new language is one
-# more entry; a language with no entry falls back to English. The Hidden folder keeps English names.
+# The visible folder names and the labels inside them, one table per language (ADR 0007): the built-in ones. Any other
+# language gets its table translated once at setup and kept in the Settings (`labels`, see `Course.labels`); a key it
+# lacks falls back to English. The Hidden folder keeps English names.
 LABELS = {
     "he": {"inbox": "1-קבצים-חדשים", "material": "2-חומרי-הקורס", "study": "3-{course}-ללמוד-מכאן",
            "official": "חומר-רשמי-של-הקורס", "added": "חומר-לא-רשמי", "unit": "יחידה {n}",
@@ -40,6 +41,7 @@ DEFAULT_SETTINGS = {
     "exam_date": None,
     "layout": 1,                   # 2 once the course folder has the three visible folders (LAYOUT)
     "folders": {},                 # the visible folder names chosen at setup: inbox, material, study
+    "labels": {},                  # a language with no built-in LABELS table: its labels, translated once at setup
 }
 
 
@@ -66,14 +68,16 @@ def parse_unit(value):
     return number
 
 
-def parse_tier_folder(name):
-    """"official" or "added" when `name` is a trust-level folder in any language, else None."""
-    return next((t for table in (*LABELS.values(), *OLD_LABELS) for t in ("official", "added") if name == table[t]), None)
+def parse_tier_folder(name, tables):
+    """"official" or "added" when `name` is a trust-level folder in any of `tables` (a course's `label_tables()`),
+    else None."""
+    return next((t for table in tables for t in ("official", "added") if name == table[t]), None)
 
 
-def parse_unit_folder(name):
-    """(True, unit) when `name` is a unit folder in any language: a number, "general", "lessons" or None (unsorted)."""
-    for table in (*LABELS.values(), *OLD_LABELS):
+def parse_unit_folder(name, tables):
+    """(True, unit) when `name` is a unit folder in any of `tables` (a course's `label_tables()`): a number,
+    "general", "lessons" or None (unsorted)."""
+    for table in tables:
         if name == table["general"]:
             return True, "general"
         if name == table.get("lessons"):  # the pre-0.5.0 names had no lessons folder
@@ -131,7 +135,7 @@ class Course:
     def folder_names(self, language=None, course_name=None):
         """The three visible folder names: the stored ones, or those the labels table gives."""
         settings = self.settings()
-        table = LABELS.get(language or settings["language"], LABELS["en"])
+        table = self.labels()
         name = safe_name(course_name or settings["course_name"] or self.root.name)
         computed = {k: table[k].format(course=name) for k in ("inbox", "material", "study")}
         return computed if language else {**computed, **settings.get("folders", {})}
@@ -151,10 +155,11 @@ class Course:
     def inbox(self):
         return self._folder("inbox")
 
-    def ensure_layout(self):
+    def ensure_layout(self, old_labels=None):
         """Create the Inbox and the Material folder in the settings' language (the Study vault only appears at the first
         Study pack, ADR 0008), renaming existing ones (and the trust-level and unit folders inside them) when it changed. Returns True when something was renamed. A rename that can't be done
-        stops everything before anything changes: the Settings never say a folder has a name it doesn't have."""
+        stops everything before anything changes: the Settings never say a folder has a name it doesn't have. `old_labels`:
+        the course's own labels before a language change, so folders named by them are recognized and renamed too."""
         from .common import UserError
         settings = self.settings()
         wanted = self.folder_names(settings["language"])
@@ -179,10 +184,12 @@ class Course:
         self.save_settings(settings)
         for key in ("inbox", "material"):
             (self.root / wanted[key]).mkdir(parents=True, exist_ok=True)
-        inner = self._rename_inner(self.material, tiers=True) | (self.study.is_dir() and self._rename_inner(self.study))
+        tables = (*self.label_tables(), *([{**LABELS["en"], **old_labels}] if old_labels else []))
+        inner = self._rename_inner(self.material, tables, tiers=True) | (self.study.is_dir()
+                                                                          and self._rename_inner(self.study, tables))
         return bool(renames) or inner
 
-    def _rename_inner(self, base, tiers=False):
+    def _rename_inner(self, base, tables, tiers=False):
         """Trust-level and unit folders inside `base` take the course language's names. Returns whether any changed."""
         def rename(folder, name):
             if folder.name == name or (folder.parent / name).exists():
@@ -191,7 +198,7 @@ class Course:
 
         changed = False
         for folder in sorted(p for p in base.iterdir() if p.is_dir()):
-            tier = parse_tier_folder(folder.name) if tiers else None
+            tier = parse_tier_folder(folder.name, tables) if tiers else None
             if tiers and not tier:
                 continue
             if tier:
@@ -201,7 +208,7 @@ class Course:
             else:
                 children = [folder]
             for child in children:
-                known, unit = parse_unit_folder(child.name)
+                known, unit = parse_unit_folder(child.name, tables)
                 if known:
                     changed |= rename(child, self.unit_folder(unit))[1]
         return changed
@@ -276,8 +283,18 @@ class Course:
     def write_state(self, name, data):
         _write_json(self.state / name, data)
 
+    def labels(self):
+        """This course's label table: the student's own (Settings `labels`, translated at setup for a language with no
+        built-in table) over the built-in table of the course language, English for any key missing."""
+        settings = self.settings()
+        return {**LABELS["en"], **LABELS.get(settings["language"], {}), **settings.get("labels", {})}
+
+    def label_tables(self):
+        """Every table a folder name of this course may come from: the built-in ones, the older names, and its own."""
+        return (*LABELS.values(), *OLD_LABELS, self.labels())
+
     def label(self, key, **kw):
-        return LABELS.get(self.settings()["language"], LABELS["en"])[key].format(**kw)
+        return self.labels()[key].format(**kw)
 
     def unit_folder(self, unit):
         """Folder name for a unit (in the Material folder and the Study vault), in the course language."""

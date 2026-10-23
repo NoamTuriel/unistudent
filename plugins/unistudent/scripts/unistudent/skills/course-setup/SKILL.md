@@ -56,9 +56,9 @@ Done when: you have the course name, and `university` and `course` are recorded.
 
 ## 3. Language
 
-Ask which language the course folder should speak. Say why in a sentence: it names the folders you'll see, and the units and trust-level folders inside them, in your language; it's also the language of the Wiki's notes, of the answers, and the one recordings are transcribed in. Offer Hebrew and English (recommend the language the course is taught in), or another language they name. Hebrew and English have ready-made folder names; for any other language the folder names are English and everything else still follows their language. Say that plainly, and don't promise translated folder names. Record it: `us setup-progress advance --course-name "<course>" --stage language --answer language=<he|en|other code>`.
+Ask which language the course folder should speak. Say why in a sentence: it names the folders you'll see, and the units and trust-level folders inside them, in your language; it's also the language of the Wiki's notes, of the answers, and the one recordings are transcribed in. Offer Hebrew and English (recommend the language the course is taught in), or another language they name. Hebrew and English have ready-made folder and page names. For any other language, translate them once: run `us labels`, translate every value into their language (keep each `{n}`, `{course}` and other `{...}` exactly as it is), show the student the folder names in a short list, and change any they ask for. Record it: `us setup-progress advance --course-name "<course>" --stage language --answer language=<he|en|other code> [--answer labels=<the translated JSON object>]`.
 
-Done when: you have a language code and the student knows what it changes, and `language` is recorded.
+Done when: you have a language code and the student knows what it changes, a language other than Hebrew or English has its translated labels, which the student saw, and `language` is recorded.
 
 ## 4. Where to keep it, and how you'll read it
 
@@ -121,7 +121,7 @@ Done when: each of the three questions was asked on its own with what it gives, 
 
 No more questions about the course after this. First create the course folder, so every install can write into it:
 
-1. Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <language> [--university <plugin, or none>]`. Its result names the three folders (`inbox`, `material`, `study`). Tell the student where the **inbox** is, and that new files go in there later.
+1. Run `us setup "<folder>" --name "<course>" --format <obsidian|markdown> --language <language> [--labels '<the translated labels, for a language other than Hebrew or English>'] [--university <plugin, or none>]`. Its result names the three folders (`inbox`, `material`, `study`). Tell the student where the **inbox** is, and that new files go in there later.
 2. Apply the stored answers: `us context --recording-level <3 if transcribe, else 1> --frame-analysis <1|0> --keep-video <1|0> [--exam-date <date>]`.
 3. Their own folder (step 5): run `us import --dry-run "<own folder>" --tier <official|added>` and say its one-line `summary` (how many files and how much will be copied). Nothing is copied yet.
 
