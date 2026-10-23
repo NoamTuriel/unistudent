@@ -1,5 +1,6 @@
 """Commands for the Wiki, the inbox, checks, preferences, study packs, recordings and the course site."""
 import datetime
+import hashlib
 import re
 from pathlib import Path
 
@@ -260,9 +261,16 @@ def register(add, with_course):
         current = {info["page"]: info.get("fingerprint")
                    for info in course.read_state("wiki.json", {}).values()
                    if info["page"].startswith((f"sources/{folder}/", "sources/general/"))}  # past exams hold its questions too
-        for rel, info in wiki.recording_pages(course).items():
-            if unit_dir(info["unit"]) == folder and info["processed"]:
-                current[info["folder"] + "/summary.md"] = "processed"  # a key, kept as built packs recorded it
+        digest = lambda text: hashlib.sha1(text.encode("utf-8")).hexdigest()
+        for rel, info in wiki.covering(course, folder, wiki.recording_pages(course)).items():  # its own, and lessons
+            for page in (wiki.summary_file(course, info["folder"]), course.wiki / info["folder"] / "toc.md"):
+                if page.is_file():
+                    current[f"{info['folder']}/{wiki.SUMMARY if page.name == 'summary.md' else page.name}"] = \
+                        digest(page.read_text("utf-8"))
+        bank = course.wiki / "question-bank.md"
+        questions = [e for e in wiki.entries(bank.read_text("utf-8") if bank.is_file() else "") if wiki.tagged(e, folder)]
+        if questions:
+            current["question-bank.md"] = digest("\n\n".join(questions))  # the unit's entries only
         packs = course.read_state("studypacks.json", {})
         pack = str(course.pack_folder(args.unit))
         if args.action == "mark-built":
@@ -284,6 +292,9 @@ def register(add, with_course):
                     "lessons_without_roadmap": lessons_without_roadmap, "new": [], "changed": [], "removed": [],
                     "summary": f"No study pack recorded for {folder}."}
         old = base["sources"]
+        legacy = {k.rsplit("/", 1)[0] for k, v in old.items() if v == "processed"}  # a pack built before summaries
+        old = {**{k: v for k, v in old.items() if v != "processed"},  # were fingerprinted: its recordings count as seen
+               **{k: v for k, v in current.items() if k.rsplit("/", 1)[0] in legacy}}
         result = {
             "has_study_pack": True, "pack_folder": pack, "built": base["built"], "pages_present": pages_present,
             "lessons_without_roadmap": lessons_without_roadmap,
