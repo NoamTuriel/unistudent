@@ -426,8 +426,8 @@ def list_generated() -> list:
     return out
 
 
-# The question block (university .. installs), the Fetch plan (plan), the unattended run (run), then capabilities.
-SETUP_STAGES = ["university", "course", "language", "path", "format", "material", "recordings", "installs", "plan",
+# The question block (language .. installs), the Fetch plan (plan), the unattended run (run), then capabilities.
+SETUP_STAGES = ["language", "university", "course", "path", "format", "material", "recordings", "installs", "plan",
                 "run", "capabilities"]
 # Stages recorded by older versions, read as the new stage they finished: fetch-and-organize was one step for fetch,
 # sort and the recordings question; fetch and sort brought the material in; analyze built the Wiki (the run's end).

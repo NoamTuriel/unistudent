@@ -9,7 +9,7 @@ class SetupProgress(CourseTestCase):
     def test_a_fresh_course_has_no_progress(self):
         status = run_json("setup-progress", "status", "--course-name", "Macro")
         self.assertIsNone(status["stage"])
-        self.assertEqual(status["next_stage"], "university")
+        self.assertEqual(status["next_stage"], "language")
 
     def test_each_stage_resumes_at_the_next_one_with_answers_intact(self):
         stages_and_answers = [
@@ -43,7 +43,7 @@ class SetupProgress(CourseTestCase):
         while order[-1] != "capabilities" and len(order) < 20:  # the last stage clears progress, so stop before it
             run_json("setup-progress", "advance", "--course-name", "Macro", "--stage", order[-1])
             order.append(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"])
-        self.assertEqual(order, ["university", "course", "language", "path", "format", "material", "recordings",
+        self.assertEqual(order, ["language", "university", "course", "path", "format", "material", "recordings",
                                  "installs", "plan", "run", "capabilities"])
 
     def test_a_setup_started_on_an_older_version_resumes_at_the_matching_new_stage(self):
