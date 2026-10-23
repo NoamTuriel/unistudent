@@ -1,7 +1,10 @@
 """Coverage (ticket 13): the Wiki says which files it read, which it couldn't, and which were skipped."""
+import base64
 import shutil
-from pathlib import Path
+import tempfile
 import unittest
+import zipfile
+from pathlib import Path
 from unittest import mock
 
 from helpers import CourseTestCase, can_read_pdfs, folders, make_pdf, run, run_json, write
@@ -215,6 +218,70 @@ class UprightPages(CourseTestCase):
         self.assertIn("1 page", out)
 
 
+PNG = base64.b64decode("iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mP8z8BQDwAEhQGAhKmMIQAAAABJRU5ErkJggg==")
+
+
+def make_docx(path, body=()):
+    """A Word file with a logo in its header and the pictures named in `body` (a question's graph: image1.png; an
+    old-style formula: image3.wmf) in its body."""
+    image = 'Type="http://schemas.openxmlformats.org/officeDocument/2006/relationships/image"'
+    path.parent.mkdir(parents=True, exist_ok=True)
+    with zipfile.ZipFile(path, "w") as docx:
+        docx.writestr("[Content_Types].xml", "<Types/>")
+        docx.writestr("word/document.xml", "<w:document/>")
+        docx.writestr("word/_rels/document.xml.rels", "<Relationships>" + "".join(
+            f'<Relationship Id="rId{n}" {image} Target="media/{name}"/>' for n, name in enumerate(body, 5)) + "</Relationships>")
+        docx.writestr("word/_rels/header1.xml.rels", f'<Relationships><Relationship Id="rId1" {image} Target="media/image2.png"/></Relationships>')
+        for name in {*body, "image2.png"}:
+            docx.writestr("word/media/" + name, PNG)
+
+
+class WordPictures(CourseTestCase):
+    """A picture in a Word file (a question's graph) is read visually, not lost (a header's logo is not read)."""
+
+    def build(self, body, **patches):
+        own = self.tmp / "own" / "Unit 1"
+        make_docx(own / "exam.docx", body)
+        make_docx(own / "notes.docx")
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", self.tmp / "own", "--tier", "official")
+        with mock.patch.multiple("unistudent.convert", **patches):
+            return run_json("wiki", "build", "--course", course)
+
+    def without_libreoffice(self, body):
+        return self.build(body, _soffice=mock.Mock(return_value=None), _markitdown=mock.Mock(
+            return_value=Conversion(["Question 1: answer from the graph below, in full sentences."], "markitdown")))
+
+    def with_libreoffice(self, body):
+        def via_pdf(path):  # LibreOffice's PDF of the Word file: the picture landed on page 2
+            pages = ["Question 1: define the multiplier in one sentence.", "Question 2: read the graph below.",
+                     "Question 3: explain the result in one paragraph."]
+            view = make_pdf(Path(tempfile.mkdtemp()) / (path.stem + ".pdf"), pages, pictures=[2])
+            return Conversion(pages, "soffice+pdftotext", view=view)
+
+        return self.build(body, _soffice=mock.Mock(return_value="soffice"), _via_pdf=via_pdf)["needs_visual"]
+
+    def test_without_libreoffice_the_pictures_are_saved_for_the_source_reader(self):
+        [item] = self.without_libreoffice(["image1.png"])["needs_visual"]
+        self.assertEqual((item["source"], item["pages"]), ("official/Unit 1/exam.docx", [1]))
+        self.assertEqual([Path(p).name for p in item["pictures"]], ["page-1-1.png"])
+        self.assertEqual(Path(item["pictures"][0]).read_bytes(), PNG)
+
+    def test_without_libreoffice_a_windows_metafile_is_named_not_handed_over(self):  # Read can't open one
+        built = self.without_libreoffice(["image3.wmf"])
+        self.assertEqual(built["needs_visual"], [])
+        self.assertTrue(any("exam.docx" in w and "LibreOffice" in w for w in built["warnings"]), built["warnings"])
+
+    @unittest.skipUnless(shutil.which("pdfimages") or pypdf, "no tool to find a PDF's pictures (pdfimages or pypdf)")
+    def test_with_libreoffice_the_pages_showing_a_picture_are_read(self):
+        [item] = self.with_libreoffice(["image1.png"])
+        self.assertEqual((item["source"], item["pages"]), ("official/Unit 1/exam.docx", [2]))
+
+    def test_with_libreoffice_a_windows_metafile_means_every_page_is_read(self):  # drawn as lines: no picture to find
+        [item] = self.with_libreoffice(["image3.wmf"])
+        self.assertEqual(item["pages"], [1, 2, 3])
+
+
 try:
     import pptx  # optional: the slides' pictures are only extracted when python-pptx is installed
 except ImportError:
@@ -239,7 +306,7 @@ class SlidePictures(CourseTestCase):
         with mock.patch("unistudent.convert._soffice", return_value=None):
             [item] = run_json("wiki", "build", "--course", course)["needs_visual"]
         self.assertEqual(item["pages"], [2])
-        self.assertEqual([p.rsplit("/", 1)[-1] for p in item["pictures"]], ["slide-2-1.png"])
+        self.assertEqual([p.rsplit("/", 1)[-1] for p in item["pictures"]], ["page-2-1.png"])
 
 
 @unittest.skipUnless(convert._soffice(), "LibreOffice not installed")

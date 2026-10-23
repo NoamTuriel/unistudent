@@ -11,6 +11,7 @@ import subprocess
 import tempfile
 import unicodedata
 import warnings
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -31,14 +32,14 @@ class Conversion:
     pages: list
     method: str
     warnings: list = field(default_factory=list)
-    picture_pages: list = field(default_factory=list)  # slides whose picture (often a graph) has no text
+    picture_pages: list = field(default_factory=list)  # pages with a picture (often a graph) that has no text
     view: Path = None  # LibreOffice's PDF of an Office file, kept so a worker can look at a page (Read can't open .pptx)
 
     @property
     def empty_pages(self):
-        """The pages to read visually: no text layer, or a slide with a picture."""
+        """The pages to read visually: no text layer, or a picture (a slide's, a Word file's)."""
         if self.method in NOT_PAGED:  # a short text file is not a page with a missing text layer
-            return []
+            return sorted(self.picture_pages)
         return sorted({i + 1 for i, text in enumerate(self.pages) if len(text.strip()) < EMPTY_PAGE_CHARS}
                       | set(self.picture_pages))
 
@@ -136,27 +137,60 @@ def _pptx_text(path: Path) -> Conversion:
     return Conversion(slides, "python-pptx")
 
 
+METAFILES = {"wmf", "emf"}  # Windows metafiles (an old Word file's formulas, mostly): only LibreOffice draws them
+
+
+def _word_pictures(path) -> list:
+    """[(extension, bytes)] of the pictures in a .docx's body (word/media; a header's logo is left out)."""
+    try:
+        with zipfile.ZipFile(path) as docx:
+            rels = docx.read("word/_rels/document.xml.rels").decode("utf-8", "replace")
+            return [(Path(name).suffix.lstrip(".").lower(), docx.read("word/" + name))
+                    for name in re.findall(r'Target="[^"]*?(media/[^"]+)"', rels)]
+    except (KeyError, OSError, zipfile.BadZipFile):
+        return []
+
+
 def _pictures(path) -> dict:
-    """{slide number: its pictures} of a .pptx; empty without python-pptx."""
-    if Path(path).suffix.lower() != ".pptx":
+    """{page: [(extension, bytes)]}: a .pptx's pictures by slide (needs python-pptx), a .docx's all on page 1 (a Word
+    file has no pages of its own)."""
+    suffix = Path(path).suffix.lower()
+    if suffix == ".docx":
+        found = [picture for picture in _word_pictures(path) if picture[0] not in METAFILES]  # Read can't open those
+        return {1: found} if found else {}
+    if suffix != ".pptx":
         return {}
     try:
         from pptx import Presentation
         from pptx.enum.shapes import MSO_SHAPE_TYPE
     except ImportError:
         return {}
-    return {number: pictures for number, slide in enumerate(Presentation(str(path)).slides, 1)  # ponytail: top-level
-            if (pictures := [s for s in slide.shapes if s.shape_type == MSO_SHAPE_TYPE.PICTURE])}  # pictures only
+    return {number: [(s.image.ext, s.image.blob) for s in pictures]  # ponytail: top-level pictures only
+            for number, slide in enumerate(Presentation(str(path)).slides, 1)
+            if (pictures := [s for s in slide.shapes if s.shape_type == MSO_SHAPE_TYPE.PICTURE])}
 
 
-def slide_pictures(path, pages, folder) -> list:
-    """The pictures on these slides of a .pptx, saved as image files a worker can open (Read can't open a .pptx)."""
+def _pages_with_pictures(pdf, count) -> list:
+    """The pages of a PDF that show a picture: poppler's pdfimages, else pypdf, else every page."""
+    if shutil.which("pdfimages"):
+        rows = subprocess.run(["pdfimages", "-list", str(pdf)], capture_output=True, text=True).stdout.splitlines()
+        return sorted({int(row.split()[0]) for row in rows[2:] if row.split() and row.split()[0].isdigit()})
+    try:
+        from pypdf import PdfReader
+        return [n for n, page in enumerate(PdfReader(str(pdf)).pages, 1) if page.images]
+    except Exception:  # no pypdf, or a picture it can't open
+        return list(range(1, count + 1))
+
+
+def picture_files(path, pages, folder) -> list:
+    """The pictures on these pages of a .pptx or .docx, saved as image files a worker can open (Read can't open
+    either), named page-<page>-<n>."""
     found, out = _pictures(path), []
     for number in pages:
-        for k, shape in enumerate(found.get(number, []), 1):
-            target = Path(folder) / f"slide-{number}-{k}.{shape.image.ext}"
+        for k, (ext, blob) in enumerate(found.get(number, []), 1):
+            target = Path(folder) / f"page-{number}-{k}.{ext}"
             target.parent.mkdir(parents=True, exist_ok=True)
-            target.write_bytes(shape.image.blob)
+            target.write_bytes(blob)
             out.append(str(target))
     return out
 
@@ -187,11 +221,20 @@ def is_noise(text) -> bool:
 
 
 def convert(path) -> Conversion:
-    conversion = _convert(Path(path))
+    path = Path(path)
+    conversion = _convert(path)
     if conversion.method not in NOT_PAGED:  # an unreadable text layer is no text layer: the page is read visually
         conversion.pages = ["" if is_noise(text) else text for text in conversion.pages]
-    if conversion.pages:
+    word = _word_pictures(path) if path.suffix.lower() == ".docx" else []
+    metafiles = sum(ext in METAFILES for ext, _ in word)
+    if conversion.view and word:  # where LibreOffice put them; it draws a metafile as lines, which could be on any page
+        conversion.picture_pages = (list(range(1, len(conversion.pages) + 1)) if metafiles
+                                    else _pages_with_pictures(conversion.view, len(conversion.pages)))
+    elif conversion.pages:
         conversion.picture_pages = sorted(n for n in _pictures(path) if n <= len(conversion.pages))
+        if metafiles:
+            conversion.warnings.append(f"{metafiles} pictures (Windows metafiles, often formulas) can be read only "
+                                       "with LibreOffice installed.")
     return conversion
 
 

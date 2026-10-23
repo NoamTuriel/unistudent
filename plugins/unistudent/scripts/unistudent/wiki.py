@@ -16,7 +16,7 @@ from urllib.request import url2pathname
 
 from . import material
 from .common import problems_summary
-from .convert import convert, kind, slide_pictures
+from .convert import convert, kind, picture_files
 from .course import LABELS, safe_name, unit_dir
 from .links_check import MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources
 
@@ -81,10 +81,10 @@ def _read_visually(course, rel, fp, page):
 
 
 def _visual_item(course, rel, pages, page, entry):
-    """One file for the source-reader; a .pptx also gets its slides' pictures as files, since Read can't open it."""
+    """One file for the source-reader; a .pptx or .docx also gets its pictures as files, since Read can't open it."""
     path = material.path_of(course, rel).resolve()  # the file to open: the worker needn't find the Material folder
     item = {"source": rel, "path": str(path), "pages": pages, "page": page, "fingerprint": entry.get("fingerprint")}
-    pictures = slide_pictures(path, pages, course.state / "visual" / Path(page).with_suffix(""))
+    pictures = picture_files(path, pages, course.state / "visual" / Path(page).with_suffix(""))
     return {**item, "pictures": pictures} if pictures else item
 
 
