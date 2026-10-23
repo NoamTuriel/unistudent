@@ -24,8 +24,8 @@ class Regressions(CourseTestCase):
     def test_a_students_own_claude_md_is_kept(self):
         course = self.tmp / "Macro"
         write(course / "CLAUDE.md", "# My own notes\n\nAlways answer in Hebrew.\n")
-        run_json("setup", course, "--name", "Macro")
-        run_json("setup", self.tmp / "Stats", "--name", "Stats")  # rewrites other courses' context
+        run_json("setup", course, "--name", "Macro", "--language", "he")
+        run_json("setup", self.tmp / "Stats", "--name", "Stats", "--language", "he")  # rewrites other courses' context
         text = (course / "CLAUDE.md").read_text("utf-8")
         self.assertTrue(text.startswith("# My own notes"))
         self.assertIn("@.unistudent/context.md", text)
@@ -34,15 +34,15 @@ class Regressions(CourseTestCase):
 
     def test_the_course_context_reaches_every_agent(self):
         course = self.tmp / "Macro"
-        run_json("setup", course, "--name", "Macro")
+        run_json("setup", course, "--name", "Macro", "--language", "he")
         self.assertIn("Grounding rule", (course / "AGENTS.md").read_text("utf-8"))
         self.assertIn("@.unistudent/context.md", (course / "CLAUDE.md").read_text("utf-8"))
 
     def test_a_students_own_agents_md_is_kept(self):
         course = self.tmp / "Macro"
         write(course / "AGENTS.md", "# Mine\n")
-        run_json("setup", course, "--name", "Macro")
-        run_json("setup", course, "--name", "Macro")
+        run_json("setup", course, "--name", "Macro", "--language", "he")
+        run_json("setup", course, "--name", "Macro", "--language", "he")
         text = (course / "AGENTS.md").read_text("utf-8")
         self.assertTrue(text.startswith("# Mine"))
         self.assertEqual(text.count(".unistudent/context.md"), 1)
@@ -57,7 +57,7 @@ class Regressions(CourseTestCase):
 
     def test_a_bad_unit_is_a_message_not_a_crash(self):
         course = self.tmp / "Macro"
-        run_json("setup", course, "--name", "Macro")
+        run_json("setup", course, "--name", "Macro", "--language", "he")
         code, out = run("study", "changes", "--course", course, "--unit", "four")
         self.assertEqual(code, 1)
         self.assertIn("A unit is a number", out)
