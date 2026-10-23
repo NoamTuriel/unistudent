@@ -290,6 +290,32 @@ class StatusTimeLeft(CourseTestCase):
         self.assertEqual(probe.call_count, 1)  # cached, not probed on every status
 
 
+class StatusAcrossPlans(CourseTestCase):
+    """A later sync's Fetch plan adds to what the course already approved; it does not replace it."""
+
+    def plan(self, *items, untick=()):
+        path = write(self.tmp / "listing.json", json.dumps(listing(*items)))
+        checklist = Path(run_json("fetch-plan", "show", "--course", self.course, path)["checklist"])
+        for number in untick:
+            checklist.write_text(checklist.read_text("utf-8").replace(f"- [x] {number}.", f"- [ ] {number}."), "utf-8")
+        return run_json("fetch-plan", "apply", "--course", self.course, path)["listing"]
+
+    def test_status_counts_every_approved_plan_and_draws_no_full_bar_for_nothing(self):
+        self.course = self.tmp / "Macro"
+        run("setup", self.course, "--name", "Macro", "--language", "en", "--university", "openu")
+        approved = self.plan(SLIDES, EXAM)
+        data = json.loads(Path(approved).read_text("utf-8"))
+        for item in data["items"]:
+            item["file"] = item["name"]
+            make_pdf(self.tmp / "staged" / item["name"], [item["name"]])
+        write(approved, json.dumps(data))
+        run_json("ingest", "--course", self.course, approved, self.tmp / "staged")
+        self.plan(SLIDES, EXAM, EXERCISES, NOTES, untick=[2])  # the second sync: two new files, one unticked
+        status = run_json("fetch-plan", "status", "--course", self.course)
+        self.assertEqual(status["documents"], {"done": 2, "total": 3})
+        self.assertIn("Recordings  [" + "-" * 20 + "]  0 of 0", status["box"])
+
+
 class StatusWithoutASite(CourseTestCase):
     """A course fed from the student's own folder has no Fetch plan; the run still shows the same box."""
 
