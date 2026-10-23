@@ -34,7 +34,7 @@ Done when: every chosen recording has a `transcript.md`.
 
 ## 4. Table of contents and summary
 
-For each transcript, as soon as it lands, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `recording-summary.md` next to the transcript (in the hidden Wiki) and returns a three-line summary. Only those three lines come back to you.
+For each transcript, as soon as it lands, **delegate** to one `recording-summarizer` worker, giving it the recording's `attachments` from `us recordings list --json` (their `page`s, the files the lecturer hung on it), and telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `recording-summary.md` next to the transcript (in the hidden Wiki) and returns a three-line summary. Only those three lines come back to you.
 
 If frame analysis is on and the course's `keep_video` is `false`, run `us recordings audio-only "<path>"` for each recording once its summary is written: the video is replaced by a sound-only copy under the same name, so the time links still work.
 

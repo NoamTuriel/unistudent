@@ -252,15 +252,19 @@ def oldest_first(course, rels):
 def listing(course, unit=None):
     rows = []
     pages = recording_pages(course)
+    files, source_pages = course.manifest()["files"], course.read_state("wiki.json", {})
     for rel in oldest_first(course, pages):
         info = pages[rel]
         if unit is not None and unit_dir(info["unit"]) != unit_dir(unit):
             continue
         path = material.path_of(course, rel)
+        site = files[rel].get("site_url")  # files the lecturer hung on this recording on the course site
+        attachments = [{"path": a, "page": source_pages.get(a, {}).get("page")}
+                       for a, entry in files.items() if site and entry.get("attached_to") == site]
         rows.append({"path": rel, "unit": info["unit"], "processed": info["processed"],
                      "has_transcript": (course.wiki / info["folder"] / "transcript.md").exists(),
                      "wiki_folder": info["folder"], "seconds": recording_seconds(course, rel),
-                     "bytes": path.stat().st_size if path.exists() else None})
+                     "bytes": path.stat().st_size if path.exists() else None, "attachments": attachments})
     return rows
 
 

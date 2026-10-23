@@ -470,7 +470,8 @@ def register(add, with_course):
                                     hint=f"{safe_name(item.get('section') or 'General')}/{name}", replace_rel=before,
                                     site_unit=parse_unit(hint) if hint is not None else None,
                                     extra={"site_url": url, "site_modified": item.get("modified"),
-                                           "fetched": datetime.date.today().isoformat()})
+                                           "fetched": datetime.date.today().isoformat(),
+                                           **({"attached_to": item["attached_to"]} if item.get("attached_to") else {})})
             (changed if before else new).append(rel)
             if item.get("transcribe"):  # ticked in the Fetch plan by a student who wants transcripts
                 from .recordings import approve

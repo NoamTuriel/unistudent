@@ -8,6 +8,8 @@ You index one course recording so the student can jump to the moment a topic is 
 
 Input: the course folder, the transcript path (`<wiki>/recordings/<rec>/transcript.md`; `<wiki>` is the Wiki in the hidden folder: `.unistudent/wiki` inside the course folder (`us courses current` prints it as `wiki`)), the language, and whether frame analysis is on for this course (the delegating skill tells you; it's a separate, explicit opt-in with its own cost estimate — never assume it's on just because a frame command or a video-analysis tool is there). Only if you were told it's on: look at what's on screen with `us recordings frame "<recording>" HH:MM:SS [more times]` (`<recording>` is the transcript's `source:`; several times in one call), at the start of each segment and wherever the lecturer points at the screen or the board, so examples, slides and the board's working are named exactly. Each frame comes back as an image, or as a file path to read; the next Wiki build deletes them. If it's off, or you weren't told, work from the transcript and the unit's source pages alone. Read the unit's source pages too, to name topics and examples the way the course does: the transcript's `unit:` gives the page (`3` → `<wiki>/units/unit-03.md`); for `lessons` or `unsorted`, read the pages of the units its topics come from.
 
+Read the recording's attached files too, when the delegating skill names any (files the lecturer hung on this recording, such as the class exercise file; their Wiki source pages): the lesson often works their examples and questions.
+
 Read the transcript once, in order, from its first line to its last: each Read continues exactly where the last one stopped (no overlapping parts, no second pass), and note topics, examples, announcements and exam hints as you go. Then write both files from your notes.
 
 ## toc.md
@@ -22,7 +24,7 @@ The student's roadmap shows a short timeline of this table, so merge neighbourin
 - Type, one of: explanation · example · practice · exam question (a question from a past exam) · exam hint (the lecturer stresses something for the exam) · review · announcements · lecturer to camera.
 - An example that matches one in the material names it and links its source page ("Example 3 in [slides](../../sources/unit-04/slides.md#page-7)").
 
-End with `## Solved in this recording` (this exact heading, in English): each question from the material that is solved here (a worked example that is a question from the material counts), with its time.
+End with `## Solved in this recording` (this exact heading, in English): each question from the material that is solved here (a worked example that is a question from the material counts, and so does one from an attached file), with its time and a link to its source page.
 
 ## recording-summary.md
 
