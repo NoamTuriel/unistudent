@@ -10,7 +10,7 @@ from pathlib import Path
 from urllib.parse import unquote
 
 from .course import Course
-from .links_check import MD_LINK, WIKILINK, check_links
+from .links_check import MD_LINK, WIKILINK, check_links, opening_words
 
 _WARNING_RE = re.compile("⚠️?")
 _LEGACY_RE = re.compile("[\u2705\U0001F4A1\u274C]")  # old labels in existing pages read as plain text
@@ -64,18 +64,16 @@ def _prose_letters(text):
     return len(re.findall(r"[^\W\d_]", text))
 
 
-_CLOSING_LINE = re.compile(r"(?i)^\W*(?:from|sources|מתוך|מקורות)\W*:")
-_SOURCES_START = re.compile(r"(?i)^\s*(?:[-*>]\s*)?(?:\*\*)?(sources|מקורות)(?:\*\*)?\s*:")
 _LIST_LINE = re.compile(r"^\s*(?:[-*+]|\d+[.)])\s+")
 
 
-def _merge_continuations(blocks):
+def _merge_continuations(blocks, sources_line):
     """A trailing "Sources:" block, or a list right after a paragraph, belongs to that paragraph."""
     merged = []
     for start, lines in blocks:
         if merged:
             prev = merged[-1][1]
-            is_sources = bool(_SOURCES_START.match(lines[0]))
+            is_sources = bool(sources_line.match(lines[0]))
             is_intro_list = not _LIST_LINE.match(prev[0]) and not _WARNING_RE.match(
                 _MARKER.sub("", lines[0], count=1)) and all(
                 _LIST_LINE.match(l) or l.startswith((" ", "\t")) for l in lines)
@@ -86,10 +84,11 @@ def _merge_continuations(blocks):
     return merged
 
 
-def paragraphs(text):
-    """[{line, warning, links, text}] for every paragraph that makes a claim."""
+def paragraphs(text, sources_line):
+    """[{line, warning, links, text}] for every paragraph that makes a claim. `sources_line`: the course's "Sources:"
+    line (`opening_words`), which belongs to the paragraph before it."""
     out = []
-    for start, lines in _merge_continuations(_blocks(text)):
+    for start, lines in _merge_continuations(_blocks(text), sources_line):
         body = "\n".join(lines)
         if _prose_letters(_WARNING_RE.sub("", _LEGACY_RE.sub("", body))) < _MIN_PROSE_LETTERS:
             continue
@@ -133,16 +132,19 @@ def check_page(page: Path, root: Path):
         start = text.index(GEN_START)         # links only; everything around it for the rule (line numbers stay)
         end = text.index(GEN_END, start) + len(GEN_END)
         text = text[:start] + re.sub(r"[^\n]", "", text[start:end]) + text[end:]
-    found = paragraphs(text)
+    course = Course(root)
+    found = paragraphs(text, opening_words(course.line_words("sources")))
+    words = "|".join(map(re.escape, sorted(course.line_words("sources") | course.line_words("from"))))
+    closing = re.compile(rf"(?i)^\W*(?:{words})\W*:")  # a closing "From:" or "Sources:" line is no claim
     pack = re.match(r"\d+\.\d", page.name)  # a Study pack page carries its own sources block (only chat answers do)
     problems = [p for p in graph_problems(page, text) if not pack or p["kind"] == "missing-image"]
     for p in found:
         where = {"page": str(page), "line": p["line"], "text": p["text"]}
         if pack or p["warning"] or p["links"]:
             continue
-        if _CLOSING_LINE.match(p["text"]):
+        if closing.match(p["text"]):
             continue
-        if any(f"{name}/" in p["body"] for name in ("inbox", Course(root).inbox.name)) and len(p["body"]) < 300:
+        if any(f"{name}/" in p["body"] for name in ("inbox", course.inbox.name)) and len(p["body"]) < 300:
             continue  # the closing "add material to inbox/" suggestion is not a claim
         problems.append({"kind": "no-citation", **where})
     problems += check_links(page, root)

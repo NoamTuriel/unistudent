@@ -94,8 +94,10 @@ def register(add, with_course):
 
     def cmd_check(args):
         from . import labels
-        from .links_check import check_links, check_pack_against_unit, check_pack_page, check_return, check_vault_page
+        from .links_check import (check_links, check_pack_against_unit, check_pack_page, check_return, check_vault_page,
+                                  opening_words)
         course = resolve_course(args)
+        from_line = opening_words(course.line_words("from"))
         report = {"paragraphs": [], "problems": []}
         for name in args.files:
             page = Path(name).resolve()
@@ -105,7 +107,7 @@ def register(add, with_course):
                 report["problems"] += check_return(ret)
             for one in pages:
                 if one.resolve().is_relative_to(course.study.resolve()):
-                    report["problems"] += (check_vault_page(one, course.state) + check_pack_page(one)
+                    report["problems"] += (check_vault_page(one, course.state) + check_pack_page(one, from_line)
                                            + check_pack_against_unit(one, course))
                 if args.labels:
                     part = labels.check_page(one, course.root)

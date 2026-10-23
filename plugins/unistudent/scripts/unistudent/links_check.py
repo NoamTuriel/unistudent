@@ -14,7 +14,16 @@ MD_LINK = re.compile(r'(?<!!)\[([^\]]*)\]\((<[^>]+>|[^)\s]+)(?:\s+"[^"]*")?\)')
 WIKILINK = re.compile(r"!?\[\[([^\]|#]*)(#[^\]|]*)?(\|[^\]]*)?\]\]")
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.M)
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.S)
-SOURCES_LINE = re.compile(r"(?im)^\s*(?:[-*>]\s*)?(?:\*\*)?(sources|מקורות|source|מקור)(?:\*\*)?\s*:")
+
+
+def opening_words(words):
+    """A line that opens with one of `words` and a colon, in any case ("Sources:", "**מקורות**:", "- From:").
+    `words`: a course's `line_words(...)`."""
+    return re.compile(r"(?im)^\s*(?:[-*>]\s*)*(?:\*\*)?(?:" + "|".join(map(re.escape, sorted(words)))
+                      + r")(?:\*\*)?\s*:")
+
+
+SOURCES_LINE = opening_words(["Sources"])  # the line UniStudent and its workers write
 STUB_MARK = "<!-- unistudent:stub -->"
 CODE_BLOCK = re.compile(r"```.*?```|<!--.*?-->", re.S)
 HREF = re.compile(r'href="([^"]+)"')
@@ -93,14 +102,14 @@ def check_links(page: Path, root: Path):
     return problems
 
 
-def has_sources(page: Path) -> bool:
+def has_sources(page: Path, sources_line) -> bool:
     text = page.read_text("utf-8")
     if STUB_MARK in text:
         return True
     front = FRONTMATTER.match(text)
     if front and re.search(r"(?m)^source:", front.group(1)):
         return True
-    if SOURCES_LINE.search(text):
+    if sources_line.search(text):
         return True
     # Pages of entries (glossary, question bank) cite per entry: a link into the material counts.
     body = CODE_BLOCK.sub("", text)
@@ -128,7 +137,6 @@ def check_vault_page(page: Path, hidden: Path):
 
 PRACTICE_PAGE = re.compile(r"^\d+\.3(?!\d)")
 WALKTHROUGH_PAGE = re.compile(r"^\d+\.2(?!\d)")
-CLOSING_FROM = re.compile(r"(?im)^\s*(?:[-*>]\s*)*(?:\*\*)?(?:from|מתוך)(?:\*\*)?\s*:")
 STAGE = re.compile(r"(?im)^\s*(?:#+\s*|[-*>]\s*)?(?:\*\*)?(?:stage|שלב)\s+\d")
 TOPIC_TAG = re.compile(r"(?<![\w&])#(?:unit-\d+/|י\d+/)")
 IMAGE = re.compile(r"!\[[^\]]*\]\(|!\[\[")
@@ -155,8 +163,9 @@ def recording_link_problems(page: Path, text: str):
     return problems
 
 
-def check_pack_page(page: Path):
-    """Study pack shape (ticket 18): a walkthrough topic closes with a "From:" line; the Practice page has no stages, tags or graphs; no `N.3b` page."""
+def check_pack_page(page: Path, from_line):
+    """Study pack shape (ticket 18): a walkthrough topic closes with a "From:" line (`from_line`, in the course
+    language or English); the Practice page has no stages, tags or graphs; no `N.3b` page."""
     text = CODE_BLOCK.sub("", page.read_text("utf-8"))
     problems = []
 
@@ -171,7 +180,7 @@ def check_pack_page(page: Path):
                 problem(kind, hit.group(0).strip())
     elif WALKTHROUGH_PAGE.match(page.name):
         for section in re.split(r"(?m)^## ", text)[1:]:
-            if re.search(r"(?m)^### ", section) and not CLOSING_FROM.search(section):
+            if re.search(r"(?m)^### ", section) and not from_line.search(section):
                 problem("topic-missing-from-line", section.splitlines()[0][:80])
     if re.match(r"\d+\.\d", page.name):  # pack pages only: the generated recordings roadmap links every line
         problems += recording_link_problems(page, text)

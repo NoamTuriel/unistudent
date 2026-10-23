@@ -191,7 +191,7 @@ def show(course, listing_path):
             lengths.append(_length(item))
         if not is_recording(item) and item.get("unit_hint") is None:
             name = safe_name(item.get("name") or "file")  # the same evidence ingest will sort by
-            if detect_unit(f"{safe_name(item.get('section') or 'General')}/{name}")[0] is None:
+            if detect_unit(f"{safe_name(item.get('section') or 'General')}/{name}", course.labels()["unit"])[0] is None:
                 needs_unit.append({"number": number, "name": item.get("name"), "section": item.get("section")})
     estimated_any = any(t["estimated"] for t in totals.values())
     total_line = f"Total: {'~' if estimated_any else ''}{human(total)}" + (
