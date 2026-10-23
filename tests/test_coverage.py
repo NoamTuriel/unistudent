@@ -1,9 +1,10 @@
 """Coverage (ticket 13): the Wiki says which files it read, which it couldn't, and which were skipped."""
 import shutil
+from pathlib import Path
 import unittest
 from unittest import mock
 
-from helpers import CourseTestCase, folders, run, run_json, write
+from helpers import CourseTestCase, can_read_pdfs, folders, make_pdf, run, run_json, write
 from unistudent import convert
 from unistudent.convert import Conversion
 
@@ -133,6 +134,42 @@ class PagesReadVisually(CourseTestCase):
     def test_an_image_item_carries_the_frontmatter_its_page_needs(self):
         item = self.build()["images"][0]
         self.assertEqual((item["origin"], item["tier"], item["unit"]), ("student-folder", "official", 1))
+
+
+class NoiseTextLayer(CourseTestCase):
+    """#59: a handwritten scan whose text layer is OCR noise is read visually, and the noise never reaches the Wiki."""
+
+    NOISE = "'fr Eg- I d 4 Lh tL yod/dis x ga'Nd y3y66 -klyd a3Ilar My"
+
+    def build(self, name, make):
+        own = self.tmp / "own" / "Unit 1"
+        make(own / name)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", self.tmp / "own", "--tier", "official")
+        built = run_json("wiki", "build", "--course", course)
+        page = (folders(course).wiki / "sources" / "unit-01" / (Path(name).stem + ".md")).read_text("utf-8")
+        return built, page
+
+    @unittest.skipUnless(can_read_pdfs(), "no PDF text tool (pdftotext or pypdf)")
+    def test_a_page_of_ocr_noise_is_listed_for_visual_reading_and_not_written(self):
+        built, page = self.build("scan.pdf", lambda path: make_pdf(path, [
+            self.NOISE,
+            "The multiplier is one over one minus the marginal propensity to consume.",
+            "Answer: ______________________ ______________________ __________",  # a question's answer lines
+        ]))
+        [item] = built["needs_visual"]
+        self.assertEqual(item["pages"], [1])
+        self.assertNotIn("Lh tL", page)
+        self.assertIn("marginal propensity", page)
+
+    def test_a_real_page_in_any_script_with_bidi_marks_is_text(self):
+        rtl, ltr, end = "‫", "‪", "‬"  # how pdftotext marks a Hebrew table's cells
+        table = " ".join(f"{rtl}{ltr}{cell}{end}{end}" for cell in ["שכר", "ריבית", "0.75", "MPC", "תוצר"] * 4)
+        pages = [table, "日本語のテキストです。経済学の授業ノートです。", "Le multiplicateur est égal à un sur un moins c."]
+        with mock.patch("unistudent.convert._convert", return_value=Conversion(pages, "pdftotext")):
+            built, page = self.build("table.pdf", lambda path: write(path))
+        self.assertEqual(built["needs_visual"], [])
+        self.assertIn("ריבית", page)
 
 
 try:
