@@ -142,7 +142,7 @@ Say what's about to happen: the course site is scanned without downloading anyth
 - **If you can't log in or can't reach the site** (no access from this app, a login that needs the student, a site that changed): say so in plain words, say it is not an error and nothing is lost, and go on with their own folder or the inbox. Never loop on a failing login.
 - **Their own folder:** run `us import "<own folder>" --tier <official|added>` now (it only copies). If they said yes to transcripts, approve its recordings for transcription: `us recordings approve "<path>" ...` with every path in `us recordings list` (their yes in step 6 is the approval). Then `us unsorted --json`: if any document has no unit, ask one grouped question: a unit number, general (whole-course files such as past exams), or "I don't know" (left unsorted, still read into the Wiki). Record each answer with `us assign "<path>" <unit|general>`. Recordings are sorted in step 9.
 
-Then run `us fetch-plan status --json` and show its `box` exactly as it comes, in a code block; if its `box` is empty (nothing to download), say the run will be short instead. Tell them, in plain words, that they can leave now and come back in about the time it shows, and that the run asks them nothing.
+Then run `us fetch-plan status --json` and show its `box` exactly as it comes, in a code block; if its `box` is empty (nothing to download), say the run will be short instead. Tell them, in plain words, that they can leave now and come back in about the time it shows, that the run asks them nothing, and that the same box is kept up to date in `progress.txt` in the course folder (open it any time to see how far the run got).
 
 Record it: `us setup-progress advance --course-name "<course>" --stage plan`.
 
@@ -164,7 +164,7 @@ From here to step 10 there are no questions: the student is away. A step that fa
 
 Record it: `us setup-progress advance --course-name "<course>" --stage run`.
 
-Done when: every approved file is in the Wiki or noted as failed, every approved recording is transcribed and summarised or noted as failed, `us wiki check` reports 0 problems, and `run` is recorded.
+Done when: the box was posted between parts, every approved file is in the Wiki or noted as failed, every approved recording is transcribed and summarised or noted as failed, `us wiki check` reports 0 problems, and `run` is recorded.
 
 ## 10. Coming back: the report
 
