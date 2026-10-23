@@ -155,6 +155,28 @@ class TranscriptionProgress(CourseTestCase):
         self.assertNotIn("Transcribing one now", (course / "progress.txt").read_text("utf-8"))
 
 
+class FasterOption(CourseTestCase):
+    """A Mac with a Hebrew course can choose the faster model (about 3x, a few more misheard words); accurate stays the default."""
+
+    def test_the_faster_model_is_offered_with_its_time_and_used_once_chosen(self):
+        from unittest import mock
+        own = self.tmp / "own"
+        write(own / "Unit 4" / "session 5.mp4", b"\x00" * 4096)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "he", "--import", own, "--tier", "official")
+        write(self.home / "benchmark.json", '{"backend": "mlx", "realtime_factor": 0.16}')
+        with mock_env(UNISTUDENT_STT_BACKEND="mlx"), mock.patch("unistudent.recordings.duration", return_value=4 * 3600.0):
+            accurate = run_json("recordings", "estimate", "--course", course)
+            self.assertEqual(accurate["estimated_hours"], 0.64)
+            self.assertLess(accurate["faster_option"]["estimated_hours"], 0.64 / 2.5)
+            run_json("context", "--course", course, "--transcription", "fast")
+            fast = run_json("recordings", "estimate", "--course", course)
+        self.assertEqual(fast["estimated_hours"], accurate["faster_option"]["estimated_hours"])
+        self.assertIsNone(fast["faster_option"])
+        with mock_env(UNISTUDENT_STT_BACKEND="fake"):  # no faster model for this engine: nothing to offer
+            self.assertIsNone(run_json("recordings", "estimate", "--course", course)["faster_option"])
+
+
 class OldestFirst(CourseTestCase):
     """Recordings are listed and transcribed oldest first (by the date in their name), so unit 1 is usable first."""
 

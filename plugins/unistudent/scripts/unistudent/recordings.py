@@ -31,6 +31,10 @@ MODELS = {
     ("mlx", "he"): "mlx-community/ivrit-ai-whisper-large-v3-mlx",
     ("mlx", None): "mlx-community/whisper-large-v3-turbo",
 }
+# The student's choice when a run is long ("transcription": "fast"): measured on two real Hebrew lessons, 3.0 and 2.7
+# times faster than the accurate model, with about 3 and 5 more misheard words per 10 minutes.
+FAST_MODELS = {("mlx", "he"): "mlx-community/ivrit-ai-whisper-large-v3-turbo-mlx"}
+FAST_SPEEDUP = 2.7
 PARAGRAPH_SECONDS = 60
 
 SYNCED_MARKERS = ("mobile documents", "icloud", "google drive", "googledrive", "my drive",
@@ -168,8 +172,14 @@ def backend_available(name):
         return False
 
 
-def model_for(name, language):
-    return MODELS.get((name, language)) or MODELS[(name, None)] if name != "fake" else "fake"
+def model_for(name, language, fast=False):
+    if name == "fake":
+        return "fake"
+    return (fast and FAST_MODELS.get((name, language))) or MODELS.get((name, language)) or MODELS[(name, None)]
+
+
+def _fast(course):
+    return course.settings().get("transcription") == "fast"
 
 
 def _require_ffmpeg():
@@ -206,9 +216,9 @@ def silences(path: Path):
     return list(zip(starts, ends + [math.inf] * (len(starts) - len(ends))))  # a silence to the very end has no end line
 
 
-def transcribe_audio(audio: Path, name: str, language: str):
+def transcribe_audio(audio: Path, name: str, language: str, fast=False):
     """[(start, end, text)] from the chosen backend."""
-    model = model_for(name, language)
+    model = model_for(name, language, fast)
     if name == "fake":
         time.sleep(float(os.environ.get("UNISTUDENT_FAKE_STT_SECONDS", 0)))
         return [(t, t + 20, f"segment at {hms(t)}") for t in range(0, 150, 20)]
@@ -262,17 +272,19 @@ def _save_speeds(data):
     _benchmark_file().write_text(json.dumps(data), "utf-8")
 
 
-def realtime_factor(course):
+def realtime_factor(course, fast=None):
     """(hours of work per hour of audio, measured?): from the transcripts this machine finished with this model, else
-    the one-minute benchmark, else a rough guess."""
-    name = backend_name()
+    the one-minute benchmark (made with the accurate model), else a rough guess. `fast`: the course's choice by default."""
+    name, language = backend_name(), course.settings().get("language")
+    fast = _fast(course) if fast is None else fast
     data = _speeds()
-    done = data.get("transcripts", {}).get(model_for(name, course.settings().get("language")))
+    done = data.get("transcripts", {}).get(model_for(name, language, fast))
     if done and done["audio"]:
         return done["spent"] / done["audio"], True
+    speedup = FAST_SPEEDUP if model_for(name, language, fast) != model_for(name, language) else 1
     if data.get("realtime_factor") is not None:
-        return data["realtime_factor"], True
-    return ROUGH_REALTIME_FACTOR.get(name, 0.5), False
+        return data["realtime_factor"] / speedup, True
+    return ROUGH_REALTIME_FACTOR.get(name, 0.5) / speedup, False
 
 
 def _running_file(course):
@@ -339,6 +351,9 @@ def estimate(course, unit=None):
     factor, measured = realtime_factor(course)
     factor = factor if measured else None
     name = backend_name()
+    offer = not _fast(course) and model_for(name, course.settings().get("language"), True) != \
+        model_for(name, course.settings().get("language"))
+    fast_factor = realtime_factor(course, fast=True)[0] if offer and factor else None
     # One vision call per ~PARAGRAPH_SECONDS segment (toc.md's row spacing): a separate,
     # explicit opt-in (ticket 04), never triggered just because a video-analysis tool is installed.
     segments = sum(math.ceil(r["seconds"] / PARAGRAPH_SECONDS) for r in rows if r["seconds"])
@@ -349,6 +364,8 @@ def estimate(course, unit=None):
         "install_run": None if backend_available(name) else install_run(name),
         "realtime_factor": factor,
         "estimated_hours": round(seconds * factor / 3600, 2) if factor else None,
+        "faster_option": {"estimated_hours": round(seconds * fast_factor / 3600, 2)} if fast_factor else None,
+        "transcription": "fast" if _fast(course) else "accurate",
         "files": [r["path"] for r in rows],
         "frame_analysis_segments": segments,
         "frame_analysis": course.settings().get("frame_analysis"),
@@ -415,12 +432,12 @@ def transcribe(course, rel):
                 audio.write_bytes(b"")
             else:
                 extract_audio(source, audio)
-            segments = transcribe_audio(audio, name, course.settings().get("language"))
+            segments = transcribe_audio(audio, name, course.settings().get("language"), _fast(course))
     finally:
         _running_file(course).unlink()
     if seconds:  # the time estimates follow this machine's real speed from now on
         data = _speeds()
-        done = data.setdefault("transcripts", {}).setdefault(model_for(name, course.settings().get("language")),
+        done = data.setdefault("transcripts", {}).setdefault(model_for(name, course.settings().get("language"), _fast(course)),
                                                              {"audio": 0, "spent": 0})
         done["audio"] += seconds
         done["spent"] += time.monotonic() - began
