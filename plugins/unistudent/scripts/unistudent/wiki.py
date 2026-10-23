@@ -461,7 +461,14 @@ def unit_context(course, unit):
     recs = covering(course, folder, recording_pages(course))
     places = (f"sources/{folder}/", *(f"{i['folder']}/" for i in recs.values()))
     glossary = [e for e in entries(read(wiki / "glossary.md")) if any(p in e for p in places)]
-    bank = [e for e in entries(read(wiki / "question-bank.md")) if tagged(e, folder)]
+    every_question = entries(read(wiki / "question-bank.md"))
+    bank = [e for e in every_question if tagged(e, folder)]
+    relink = []  # questions written before their file arrived: they name it, but don't link its page yet
+    for rel, info in sorted(course.read_state("wiki.json", {}).items()):
+        page = info.get("page", "")
+        if page.startswith(f"sources/{folder}/") and len(Path(rel).stem) >= 4:  # ponytail: matched by file name only
+            relink += [f"- {_heading(e)}: names {Path(rel).name}; link {_link(Path(rel).stem, page)}"
+                       for e in every_question if Path(rel).stem in e and Path(page).name not in e]
     index = course.state / "before-test" / "index.json"
     exams = []
     for row in json.loads(index.read_text("utf-8")) if index.is_file() else []:
@@ -475,6 +482,8 @@ def unit_context(course, unit):
              (f"units/{folder}.md: the unit page (it links the unit's source pages)", read(wiki / "units" / f"{folder}.md")),
              ("glossary.md: the entries citing this unit", "\n\n".join(glossary) or "(none yet)"),
              (f"question-bank.md: the entries tagged #{folder}", "\n\n".join(bank) or "(none yet)"),
+             ("question-bank.md: entries to relink (they name a file of this unit, but don't link its page)",
+              "\n".join(relink) or "(none)"),
              ("../before-test/index.json: past-exam questions indexed to this unit", "\n".join(exams) or "(none yet)")]
     for rel, info in recs.items():
         parts += [(f"{info['folder']}/{name}: {Path(rel).name}", read(wiki / info["folder"] / name))
