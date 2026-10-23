@@ -106,6 +106,19 @@ class UnitWriter(CourseTestCase):
         self.assertNotIn("unit-07", run_json("wiki", "build", "--course", self.course)["units_touched"])
         self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
 
+    def test_a_question_tagged_with_two_units_reaches_both(self):
+        write(self.f.wiki / "question-bank.md", "# Question bank\n\n"
+                                                "### Exam Q12  #unit-03/demand #unit-04/supply\n- Where: [d](sources/unit-03/demand.md)\n\n"
+                                                "### Exam Q13  #unit-13/other\n- Where: [d](sources/unit-03/demand.md)\n")
+        for unit in ("3", "4"):
+            run_json("study", "mark-built", "--unit", unit, "--course", self.course)
+            text = self.context(unit)
+            self.assertIn("### Exam Q12", text)
+            self.assertNotIn("### Exam Q13", text)  # unit 13 is not unit 3
+        write(self.f.wiki / "question-bank.md", (self.f.wiki / "question-bank.md").read_text("utf-8").replace("Q12", "Q12b"))
+        for unit in ("3", "4"):
+            self.assertEqual(run_json("study", "changes", "--unit", unit, "--course", self.course)["changed"], ["question-bank.md"])
+
 
 if __name__ == "__main__":
     unittest.main()

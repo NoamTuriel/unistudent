@@ -35,7 +35,8 @@ STUBS = {
     "question-bank.md": """# Question bank
 
 {stub}
-<!-- One entry per question found in the course material (Q&A files, assignments, past exams):
+<!-- One entry per question found in the course material (Q&A files, assignments, past exams), one tag per unit it
+exercises (a question on two units: #unit-05/<topic-tag> #unit-06/<topic-tag>):
 ### <short title>  #unit-NN/<topic-tag>
 - Where: [..](sources/..#page-N) · Solved in a recording: [<time>](recordings/../toc.md#solved-in-this-recording) or "no"
 - Question: <short paraphrase>
