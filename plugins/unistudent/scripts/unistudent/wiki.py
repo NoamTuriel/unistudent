@@ -6,6 +6,7 @@ methods/notation/assumptions of each unit) through the wiki skill; those parts a
 never touched by a rebuild.
 """
 import os
+import posixpath
 import re
 import shutil
 from pathlib import Path
@@ -270,6 +271,10 @@ def build(course, force=False):
             by_unit.setdefault(unit_dir(manifest[rel].get("unit")), []).append((rel, page))
     for rel, info in recordings.items():
         by_unit.setdefault(unit_dir(info["unit"]), [])
+        summary = wiki / info["folder"] / SUMMARY
+        if info["unit"] == "lessons" and info["processed"] and summary.exists():  # a unit taught only in a
+            for n in _units_named(description_line(summary.read_text("utf-8")) or ""):  # lesson (a printed
+                by_unit.setdefault(unit_dir(n), [])  # textbook, no files on the site) still gets its page
     # A new table of contents makes its units' pages stale: the unit writer can now fill "Solved in a recording".
     seen = set(course.read_state("tocs.json", []))
     for rel, info in recordings.items():
@@ -304,9 +309,10 @@ def build(course, force=False):
                     lines += ["", f"{title} (the lecturer said, in a recording):", ""]
                     for r, i, items in found_in:
                         # the summary's links are relative to its own folder; the unit page is one level over
-                        here = lambda m, f=i["folder"]: f"](<../{f}/transcript.md{m.group(1)}>)"
+                        here = lambda m, f=i["folder"]: (m.group(0) if re.match(r"\w+:|#", m.group(1) or m.group(2)) else
+                                                         f"](<{posixpath.normpath(f'../{f}/' + (m.group(1) or m.group(2)))}>)")
                         lines += [f"- {Path(r).name} ({_link('summary', '../' + i['folder'] + '/' + SUMMARY)}): "
-                                  + re.sub(r"\]\(<?transcript\.md(#\d+)>?\)", here, item)
+                                  + re.sub(r"\]\((?:<([^<>]+)>|([^)\s<>]+))\)", here, item)  # every relative link
                                   for item in items]
         lines += ["", f"Questions: {_link('question bank', '../question-bank.md')} (tag #{folder})"]
         path = wiki / "units" / f"{folder}.md"
@@ -360,9 +366,13 @@ def build(course, force=False):
 def _units_named(line):
     """The unit numbers a lesson's one-line description says it covers ("a lesson about units 7-9")."""
     # ponytail: English and Hebrew unit words only; add a language's word when it gets a LABELS table
-    parts = re.split(r"(?i)unit|יחיד", line, maxsplit=1)
-    return {n for a, b in re.findall(r"(\d+)(?:\s*(?:[-–]|עד|to|through)\s*(\d+))?", parts[1] if len(parts) == 2 else "")
-            for n in range(int(a), int(b or a) + 1)}
+    units = set()  # only numbers right after a unit word: "היחידה הראשונה ... שאלה 11" names no unit
+    for numbers in re.findall(r"(?i)(?<![a-z])(?:unit|chapter|יחיד|פרק)\w*\s+(\d+(?:\s*(?:[-–,]|עד|to|through|and|ו-?)\s*\d+)*)",
+                              line):  # OpenU books say "פרק" (chapter)
+        numbers = re.sub(r"(?:and|ו-?)\s*(?=\d)", ",", numbers)  # "2 ו-3" lists two; only -, עד, to make a range
+        for a, b in re.findall(r"(\d+)(?:\s*(?:[-–]|עד|to|through)\s*(\d+))?", numbers):
+            units.update(range(int(a), int(b or a) + 1))
+    return units
 
 
 def _section(text, title):

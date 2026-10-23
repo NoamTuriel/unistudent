@@ -85,6 +85,12 @@ class FetchPlanShow(CourseTestCase):
         self.assertEqual(list(plan["totals"]), [".mp4"])
         self.assertIn(".mp4", Path(plan["checklist"]).read_text("utf-8"))
 
+    def test_a_document_named_with_a_dotted_date_counts_by_the_file_it_downloads_as(self):
+        exam = dict(EXAM, name="Exam of 4.2.21", file="unistudent-123-2026-10-20__Exam of 4.2.21.pdf")
+        undated = dict(EXAM, url="https://example.edu/f/9", name="Exam of 8.2.21")  # no file name: type unknown
+        write(self.listing, json.dumps(listing(exam, undated)))
+        self.assertEqual(sorted(self.show()["totals"]), ["(none)", ".pdf"])
+
     def test_a_plan_bigger_than_the_free_space_does_not_fit(self):
         plan = self.show(free=500_000_000)
         self.assertFalse(plan["fits"])

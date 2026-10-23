@@ -43,6 +43,14 @@ class SiteIngest(CourseTestCase):
         self.assertTrue((folders(self.course).material / "official" / "Unit 4" / "Unit slides.pdf").is_file())
         self.assertFalse((self.staged / "slides-u4.pdf").exists())  # moved, not copied
 
+    def test_a_site_title_without_a_file_type_keeps_the_downloaded_files_type(self):
+        # OpenU titles name no file type, and a dotted date ("4.2.21") is not one.
+        make_pdf(self.staged / "unistudent-1-x__Exam of 4.2.21.pdf", ["Exam"])
+        result = self.ingest(listing({"url": "https://example.edu/f/1", "file": "unistudent-1-x__Exam of 4.2.21.pdf",
+                                      "name": "Exam of 4.2.21", "section": "Past exams", "unit_hint": "general"}))
+        self.assertEqual(result["new"], ["official/General/Exam of 4.2.21.pdf"])
+        self.assertEqual(result["wiki"]["coverage"]["skipped"], 0)
+
     def test_status_tells_the_fetcher_what_is_already_downloaded(self):
         make_pdf(self.staged / "a.pdf", ["Unit 1"])
         self.ingest(listing({"url": "https://example.edu/f/1", "file": "a.pdf", "name": "a.pdf", "section": "Unit 1"}))
