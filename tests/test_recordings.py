@@ -177,6 +177,40 @@ class FasterOption(CourseTestCase):
             self.assertIsNone(run_json("recordings", "estimate", "--course", course)["faster_option"])
 
 
+@unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg not installed")
+class GraphicsCardWithoutItsLibraries(CourseTestCase):
+    def test_missing_cuda_libraries_fall_back_to_the_processor_and_say_so(self):
+        import contextlib
+        import io
+        import sys
+        import types
+        from unittest import mock
+
+        class Model:  # faster-whisper on an NVIDIA computer without cuBLAS/cuDNN
+            def __init__(self, model, device="auto", compute_type="auto"):
+                self.device = device
+
+            def transcribe(self, audio, **options):
+                if self.device != "cpu":
+                    raise RuntimeError("Library cublas64_12.dll is not found or cannot be loaded")
+                return iter([types.SimpleNamespace(start=0.0, end=1.5, text=" hello")]), None
+
+        own = self.tmp / "own"
+        (own / "Unit 4").mkdir(parents=True)
+        subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i", "sine=duration=2", str(own / "Unit 4" / "a.m4a")],
+                       check=True)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
+        said = io.StringIO()
+        with mock_env(UNISTUDENT_STT_BACKEND="faster"), \
+                mock.patch.dict(sys.modules, {"faster_whisper": types.SimpleNamespace(WhisperModel=Model)}), \
+                contextlib.redirect_stderr(said):
+            run_json("recordings", "approve", "--course", course, "official/Unit 4/a.m4a")
+            run_json("recordings", "transcribe", "--course", course, "official/Unit 4/a.m4a")
+        self.assertIn("hello", (folders(course).wiki / "recordings" / "a" / "transcript.md").read_text("utf-8"))
+        self.assertIn("processor", said.getvalue())
+
+
 class OldestFirst(CourseTestCase):
     """Recordings are listed and transcribed oldest first (by the date in their name), so unit 1 is usable first."""
 

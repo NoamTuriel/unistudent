@@ -13,6 +13,7 @@ import platform
 import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
 from pathlib import Path
@@ -230,9 +231,19 @@ def transcribe_audio(audio: Path, name: str, language: str, fast=False):
                                         condition_on_previous_text=False)
         return [(s["start"], s["end"], s["text"].strip()) for s in result["segments"]]
     from faster_whisper import WhisperModel
-    whisper = WhisperModel(model, device="auto", compute_type="auto")
-    segments, _ = whisper.transcribe(str(audio), language=language, vad_filter=True)
-    return [(s.start, s.end, s.text.strip()) for s in segments]
+
+    def run(device):
+        whisper = WhisperModel(model, device=device, compute_type="auto")
+        segments, _ = whisper.transcribe(str(audio), language=language, vad_filter=True)
+        return [(s.start, s.end, s.text.strip()) for s in segments]  # the work happens here, so its errors too
+    try:
+        return run("auto")
+    except (RuntimeError, OSError) as error:  # an NVIDIA card without its CUDA libraries (cuBLAS, cuDNN)
+        if not re.search(r"cuda|cublas|cudnn", str(error), re.I):
+            raise
+        print("This computer's graphics card is missing its CUDA libraries (cuBLAS, cuDNN), so transcription runs on "
+              "the processor instead: slower, same result.", file=sys.stderr)
+        return run("cpu")
 
 
 def _benchmark_file():
