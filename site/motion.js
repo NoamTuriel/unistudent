@@ -14,10 +14,12 @@ document.querySelectorAll('main [data-field], footer[data-field]').forEach(c => 
 
 // Video: plays muted with captions, unless the visitor prefers reduced motion
 const film = document.getElementById('film');
-if (!reduce) film.play().catch(() => {});
-document.getElementById('sound').addEventListener('click', () => {
-  film.muted = false; film.currentTime = 0; film.play();
-});
+if (film) {
+  if (!reduce) film.play().catch(() => {});
+  document.getElementById('sound').addEventListener('click', () => {
+    film.muted = false; film.currentTime = 0; film.play();
+  });
+}
 
 if (moving) {
   const { animate, inView, scroll, stagger, press, hover } = M;
@@ -40,7 +42,7 @@ if (moving) {
   }, { amount: 1 });
 
   // The preview video eases back as the hero scrolls away
-  scroll(animate('.hero-film video', { scale: [1, .94], y: [0, 30] }, { ease: 'linear' }), { target: document.querySelector('.hero'), offset: ['start start', 'end start'] });
+  if (film) scroll(animate(film, { scale: [1, .94], y: [0, 30] }, { ease: 'linear' }), { target: document.querySelector('.hero'), offset: ['start start', 'end start'] });
 
   // The name returns at full width, letter by letter
   inView('.wordmark', el => {
@@ -60,10 +62,10 @@ if (moving) {
 
 // Demo player: plays each feature in turn until the visitor picks one
 const demo = document.getElementById('demo');
-const dtabs = [...demo.querySelectorAll('[role=tab]')];
+const dtabs = demo ? [...demo.querySelectorAll('[role=tab]')] : [];
 const DUR = 9;
 let cur = 0, timer = null, auto = moving, progress = null;
-if (auto) demo.classList.add('auto');
+if (auto && demo) demo.classList.add('auto');
 
 function play(pane) {
   if (!moving) return;
@@ -120,7 +122,7 @@ dtabs.forEach((t, i) => {
   });
 });
 // Start playing when the demo comes into view
-new IntersectionObserver((entries, obs) => {
+if (demo) new IntersectionObserver((entries, obs) => {
   if (entries[0].isIntersecting) { show(0); obs.disconnect(); }
 }, { threshold: .3 }).observe(demo.querySelector('.stage'));
 
@@ -143,8 +145,8 @@ document.querySelectorAll('[role=tablist]:not([data-demo])').forEach(list => {
     });
   });
 });
-if (/Win/.test(navigator.platform)) document.getElementById('t-win').click();
-else if (/Linux/.test(navigator.platform)) document.getElementById('t-linux').click();
+if (/Win/.test(navigator.platform)) document.getElementById('t-win')?.click();
+else if (/Linux/.test(navigator.platform)) document.getElementById('t-linux')?.click();
 
 // Copy buttons
 document.querySelectorAll('.copy').forEach(b => b.addEventListener('click', async () => {
