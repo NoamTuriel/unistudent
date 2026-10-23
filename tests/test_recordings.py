@@ -219,6 +219,22 @@ class GraphicsCardWithoutItsLibraries(CourseTestCase):
         self.assertTrue(all(not isinstance(a, str) for a in heard))
 
 
+class NoGraphicsCard(CourseTestCase):
+    def test_without_an_nvidia_card_the_estimate_warns_that_the_processor_does_the_work(self):
+        from unittest import mock
+        own = self.tmp / "own"
+        write(own / "Unit 4" / "session 5.mp4", b"\x00" * 4096)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
+        with mock_env(UNISTUDENT_STT_BACKEND="faster"):
+            with mock.patch("unistudent.recordings.has_nvidia_gpu", return_value=False):
+                self.assertIn("processor", run_json("recordings", "estimate", "--course", course)["warning"])
+            with mock.patch("unistudent.recordings.has_nvidia_gpu", return_value=True):
+                self.assertIsNone(run_json("recordings", "estimate", "--course", course)["warning"])
+        with mock_env(UNISTUDENT_STT_BACKEND="mlx"):  # a Mac's own engine uses its graphics: nothing to warn about
+            self.assertIsNone(run_json("recordings", "estimate", "--course", course)["warning"])
+
+
 class OldestFirst(CourseTestCase):
     """Recordings are listed and transcribed oldest first (by the date in their name), so unit 1 is usable first."""
 
