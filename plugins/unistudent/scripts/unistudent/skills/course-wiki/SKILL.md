@@ -18,7 +18,7 @@ Done when: the build ran and you have its `units_touched`, `images` and `needs_v
 
 ## 2. Read what has no text
 
-For each item in `images` and `needs_visual`, **delegate** to the `source-reader` worker (one per item, given the whole item). It writes the content as Markdown source pages. Then run `us wiki build` again, so `coverage.md` counts them as analyzed.
+For each item in `images` and `needs_visual`, **delegate** to the `source-reader` worker (one per item, given the whole item, the course folder and the course language). It writes the content as Markdown source pages. Then run `us wiki build` again, so `coverage.md` counts them as analyzed.
 
 Done when: every listed item has a source page and the second build lists no `images` or `needs_visual`.
 

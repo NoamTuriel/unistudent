@@ -82,8 +82,9 @@ def _read_visually(course, rel, fp, page):
 
 def _visual_item(course, rel, pages, page, entry):
     """One file for the source-reader; a .pptx also gets its slides' pictures as files, since Read can't open it."""
-    item = {"source": rel, "pages": pages, "page": page, "fingerprint": entry.get("fingerprint")}
-    pictures = slide_pictures(material.path_of(course, rel), pages, course.state / "visual" / Path(page).with_suffix(""))
+    path = material.path_of(course, rel).resolve()  # the file to open: the worker needn't find the Material folder
+    item = {"source": rel, "path": str(path), "pages": pages, "page": page, "fingerprint": entry.get("fingerprint")}
+    pictures = slide_pictures(path, pages, course.state / "visual" / Path(page).with_suffix(""))
     return {**item, "pictures": pictures} if pictures else item
 
 
@@ -256,7 +257,8 @@ def build(course, force=False):
     _relink_pages(wiki, {**{old: new for old, new in moved_pages.items() if (wiki / new).exists()},
                          **_rename_old_summaries(course)})
 
-    images = [{"source": rel, "page": page, "fingerprint": manifest[rel].get("fingerprint"),
+    images = [{"source": rel, "path": str(material.path_of(course, rel).resolve()), "page": page,
+               "fingerprint": manifest[rel].get("fingerprint"),
                "origin": manifest[rel].get("origin"), "tier": manifest[rel].get("tier"),  # the image page's frontmatter
                "unit": manifest[rel].get("unit") if manifest[rel].get("unit") is not None else "unsorted"}
               for rel, page in pages.items()
