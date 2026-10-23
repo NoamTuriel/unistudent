@@ -61,13 +61,47 @@ class FrameAnalysisEstimate(CourseTestCase):
         self.assertEqual(est["frame_analysis_segments"], 3)
 
 
+@unittest.skipUnless(HAS_FFMPEG, "ffmpeg not installed")
+class FrameCommand(CourseTestCase):
+    """`us recordings frame`: the screen at given times, as JPEG images for the summarizer, gone after the summary."""
+
+    def setUp(self):
+        super().setUp()
+        own = self.tmp / "own"
+        make_video(own / "Unit 4" / "session.mp4", seconds=5)
+        self.course = self.tmp / "Macro"
+        run_json("setup", self.course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
+        self.rec = "official/Unit 4/session.mp4"
+
+    def test_frames_come_back_as_images_and_are_deleted_once_the_summary_is_written(self):
+        result = run_json("recordings", "frame", "--course", self.course, self.rec, "00:00:01", "00:00:03")
+        self.assertEqual(len(result["images"]), 2)
+        for image in result["images"]:
+            self.assertTrue(Path(image).is_absolute())
+            self.assertTrue(Path(image).read_bytes().startswith(b"\xff\xd8"))  # a JPEG
+        wiki = self.course / ".unistudent" / "wiki"
+        run_json("wiki", "build", "--course", self.course)
+        self.assertTrue(all(Path(i).exists() for i in result["images"]))  # still being summarised
+        write(wiki / "recordings" / "session" / "recording-summary.md", "Session.\n\nSources: [transcript](transcript.md)\n")
+        run_json("wiki", "build", "--course", self.course)
+        self.assertFalse(any(Path(i).exists() for i in result["images"]))  # frames can show private screens
+
+    def test_a_time_that_is_not_a_time_or_past_the_end_is_refused(self):
+        code, out = run("recordings", "frame", "--course", self.course, self.rec, "1h")
+        self.assertEqual(code, 1)
+        self.assertIn("HH:MM:SS", out)
+        code, out = run("recordings", "frame", "--course", self.course, self.rec, "00:09:00")
+        self.assertEqual(code, 1)
+        self.assertIn("00:09:00", out)
+
+
 class RecordingSummarizerNeverAssumesFrameAnalysis(unittest.TestCase):
     """The gating lives in prose (the worker is an LLM agent, not code); this pins the wording down."""
 
     def test_the_worker_is_told_not_to_infer_the_opt_in_from_tool_availability(self):
         base = Path(__file__).resolve().parents[1] / "plugins" / "unistudent" / "scripts" / "unistudent"
         text = (base / "agents" / "recording-summarizer.md").read_text("utf-8")
-        self.assertIn("never assume it's on just because a video-analysis tool happens to be installed", text)
+        self.assertIn("never assume it's on just because a frame command or a video-analysis tool is there", text)
         self.assertIn("Only if you were told it's on", text)
 
     def test_course_recordings_asks_frame_analysis_separately_from_recording_level(self):
