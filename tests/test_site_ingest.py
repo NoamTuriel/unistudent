@@ -105,6 +105,22 @@ class SiteIngest(CourseTestCase):
         self.assertEqual(result["recordings_available"], ["https://example.edu/v/1"])
         self.assertEqual(result["missing"], [])
 
+    def test_a_file_the_lecturer_hung_on_a_recording_is_listed_with_that_recording(self):
+        write(self.staged / "session.mp4", b"\x00" * 4096)
+        write(self.staged / "exercise.txt", "Exercise 1: find the equilibrium.")
+        rec_url = "https://example.edu/video#Session 5"
+        self.ingest(listing(
+            {"url": rec_url, "file": "session.mp4", "name": "Session 5.mp4", "section": "Unit 4", "kind": "recording"},
+            {"url": "https://example.edu/f/9", "file": "exercise.txt", "name": "Class exercise.txt",
+             "section": "Session 5", "attached_to": rec_url},
+        ))
+        rows = run_json("recordings", "list", "--course", self.course)["recordings"]
+        self.assertEqual(len(rows), 1)
+        [attachment] = rows[0]["attachments"]
+        self.assertTrue(attachment["path"].endswith("Class exercise.txt"))
+        page = folders(self.course).wiki / attachment["page"]
+        self.assertIn("find the equilibrium", page.read_text("utf-8"))
+
 
 if __name__ == "__main__":
     unittest.main()
