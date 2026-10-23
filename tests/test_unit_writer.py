@@ -92,6 +92,20 @@ class UnitWriter(CourseTestCase):
         write(packs, json.dumps(data))
         self.assertEqual([changes()[k] for k in ("new", "changed", "removed")], [[], [], []])
 
+    def test_a_unit_no_material_covers_any_more_keeps_only_the_writers_sections(self):
+        self.summary("units 3 and 7")
+        self.touched()
+        unit7 = self.f.wiki / "units" / "unit-07.md"
+        write(unit7, unit7.read_text("utf-8") + "\n## Approved methods\n\n- Elasticity. Sources: [lesson](<../recordings/lesson 9/transcript.md>)\n")
+        self.summary("unit 3")
+        self.touched()
+        text = unit7.read_text("utf-8")
+        self.assertNotIn("lesson 9.mp4", text)
+        self.assertIn("No material yet", text)
+        self.assertIn("- Elasticity.", text)
+        self.assertNotIn("unit-07", run_json("wiki", "build", "--course", self.course)["units_touched"])
+        self.assertEqual(run_json("wiki", "check", "--course", self.course)["problems"], [])
+
 
 if __name__ == "__main__":
     unittest.main()
