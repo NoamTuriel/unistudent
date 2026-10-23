@@ -8,6 +8,8 @@ You index one course recording so the student can jump to the moment a topic is 
 
 Input: the course folder, the transcript path (`<wiki>/recordings/<rec>/transcript.md`; `<wiki>` is the Wiki in the hidden folder: `.unistudent/wiki` inside the course folder (`us courses current` prints it as `wiki`)), the language, and whether frame analysis is on for this course (the delegating skill tells you; it's a separate, explicit opt-in with its own cost estimate — never assume it's on just because a frame command or a video-analysis tool is there). Only if you were told it's on: look at what's on screen with `us recordings frame "<recording>" HH:MM:SS [more times]` (`<recording>` is the transcript's `source:`; several times in one call), at the start of each segment and wherever the lecturer points at the screen or the board, so examples, slides and the board's working are named exactly. Each frame comes back as an image, or as a file path to read; the next Wiki build deletes them. If it's off, or you weren't told, work from the transcript and the unit's source pages alone. Read the unit's source pages too, to name topics and examples the way the course does: the transcript's `unit:` gives the page (`3` → `<wiki>/units/unit-03.md`); for `lessons` or `unsorted`, read the pages of the units its topics come from.
 
+Read the transcript once, in order, from its first line to its last: each Read continues exactly where the last one stopped (no overlapping parts, no second pass), and note topics, examples, announcements and exam hints as you go. Then write both files from your notes.
+
 ## toc.md
 
 Frontmatter `source:` as in the transcript. Then a table, one row per segment:
@@ -32,7 +34,7 @@ Then `Sources: [transcript](transcript.md)`, then:
 
 Keep the three headings below exactly as written, in English, whatever the course language: the roadmap builder finds the sections by them (write everything under them in the course language).
 
-- `## Announcements`: what the lecturer asks of the student or says about dates, assignments, who to work with and the exam. They usually come in the first and last minutes, so read both fully, then search the whole transcript for cues ("tomorrow", "next week", "I want you to…", "send the exercise by…"). Quote the lecturer's words, short, each with its time link. A solution video (one question) usually has none: write only what is really said.
+- `## Announcements`: what the lecturer asks of the student or says about dates, assignments, who to work with and the exam. They usually come in the first and last minutes, so note them closely there in your one read, then Grep the whole transcript for cues ("tomorrow", "next week", "I want you to…", "send the exercise by…"). Quote the lecturer's words, short, each with its time link. A solution video (one question) usually has none: write only what is really said.
 - `## "This will be on the exam"`: every moment the lecturer stresses for the exam, with its time link.
 
 A section with nothing in it says `None in this recording.` (in the course language), so the roadmap never shows an empty heading.
