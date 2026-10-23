@@ -36,6 +36,14 @@ class Recordings(CourseTestCase):
         self.assertEqual(code, 1)
         self.assertIn("Not approved", out)
 
+    def test_the_transcript_records_the_language_heard_not_the_course_language(self):
+        run_json("setup", self.course, "--name", "Macro", "--language", "he")  # the fake engine hears English
+        rec = run_json("recordings", "list", "--course", self.course)["recordings"][0]["path"]
+        run_json("recordings", "approve", "--course", self.course, rec)
+        run_json("recordings", "transcribe", "--course", self.course, rec)
+        transcript = (folders(self.course).wiki / "recordings" / "session 5" / "transcript.md").read_text("utf-8")
+        self.assertIn("language: en", transcript.split("\n---\n")[0].splitlines())
+
     def test_approving_something_that_is_not_a_recording_is_refused(self):
         code, out = run("recordings", "approve", "--course", self.course, "official/Unit 4/nope.mp4")
         self.assertEqual(code, 1)
@@ -194,7 +202,8 @@ class GraphicsCardWithoutItsLibraries(CourseTestCase):
                 heard.append(audio)
                 if self.device != "cpu":
                     raise RuntimeError("Library cublas64_12.dll is not found or cannot be loaded")
-                return iter([types.SimpleNamespace(start=0.0, end=1.5, text=" hello")]), None
+                segments = [types.SimpleNamespace(start=0.0, end=1.5, text=" hello, this is a lecture about prices")]
+                return iter(segments), types.SimpleNamespace(language="en")  # the language heard
 
         heard = []
         own = self.tmp / "own"
@@ -209,7 +218,9 @@ class GraphicsCardWithoutItsLibraries(CourseTestCase):
                 contextlib.redirect_stderr(said):
             run_json("recordings", "approve", "--course", course, "official/Unit 4/a.m4a")
             run_json("recordings", "transcribe", "--course", course, "official/Unit 4/a.m4a")
-        self.assertIn("hello", (folders(course).wiki / "recordings" / "a" / "transcript.md").read_text("utf-8"))
+        transcript = (folders(course).wiki / "recordings" / "a" / "transcript.md").read_text("utf-8")
+        self.assertIn("hello", transcript)
+        self.assertIn("language: en", transcript)  # detected on the processor first, then transcribed
         self.assertIn("processor", said.getvalue())
         try:
             import numpy  # noqa: F401  (installed with faster-whisper)
