@@ -60,7 +60,7 @@ Done when: every approved document is ingested or listed as failed.
 
 ## 6. Download the recordings, one at a time
 
-For each recording item of the approved listing whose `url` is not in `us site-status` yet (a resumed run skips what is already in), in order, and only now:
+For each recording item of the approved listing whose `url` is not in `us site-status` yet (a resumed run skips what is already in), oldest first (by the recording date), and only now:
 
 1. In its collection tab, run the stream snippet from `site.md` with the item copied exactly from the approved listing (rebuilding it from the page loses its `transcribe` tick): it collects that one recording's link and downloads a one-recording listing, `unistudent-<course number>-<date>__rec-<n>.json`.
 2. Run `us recordings fetch --json "<Downloads>/<that file>" "<Downloads>"` (it keeps the sound only when the Settings say so).

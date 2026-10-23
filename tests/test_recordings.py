@@ -125,6 +125,26 @@ class Recordings(CourseTestCase):
         self.assertIn(f"source: {moved}\nunit: lessons\n", transcript)
 
 
+class OldestFirst(CourseTestCase):
+    """Recordings are listed and transcribed oldest first (by the date in their name), so unit 1 is usable first."""
+
+    def test_recordings_are_listed_and_transcribed_by_recording_date(self):
+        own = self.tmp / "own"
+        for name in ("a lesson 2026-08-03.mp4", "b lesson 2026-07-16.mp4", "c lesson 12.10.2025.mp4"):
+            write(own / "Unit 4" / name, name.encode() + b"\x00" * 4096)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
+        oldest_first = [f"official/Unit 4/{n}" for n in ("c lesson 12.10.2025.mp4", "b lesson 2026-07-16.mp4",
+                                                         "a lesson 2026-08-03.mp4")]
+        listed = [r["path"] for r in run_json("recordings", "list", "--course", course)["recordings"]]
+        self.assertEqual(listed, oldest_first)
+        self.assertEqual(run_json("recordings", "estimate", "--course", course)["files"], oldest_first)
+        with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "approve", "--course", course, *reversed(oldest_first))
+            done = run_json("recordings", "transcribe", "--course", course, *reversed(oldest_first))["transcripts"]
+        self.assertEqual([Path(p).parent.name for p in done], [Path(r).stem for r in oldest_first])
+
+
 class SyncedCourseFolder(CourseTestCase):
     def test_recordings_added_to_a_synced_course_folder_live_in_a_local_folder(self):
         local = self.tmp / "local recordings"
