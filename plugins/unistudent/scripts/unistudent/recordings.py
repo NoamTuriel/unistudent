@@ -275,7 +275,19 @@ def benchmark(course, rel):
     return factor
 
 
-ROUGH_REALTIME_FACTOR = {"mlx": 0.15, "faster": 0.5}  # hours of work per hour of audio, before anything is measured
+# Hours of work per hour of audio, before anything is measured on this machine. mlx: 0.16 measured on real lessons
+# (Apple M4). faster: 0.39 measured on a fast processor with no graphics card (Apple M4 CPU, 10 minutes of a Hebrew
+# lesson); an NVIDIA card is much faster, an older processor slower.
+ROUGH_REALTIME_FACTOR = {"mlx": 0.15, "faster": 0.4}
+
+
+def has_nvidia_gpu():
+    """Whether faster-whisper can use an NVIDIA graphics card here (otherwise it runs on the processor)."""
+    try:
+        import ctranslate2  # installed with faster-whisper
+        return ctranslate2.get_cuda_device_count() > 0
+    except ImportError:
+        return shutil.which("nvidia-smi") is not None
 
 
 def _speeds():
@@ -382,6 +394,10 @@ def estimate(course, unit=None):
         "install_run": None if backend_available(name) else install_run(name),
         "realtime_factor": factor,
         "estimated_hours": round(seconds * factor / 3600, 2) if factor else None,
+        "warning": None if name != "faster" or has_nvidia_gpu() else (
+            "This computer has no NVIDIA graphics card, so speech-to-text runs on the processor: about 25 minutes "
+            "per hour of recording on a fast new processor, longer on an older one. `us recordings benchmark` "
+            "measures this computer."),
         "faster_option": {"estimated_hours": round(seconds * fast_factor / 3600, 2)} if fast_factor else None,
         "transcription": "fast" if _fast(course) else "accurate",
         "files": [r["path"] for r in rows],

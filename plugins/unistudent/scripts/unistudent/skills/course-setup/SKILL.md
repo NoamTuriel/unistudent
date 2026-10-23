@@ -98,7 +98,7 @@ Say why in a sentence: recorded lessons hold what the lecturer *said*: explanati
 
 **Question 1 of 3: transcribe and summarise the recordings?** Recommended.
 - **What it gives:** a written transcript of each recording, and a summary with a table of contents that links every topic, example and announcement to the exact minute it was said. The AI can then answer from what the lecturer said.
-- **What it costs, per hour of recording:** about 10 minutes of this computer's time on a Mac with Apple silicon, about 30 minutes on other computers; almost no disk; some Claude usage, to read the transcript and write the summary. It needs a free speech-to-text tool on this computer (downloaded once: about 1.6 GB, or about 3 GB for Hebrew on a Mac; it runs here and sends nothing anywhere).
+- **What it costs, per hour of recording:** about 10 minutes of this computer's time on a Mac with Apple silicon, on other computers about 25 minutes with a fast new processor, longer with an older one, less with an NVIDIA graphics card; almost no disk; some Claude usage, to read the transcript and write the summary. It needs a free speech-to-text tool on this computer (downloaded once: about 1.6 GB, or about 3 GB for Hebrew on a Mac; it runs here and sends nothing anywhere).
 - Ask yes or no. The recordings you approve in step 8's download list are transcribed then: you won't be asked again recording by recording. No → they are still downloaded (sound only, if you don't keep the video), so you can have them transcribed any time later with `/unistudent:course-recordings`.
 
 **Question 2 of 3: frame analysis (looking at the screen)?** Recommended for courses taught from slides, graphs, formulas or drawings (economics, maths, science); fine to skip for talking-only lectures.
