@@ -209,7 +209,8 @@ def cmd_context(args):
     course.update_settings(exam_date=args.exam_date,
                            recording_level=int(args.recording_level) if args.recording_level is not None else None,
                            frame_analysis=(args.frame_analysis == "1") if args.frame_analysis is not None else None,
-                           keep_video=(args.keep_video == "1") if args.keep_video is not None else None)
+                           keep_video=(args.keep_video == "1") if args.keep_video is not None else None,
+                           transcription=args.transcription)
     write_context_files(course)
     return {"summary": f"Context file written: {course.root / 'CLAUDE.md'}"}
 
@@ -261,6 +262,8 @@ def build_parser():
                    help="0 skip, 1 download only, 3 transcript and summary")
     p.add_argument("--frame-analysis", choices=["0", "1"],
                    help="0 off, 1 on: per-segment vision calls when indexing recordings (separate opt-in, costly)")
+    p.add_argument("--transcription", choices=["accurate", "fast"],
+                   help="accurate (default) or fast: about 3x faster on a Mac, a few more misheard words")
     p.add_argument("--keep-video", choices=["0", "1"],
                    help="1 keep the recordings' video to watch; 0 keep only their sound (the time links still work)")
 

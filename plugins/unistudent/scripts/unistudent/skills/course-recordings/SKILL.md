@@ -24,6 +24,8 @@ Show the totals: number of recordings, hours of audio, GB, estimated time on thi
 
 Then ask a **separate** question about frame analysis (looking at what's on screen, e.g. slides; built in, it needs only ffmpeg): show `frame_analysis_segments` from the same estimate (one extra AI call per segment — real cost, distinct from transcription) and ask yes/no. Default to no unless the student asks for it. Record with `us context --frame-analysis <0 off|1 on>`. Skip this question if it was already answered for this course.
 
+When the chosen recordings' estimate is over 3 hours and the estimate has a `faster_option`, ask one more question: **Accurate** (recommended, the default) or **Faster: about 3x faster, a few more misheard words** (with both times). Faster → `us context --transcription fast`; never offer it otherwise.
+
 Done when: the student named recordings by number, or said none; and, if relevant, frame analysis is explicitly on or off.
 
 ## 3. Transcribe
