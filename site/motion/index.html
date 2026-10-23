@@ -1,0 +1,349 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>UniStudent: study from your course, not the internet</title>
+<meta name="description" content="A free plugin for the AI app you already use. It answers from your course's own files, with the exact page or lecture minute, and builds study packs with summaries, illustrations and an exercise guide.">
+<meta property="og:title" content="UniStudent: study from your course, not the internet">
+<meta property="og:description" content="A free plugin for your AI app that answers from your course's own files, with the exact page or lecture minute.">
+<meta property="og:image" content="https://noamturiel.github.io/unistudent/media/unistudent-35s.jpg">
+<meta name="twitter:card" content="summary_large_image">
+<link rel="icon" href="../media/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="motion.css">
+<script>
+// Hide what will animate in, only when motion is wanted; the Motion script's onerror undoes it
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('m');
+</script>
+</head>
+<body>
+
+<header class="bar" data-field="yellow">
+  <div class="wrap">
+    <a class="brand" href="#top"><img src="../media/icon.svg" alt="" width="28" height="28">UniStudent</a>
+    <nav aria-label="Main">
+      <a href="#demo">See it work</a>
+      <a href="#notebooklm">vs NotebookLM</a>
+      <a href="../setup.html">How setup works</a>
+      <a href="https://github.com/NoamTuriel/unistudent">GitHub</a>
+      <a class="btn small" href="#install">Install free</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="field hero" data-field="yellow" aria-labelledby="h-hero">
+    <div class="wrap">
+      <h1 id="h-hero"><span class="ln"><span>Study from your course,</span></span> <span class="ln"><span>not the internet.</span></span></h1>
+      <div class="hero-row">
+        <div class="hero-copy">
+          <p class="sub" data-rise>UniStudent makes your AI answer from your course's own files, with the exact page or lecture minute. It builds study packs with summaries, illustrations and an exercise guide, and you can ask it anything about your course.</p>
+          <div class="cta" data-rise><a class="btn" href="#install">Install in 3 steps</a><a class="text-btn" href="#demo">See it work</a></div>
+          <p class="fine" data-rise>Free and open source. Works in Claude, Cursor, VS Code, Codex and other AI apps.</p>
+        </div>
+        <figure class="hero-film" data-rise>
+          <video id="film" src="../media/unistudent-35s.mp4" poster="../media/unistudent-35s.jpg" controls muted loop playsinline preload="metadata" width="1920" height="1080">
+            <track kind="captions" src="../media/unistudent-35s.vtt" srclang="en" label="English" default>
+          </video>
+          <figcaption>The preview: 35 seconds, from adding a course to studying for the exam. <button class="sound" type="button" id="sound">Watch with sound</button></figcaption>
+        </figure>
+      </div>
+    </div>
+  </section>
+
+  <section class="field" id="demo" data-field="ink" aria-labelledby="h-demo">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 id="h-demo" data-rise>See it work</h2>
+        <p data-rise>Six things it does with your course, playing one after another. Click one to stay on it.</p>
+      </div>
+      <div class="demo-grid">
+        <div class="dtabs" role="tablist" aria-label="Features" data-demo data-rise>
+          <button role="tab" id="d-ask" aria-controls="dp-ask" aria-selected="true">Ask anything<small>Answers with the page or the minute</small><i class="prog" aria-hidden="true"></i></button>
+          <button role="tab" id="d-inbox" aria-controls="dp-inbox" aria-selected="false" tabindex="-1">Drop in files<small>Each one lands in the right subject</small><i class="prog" aria-hidden="true"></i></button>
+          <button role="tab" id="d-pack" aria-controls="dp-pack" aria-selected="false" tabindex="-1">Study packs<small>Summary, drawings, exercise guide</small><i class="prog" aria-hidden="true"></i></button>
+          <button role="tab" id="d-rec" aria-controls="dp-rec" aria-selected="false" tabindex="-1">Recordings<small>Contents, announcements, exam hints</small><i class="prog" aria-hidden="true"></i></button>
+          <button role="tab" id="d-prac" aria-controls="dp-prac" aria-selected="false" tabindex="-1">Practice<small>Up to real past exams</small><i class="prog" aria-hidden="true"></i></button>
+          <button role="tab" id="d-tools" aria-controls="dp-tools" aria-selected="false" tabindex="-1">Your AI's tools<small>Every plugin you have, on your course</small><i class="prog" aria-hidden="true"></i></button>
+        </div>
+
+        <div class="stage" data-rise>
+          <div class="app" data-ui>
+            <div class="app-top">Your AI app, with UniStudent · Intro to Economics</div>
+
+            <div class="pane" role="tabpanel" id="dp-ask" aria-labelledby="d-ask">
+              <div class="two">
+                <div class="chat">
+                  <p class="q" data-d=".2">Why does the demand curve slope down?</p>
+                  <p data-d="1">As the price rises, buyers purchase less of the good.<span class="chip ping" data-d="1.2">Subject 2 · p. 14</span></p>
+                  <p data-d="3.4">Think of coffee: from 3 to 6 euros a cup, you start making it at home. The lecturer used the same example.<span class="chip min">Lecture 5 · 23:10</span></p>
+                  <p class="warn" data-d="4.6">⚠️ Not from your course material (general knowledge): economists also explain this through loss aversion.</p>
+                </div>
+                <div class="src" data-d="2.2" data-from="left">
+                  <div class="head"><span>Subject 2 · Demand</span><b>p. 14</b></div>
+                  <h4>The law of demand</h4>
+                  <p><mark>When the price of a good rises, and nothing else changes, buyers purchase less of it.</mark> Part of the drop comes from switching to a substitute: the substitution effect.</p>
+                </div>
+              </div>
+            </div>
+
+            <div class="pane" role="tabpanel" id="dp-inbox" aria-labelledby="d-inbox" hidden>
+              <h3 data-d=".1">Drop files in the inbox. Each one lands in the right subject.</h3>
+              <p class="cap" data-d=".3">Then say "Add my new files". PDFs, slides, Word, scans, photos of notes, recordings.</p>
+              <ul class="rows">
+                <li data-d=".8"><span class="file"><span class="ext pdf">PDF</span><span>week3-slides.pdf</span></span><span class="arrow">→</span><span class="dest">Subject 2 · Demand</span></li>
+                <li data-d="1.6"><span class="file"><span class="ext mp4">MP4</span><span>lecture-05.mp4</span></span><span class="arrow">→</span><span class="dest">Recordings · transcribed</span></li>
+                <li data-d="2.4"><span class="file"><span class="ext jpg">JPG</span><span>photo-of-my-notes.jpg</span></span><span class="arrow">→</span><span class="dest">Subject 3 · Elasticity</span></li>
+                <li data-d="3.2"><span class="file"><span class="ext docx">DOCX</span><span>assignment-2.docx</span></span><span class="arrow">→</span><span class="dest">Assignments</span></li>
+                <li data-d="4"><span class="file"><span class="ext pdf">PDF</span><span>exam-2024-winter.pdf</span></span><span class="arrow">→</span><span class="dest">Past exams</span></li>
+              </ul>
+              <p class="fetched" data-d="5"><span class="pulse"></span><span><b>From your university's site:</b> 2 new files downloaded and sorted, with a university plugin.</span></p>
+            </div>
+
+            <div class="pane" role="tabpanel" id="dp-pack" aria-labelledby="d-pack" hidden>
+              <h3 data-d=".1">Study pack · Subject 2: Demand</h3>
+              <p class="cap" data-d=".3">A summary, the course's drawings, and a guide to the exercises.</p>
+              <div class="pack">
+                <div class="box" data-d=".7">
+                  <h5>Know by heart</h5>
+                  <ul><li>The law of demand, in the course's words</li><li>The notation: <i>Q<sub>d</sub></i>, <i>P</i>, <i>ε</i></li><li>The three things that shift the curve</li></ul>
+                  <div class="mistake" data-d="2.8"><b>Common mistake:</b> mixing a move along the curve with a shift of it.</div>
+                </div>
+                <div class="box" data-d="1.2">
+                  <h5>Understand</h5>
+                  <ul><li>Why a price change moves you <em>along</em> the curve</li><li>Why income shifts the <em>whole</em> curve</li></ul>
+                  <div class="guide" data-d="3.4">
+                    <h5>Exercise guide</h5>
+                    <div><span>Shift or move along?</span><b>4 exercises</b></div>
+                    <div><span>Reading a demand table</span><b>3 exercises</b></div>
+                    <div><span>Must-do before the test</span><b>2 exercises</b></div>
+                  </div>
+                </div>
+                <figure class="graph box" data-d="1.2">
+                  <h5>Illustration, redrawn</h5>
+                  <svg viewBox="0 0 420 270" role="img" aria-label="A demand curve: price up, quantity across, the curve sloping down, with points at prices 6 and 3.">
+                    <g fill="none" stroke-linecap="round">
+                      <path d="M50 20 V230 H400" stroke="#111214" stroke-width="2"/>
+                      <path d="M44 28 L50 18 L56 28 M392 224 L402 230 L392 236" stroke="#111214" stroke-width="2"/>
+                      <path class="curve" d="M80 40 C 170 115, 260 170, 370 210" stroke="#e0458e" stroke-width="5"/>
+                      <path d="M50 152 H222 V230 M50 84 H133 V230" stroke="#8a8d97" stroke-width="1.2" stroke-dasharray="4 5"/>
+                    </g>
+                    <circle cx="133" cy="84" r="7" fill="#111214"/><circle cx="222" cy="152" r="7" fill="#111214"/>
+                    <g font-family="Figtree, sans-serif" font-size="15" fill="#111214"><text x="58" y="22">Price</text><text x="346" y="256">Quantity</text><text x="376" y="204" font-weight="700">D</text><text x="22" y="89">6</text><text x="22" y="157">3</text></g>
+                  </svg>
+                  <figcaption>Graphs, flowcharts, circuits, molecules: whatever your course draws.</figcaption>
+                </figure>
+              </div>
+            </div>
+
+            <div class="pane" role="tabpanel" id="dp-rec" aria-labelledby="d-rec" hidden>
+              <h3 data-d=".1">Lecture 5, with a table of contents</h3>
+              <p class="cap" data-d=".3">What the lecturer said out loud is written down. Click a line to play from that minute.</p>
+              <div class="player" data-d=".6">
+                <div class="t"><span>lecture-05.mp4</span><b>Playing from 41:12</b></div>
+                <div class="scrub"><span class="done"></span><span class="mark" style="left:64%"></span><span class="mark" style="left:83%"></span><span class="knob"></span></div>
+              </div>
+              <ol class="toc">
+                <li data-d="1"><time>03:40</time><span>The demand curve, defined</span></li>
+                <li data-d="1.4"><time>18:05</time><span>Worked example: coffee prices</span></li>
+                <li class="ann now" data-d="1.8"><time>41:12</time><span><b>Announcement:</b> send me your project partner's name by next Tuesday.</span></li>
+                <li class="exam" data-d="2.2"><time>52:30</time><span><b>"This will be on the exam":</b> a shift of the curve vs. a move along it.</span></li>
+              </ol>
+            </div>
+
+            <div class="pane" role="tabpanel" id="dp-prac" aria-labelledby="d-prac" hidden>
+              <h3 data-d=".1">Practice that builds up to the real exam</h3>
+              <p class="cap" data-d=".3">Start easy, finish on real past exams.</p>
+              <div class="ladder">
+                <div class="step" data-d=".7"><b>Warm-up</b><span>Check you know the terms</span></div>
+                <div class="step" data-d="1.1"><b>Exercises</b><span>From the course</span></div>
+                <div class="step" data-d="1.5"><b>Harder</b><span>Two ideas at once</span></div>
+                <div class="step" data-d="1.9"><b>Past exams</b><span>Real exam questions</span></div>
+              </div>
+              <div class="methods">
+                <h5 data-d="2.6">Before the test: every past-exam question, grouped by method</h5>
+                <div data-d="3"><span>Shift vs. move along the curve</span><a href="#demo">6 questions · solutions →</a></div>
+                <div data-d="3.4"><span>Price elasticity from a table</span><a href="#demo">4 questions · solutions →</a></div>
+                <div data-d="3.8"><span>Finding the new equilibrium</span><a href="#demo">5 questions · solutions →</a></div>
+              </div>
+            </div>
+
+            <div class="pane" role="tabpanel" id="dp-tools" aria-labelledby="d-tools" hidden>
+              <div class="two">
+                <div class="chat">
+                  <p class="q" data-d=".2">Make me a 3D model of the part in question 6.</p>
+                  <span class="tool" data-d="1">Using your 3D modelling plugin</span>
+                  <p data-d="1.2">Here's the bracket from question 6, with the measurements from the drawing.<span class="chip">Subject 4 · p. 31</span></p>
+                  <p data-d="2.6">UniStudent lives inside your AI app, so every other tool you've added there works with your course too.</p>
+                </div>
+                <div class="model" data-d="1.4">
+                  <svg viewBox="40 -6 160 165" role="img" aria-label="A 3D model of an L-shaped bracket with two holes.">
+                    <path d="M110 61.2 L186.2 105.2 L129.1 138.2 L52.9 94.2 Z" fill="#dfe5ec"/>
+                    <path d="M186.2 105.2 L129.1 138.2 L129.1 147 L186.2 114 Z" fill="#7b8ca0"/>
+                    <path d="M52.9 94.2 L129.1 138.2 L129.1 147 L52.9 103 Z" fill="#a3b1c2"/>
+                    <ellipse cx="110" cy="105.2" rx="11" ry="6.4" fill="#3c4a5a"/>
+                    <path d="M102.4 65.6 L178.6 109.6 L178.6 52.4 L102.4 8.4 Z" fill="#c4cfdb"/>
+                    <path d="M186.2 105.2 L178.6 109.6 L178.6 52.4 L186.2 48 Z" fill="#7b8ca0"/>
+                    <path d="M110 4 L186.2 48 L178.6 52.4 L102.4 8.4 Z" fill="#dfe5ec"/>
+                    <ellipse cx="140.5" cy="56.8" rx="6.5" ry="9" transform="rotate(30 140.5 56.8)" fill="#3c4a5a"/>
+                  </svg>
+                </div>
+              </div>
+            </div>
+          </div>
+          <p class="made">Made-up examples. No real course material appears on this site.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="field trust" id="trust" data-field="pink" aria-labelledby="h-trust">
+    <div class="wrap">
+      <div class="t-head">
+        <h2 id="h-trust" data-rise>Every answer shows where it came from.</h2>
+        <p data-rise>A general AI answers from the whole internet, so you get methods and notation your course never used. Your exam is graded your course's way. UniStudent keeps your AI on your course's files, and when it has to go beyond them, it says so.</p>
+      </div>
+      <div class="specimens">
+        <div class="spec">
+          <span class="stamp ok" data-ui>Subject 2 · p. 14</span>
+          <h3 data-rise>From your course</h3>
+          <p data-rise>Linked to the exact page, or the exact minute of a recording. One click opens it.</p>
+        </div>
+        <div class="spec">
+          <span class="stamp warn-stamp" data-ui>⚠️ Not from your course</span>
+          <h3 data-rise>From somewhere else</h3>
+          <p data-rise>It says so, in plain words, and where it came from. When the usual way differs from your course's way, your course's way comes first.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="field" id="notebooklm" data-field="paper" aria-labelledby="h-nblm">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 id="h-nblm" data-rise>Why not just use NotebookLM?</h2>
+        <p data-rise>Fair question. NotebookLM is good, and it also answers from the sources you give it. UniStudent does a narrower job, getting you through one course and its exam, so it does more of that job for you.</p>
+      </div>
+      <div class="reasons">
+        <article class="reason"><h3 data-rise>Free, with no paid tiers</h3><p data-rise>There's no plan to upgrade to, and it has no usage limits of its own. It runs on the AI app you already use.</p></article>
+        <article class="reason"><h3 data-rise>Your course's drawings, redrawn</h3><p data-rise>The graphs, flowcharts, circuits and molecules from your course show up in your study pack as clean drawings you can look at.</p></article>
+        <article class="reason"><h3 data-rise>It's your AI, with all its tools</h3><p data-rise>It lives inside the AI app you use, so every tool you've added there works with your course. Engineering student with a 3D plugin? Ask for <span class="say">a 3D model of the part in question 6</span>.</p></article>
+        <article class="reason"><h3 data-rise>It fetches and sorts your files</h3><p data-rise>If there's a plugin for your university, new files come in from the course site on their own. Anything else you drop in the inbox folder goes into the right subject, so you never upload sources one at a time.</p></article>
+        <article class="reason"><h3 data-rise>Made for students</h3><p data-rise>Every subject gets a study pack, every recording gets a table of contents with the lecturer's announcements, and practice goes all the way up to past exams. You don't have to write clever prompts to get any of it.</p></article>
+      </div>
+      <p class="side" data-rise>If you like NotebookLM's audio overviews, keep using them. The two work fine together.</p>
+    </div>
+  </section>
+
+  <section class="field install" id="install" data-field="green" aria-labelledby="h-install">
+    <div class="wrap">
+      <div class="i-head">
+        <h2 id="h-install" data-rise>Install it</h2>
+        <p data-rise>Installing takes about five minutes. You don't need to know how to code: every step is a copy and paste, or a few clicks. After that, setup reads your whole course, which takes longer.</p>
+        <p data-rise><a href="../setup.html">How setup works</a></p>
+      </div>
+      <ol class="steps">
+        <li data-rise>
+          <h3>First, install uv, the one helper UniStudent needs</h3>
+          <div class="tabs" role="tablist" aria-label="Your computer">
+            <button role="tab" id="t-mac" aria-controls="p-mac" aria-selected="true">Mac</button>
+            <button role="tab" id="t-win" aria-controls="p-win" aria-selected="false" tabindex="-1">Windows</button>
+            <button role="tab" id="t-linux" aria-controls="p-linux" aria-selected="false" tabindex="-1">Linux</button>
+          </div>
+          <div class="panel" role="tabpanel" id="p-mac" aria-labelledby="t-mac">
+            <p>Open Terminal: press <kbd>⌘</kbd> and <kbd>Space</kbd>, type <i>Terminal</i>, press Enter. Paste this line and press Enter:</p>
+            <div class="cmd"><pre><code>curl -LsSf https://astral.sh/uv/install.sh | sh && echo 'export PATH="$HOME/.local/bin:$PATH"' >> ~/.zshenv</code></pre><button class="copy" type="button">Copy</button></div>
+            <p class="fine">The second half makes sure your AI app can find uv. Restart the app afterwards.</p>
+          </div>
+          <div class="panel" role="tabpanel" id="p-win" aria-labelledby="t-win" hidden>
+            <p>Open PowerShell: press the Windows key, type <i>PowerShell</i>, press Enter. Paste this line and press Enter:</p>
+            <div class="cmd"><pre><code>powershell -ExecutionPolicy ByPass -c "irm https://astral.sh/uv/install.ps1 | iex"</code></pre><button class="copy" type="button">Copy</button></div>
+            <p class="fine">Restart your AI app afterwards.</p>
+          </div>
+          <div class="panel" role="tabpanel" id="p-linux" aria-labelledby="t-linux" hidden>
+            <p>Open a terminal, paste this line and press Enter:</p>
+            <div class="cmd"><pre><code>curl -LsSf https://astral.sh/uv/install.sh | sh</code></pre><button class="copy" type="button">Copy</button></div>
+          </div>
+        </li>
+        <li id="step-2" data-rise>
+          <h3>Then add UniStudent to your AI app</h3>
+          <div class="tabs" role="tablist" aria-label="Your AI app">
+            <button role="tab" id="t-claude" aria-controls="p-claude" aria-selected="true">Claude app</button>
+            <button role="tab" id="t-code" aria-controls="p-code" aria-selected="false" tabindex="-1">Claude Code</button>
+            <button role="tab" id="t-mcp" aria-controls="p-mcp" aria-selected="false" tabindex="-1">Cursor, VS Code, others</button>
+            <button role="tab" id="t-codex" aria-controls="p-codex" aria-selected="false" tabindex="-1">Codex</button>
+          </div>
+          <div class="panel" role="tabpanel" id="p-claude" aria-labelledby="t-claude">
+            <ol>
+              <li>In the Claude desktop app, open <b>Customize</b>, then <b>Plugins</b>.</li>
+              <li>Next to <b>Personal plugins</b>, click <b>+</b>, then <b>Add marketplace</b>.</li>
+              <li>Choose <b>Add from a repository</b> and paste:
+                <span class="inline-cmd"><code>NoamTuriel/unistudent</code><button class="copy" type="button" data-copy="NoamTuriel/unistudent">Copy</button></span></li>
+              <li>Find <b>unistudent</b> in the list and click <b>Install</b>.</li>
+            </ol>
+            <p class="fine">Button names can differ a little between app versions.</p>
+          </div>
+          <div class="panel" role="tabpanel" id="p-code" aria-labelledby="t-code" hidden>
+            <p>Type these two lines in Claude Code:</p>
+            <div class="cmd"><pre><code>/plugin marketplace add NoamTuriel/unistudent
+/plugin install unistudent@unistudent</code></pre><button class="copy" type="button">Copy</button></div>
+          </div>
+          <div class="panel" role="tabpanel" id="p-mcp" aria-labelledby="t-mcp" hidden>
+            <p>Add this to the app's MCP settings (Cursor, Claude Desktop chat, Windsurf, Gemini CLI's <code>~/.gemini/settings.json</code>):</p>
+            <div class="cmd"><pre><code>{
+  "mcpServers": {
+    "unistudent": {
+      "command": "uvx",
+      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+    }
+  }
+}</code></pre><button class="copy" type="button">Copy</button></div>
+            <p class="fine">VS Code calls the top key <code>servers</code> and wants <code>"type": "stdio"</code>. On a Mac, if it doesn't start, put the full path from <code>which uvx</code> in <code>"command"</code>.</p>
+          </div>
+          <div class="panel" role="tabpanel" id="p-codex" aria-labelledby="t-codex" hidden>
+            <p>Paste this in your terminal:</p>
+            <div class="cmd"><pre><code>codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" unistudent-mcp</code></pre><button class="copy" type="button">Copy</button></div>
+          </div>
+        </li>
+        <li data-rise>
+          <h3>Last, set up your first course</h3>
+          <p>Open a new chat and say <span class="say-it">Set up my course with UniStudent.</span></p>
+          <p>In Claude Code you can also type <code>/unistudent:course-setup</code>. It asks one question at a time: your university, your course, where your files are. Then it reads your course and tells you what's next. This part takes a while, and you only do it once per course: <a href="../setup.html">here's how setup works</a>.</p>
+          <p>Later, when you get new files, drop them in the course's inbox folder and say <span class="say-it">Add my new files.</span></p>
+          <p class="fine">You can stop setup at any point; running it again picks up where you left off. Recordings also need ffmpeg, and setup offers to install it.</p>
+        </li>
+      </ol>
+    </div>
+  </section>
+
+  <section class="field closer" id="why" data-field="ink" aria-labelledby="h-letter">
+    <div class="wrap">
+      <div class="letter">
+        <h2 id="h-letter" data-rise>Why I made this</h2>
+        <p data-rise>I'm a university student, and I built UniStudent for my own courses. The AI I studied with kept answering from the whole internet, with methods and notation my course didn't use, and I couldn't tell which parts I could trust for the exam.</p>
+        <p data-rise>Now every answer points to the page or the lecture minute it came from. It's free and open source. If it doesn't work well for your course or your university, open an issue on GitHub and tell me.</p>
+        <p class="sign" data-rise>Noam</p>
+        <div class="cta" data-rise><a class="btn" href="#install">Install it</a><a class="text-btn" href="https://github.com/NoamTuriel/unistudent">See the code on GitHub</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="field" id="end" data-field="ink">
+  <div class="wrap">
+    <p class="wordmark" aria-hidden="true"><span>U</span><span>n</span><span>i</span><span>S</span><span>t</span><span>u</span><span>d</span><span>e</span><span>n</span><span>t</span></p>
+    <div class="foot">
+      <p>Your course files stay in folders on your computer; your AI app reads them to answer you. Course material belongs to your university, so this site shows only made-up examples.</p>
+      <nav aria-label="Footer"><a href="../setup.html">How setup works</a><a href="https://github.com/NoamTuriel/unistudent">GitHub</a><a href="https://github.com/NoamTuriel/unistudent/blob/main/LICENSE">MIT license</a></nav>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/motion@13.5.1/dist/motion.js" onerror="document.documentElement.classList.remove('m')"></script>
+<script src="motion.js"></script>
+</body>
+</html>
