@@ -2,7 +2,7 @@
 
 Built from a University plugin's listing (or the generated fallback's), so every university gets the same screen.
 `show` writes the checklist into the Hidden folder, `apply` reads its ticks back into the approved listing, `status`
-counts what the run has done from the approved listing, the Manifest and the recordings state (files from the student's
+counts what the run has done from every listing the course approved, the Manifest and the recordings state (files from the student's
 own folder or the inbox count as already in, so a course with no site still gets the box).
 """
 import hashlib
@@ -36,6 +36,18 @@ def checklist_file(course):
 
 def approved_file(course):
     return _folder(course) / "approved-listing.json"
+
+
+def _every_approved_file(course):
+    return _folder(course) / "every-approved.json"
+
+
+def every_approved(course):
+    """Every file the student approved in any Fetch plan of the course (a course from before this record: its last)."""
+    for path in (_every_approved_file(course), approved_file(course)):
+        if path.is_file():
+            return _read_listing(path).get("items", [])
+    return []
 
 
 def is_recording(item):
@@ -235,6 +247,9 @@ def apply(course, listing_path, unit_answers):
         if is_recording(item) and _transcribes(course):
             item["transcribe"] = True  # ingest approves it for transcription once it is downloaded
         chosen.append(item)
+    planned = {i.get("url") for i in items}  # this plan decides again on an earlier plan's file it lists
+    earlier = [i for i in every_approved(course) if i.get("url") not in planned]
+    _every_approved_file(course).write_text(json.dumps({"items": earlier + chosen}, ensure_ascii=False, indent=1), "utf-8")
     path = approved_file(course)
     path.write_text(json.dumps({**data, "items": chosen}, ensure_ascii=False, indent=1), "utf-8")
     recordings = sum(1 for i in chosen if is_recording(i))
@@ -245,7 +260,7 @@ def apply(course, listing_path, unit_answers):
 
 
 def _bar(done, total, width=20):
-    filled = min(width, width * done // total) if total else width
+    filled = min(width, width * done // total) if total else 0  # nothing to do is not done
     return "[" + "#" * filled + "-" * (width - filled) + "]"
 
 
@@ -260,7 +275,7 @@ def status(course):
                 "recordings": {"downloaded": 0, "transcribed": 0, "summarised": 0, "total": 0},
                 "hours": 0, "rough": False, "box": None,
                 "summary": "Nothing to download: no Fetch plan was approved and no files were copied in."}
-    items = _read_listing(path).get("items", []) if path.is_file() else []
+    items = every_approved(course)
     by_url = {e.get("site_url"): rel for rel, e in files.items() if e.get("site_url")}
     pages = recording_pages(course)
     chosen = set(approved(course))
