@@ -17,6 +17,7 @@ import sys
 import tempfile
 import time
 import wave
+import zlib
 from pathlib import Path
 
 from . import material
@@ -26,7 +27,8 @@ from .course import home
 from .course import unit_dir
 from .wiki import recording_pages, video_link
 
-# Hebrew-tuned models by ivrit.ai; other languages use the multilingual model.
+# The spoken language is detected per recording (ADR 0014), then the model is picked for it: Hebrew-tuned models by
+# ivrit.ai, the multilingual model for any other language.
 MODELS = {
     ("faster", "he"): "ivrit-ai/whisper-large-v3-turbo-ct2",
     ("faster", None): "large-v3-turbo",
@@ -37,6 +39,12 @@ MODELS = {
 # times faster than the accurate model, with about 3 and 5 more misheard words per 10 minutes.
 FAST_MODELS = {("mlx", "he"): "mlx-community/ivrit-ai-whisper-large-v3-turbo-mlx"}
 FAST_SPEEDUP = 2.7
+# Detecting takes a small multilingual model: a language-tuned one hears every language as its own (measured: the Hebrew
+# model wrote an English clip out in Hebrew; tiny agreed with the large multilingual model on 30 of 31 real lecture
+# clips, the one miss a clip with no speech, in under a second each).
+DETECT_MODELS = {"faster": "tiny", "mlx": "mlx-community/whisper-tiny"}
+DETECT_SECONDS = 30
+MIN_SPEECH_CHARACTERS = 20  # a clip whose text is shorter held no speech (silence came out as "Thank you.")
 PARAGRAPH_SECONDS = 60
 
 SYNCED_MARKERS = ("mobile documents", "icloud", "google drive", "googledrive", "my drive",
@@ -220,6 +228,52 @@ def silences(path: Path):
     return list(zip(starts, ends + [math.inf] * (len(starts) - len(ends))))  # a silence to the very end has no end line
 
 
+def _sound(audio: Path):
+    """A WAV file as faster-whisper takes it, decoded here: its own reader fails with PyAV 19 (open() has no
+    metadata_errors any more)."""
+    try:
+        import numpy  # installed with faster-whisper
+        with wave.open(str(audio)) as pcm:
+            return numpy.frombuffer(pcm.readframes(pcm.getnframes()), numpy.int16).astype(numpy.float32) / 32768
+    except ImportError:
+        return str(audio)
+
+
+def _is_speech(text):
+    """Whether a clip's text is speech: long enough, and not Whisper's loop over silence ("yn ymthio, yn ymthio, ...",
+    which compresses as no real sentence does; 2.4 is Whisper's own threshold)."""
+    data = text.strip().encode("utf-8")
+    return len(text.strip()) >= MIN_SPEECH_CHARACTERS and len(data) / len(zlib.compress(data)) < 2.4
+
+
+def detect_language(audio: Path, name: str):
+    """The language spoken in a recording ("he", "en", ...), or None when no clip had speech: the most heard among five
+    30-second clips spread over it that hold speech. A clip of silence or a break names a random language (measured on
+    real lectures, with every model size), and a lecture's first minutes often are one."""
+    if name == "fake":
+        return "en"
+    length = duration(audio) or 0
+    heard = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for i, part in enumerate((0.5, 0.3, 0.7, 0.1, 0.9)):
+            clip = Path(tmp) / f"clip{i}.wav"
+            extract_audio(audio, clip, start=int(max(0, min(length * part, length - DETECT_SECONDS))),
+                          seconds=DETECT_SECONDS)
+            if name == "mlx":
+                import mlx_whisper
+                result = mlx_whisper.transcribe(str(clip), path_or_hf_repo=DETECT_MODELS[name],
+                                                condition_on_previous_text=False)
+                language, text = result["language"], result["text"]
+            else:
+                from faster_whisper import WhisperModel
+                detector = WhisperModel(DETECT_MODELS[name], device="cpu", compute_type="auto")  # tiny: no GPU needed
+                segments, info = detector.transcribe(_sound(clip))
+                language, text = info.language, " ".join(s.text for s in segments)
+            if _is_speech(text):
+                heard.append(language)
+    return max(heard, key=heard.count) if heard else None  # a tie: the clip nearest the middle
+
+
 def transcribe_audio(audio: Path, name: str, language: str, fast=False):
     """[(start, end, text)] from the chosen backend."""
     model = model_for(name, language, fast)
@@ -234,12 +288,7 @@ def transcribe_audio(audio: Path, name: str, language: str, fast=False):
                                         condition_on_previous_text=False)
         return [(s["start"], s["end"], s["text"].strip()) for s in result["segments"]]
     from faster_whisper import WhisperModel
-    try:  # decoded here: faster-whisper's own reader fails with PyAV 19 (open() has no metadata_errors any more)
-        import numpy  # installed with faster-whisper
-        with wave.open(str(audio)) as pcm:
-            sound = numpy.frombuffer(pcm.readframes(pcm.getnframes()), numpy.int16).astype(numpy.float32) / 32768
-    except ImportError:
-        sound = str(audio)
+    sound = _sound(audio)
 
     def run(device):
         whisper = WhisperModel(model, device=device, compute_type="auto")
@@ -269,8 +318,9 @@ def benchmark(course, rel):
     with tempfile.TemporaryDirectory() as tmp:
         audio = Path(tmp) / "sample.wav"
         extract_audio(source, audio, start=0, seconds=SAMPLE_SECONDS)
+        language = detect_language(audio, name)
         began = time.monotonic()
-        transcribe_audio(audio, name, course.settings().get("language"))
+        transcribe_audio(audio, name, language)
         spent = time.monotonic() - began
     factor = spent / SAMPLE_SECONDS
     _save_speeds({**_speeds(), "backend": name, "realtime_factor": factor})
@@ -409,14 +459,14 @@ def estimate(course, unit=None):
     }
 
 
-def write_transcript(course, rel, segments, name):
+def write_transcript(course, rel, segments, name, language):
     info = recording_pages(course)[rel]
     folder = course.wiki / info["folder"]
     folder.mkdir(parents=True, exist_ok=True)
     source = material.path_of(course, rel)
     total = segments[-1][1] if segments else 0
     lines = ["---", f"source: {rel}", f"unit: {info['unit'] if info['unit'] is not None else 'unsorted'}",
-             f"duration: {hms(total)}", f"backend: {name}", "---", "",
+             f"duration: {hms(total)}", f"backend: {name}", f"language: {language or 'unknown'}", "---", "",
              f"# {Path(rel).name}: transcript", "",
              "Sources: " + video_link(course, rel, folder), ""]
     block_start, block = None, []
@@ -468,19 +518,20 @@ def transcribe(course, rel):
                 audio.write_bytes(b"")
             else:
                 extract_audio(source, audio)
-            segments = transcribe_audio(audio, name, course.settings().get("language"), _fast(course))
+            language = detect_language(audio, name)  # the lecture's own language, whatever the course's
+            segments = transcribe_audio(audio, name, language, _fast(course))
     finally:
         _running_file(course).unlink()
     if seconds:  # the time estimates follow this machine's real speed from now on
         data = _speeds()
-        done = data.setdefault("transcripts", {}).setdefault(model_for(name, course.settings().get("language"), _fast(course)),
+        done = data.setdefault("transcripts", {}).setdefault(model_for(name, language, _fast(course)),
                                                              {"audio": 0, "spent": 0})
         done["audio"] += seconds
         done["spent"] += time.monotonic() - began
         _save_speeds(data)
     quiet = silences(source)  # Whisper invents text over a silent break ("Thank you." again and again): drop it
     segments = [s for s in segments if not any(a <= s[0] and s[1] <= b for a, b in quiet)]  # wholly inside only
-    path = write_transcript(course, rel, segments, name)
+    path = write_transcript(course, rel, segments, name, language)
     left = [r for r in approved(course) if r != rel]
     _approved_file(course).write_text(json.dumps(left, ensure_ascii=False), "utf-8")
     _write_progress(course)
