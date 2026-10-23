@@ -1,4 +1,6 @@
 """Recordings into the Wiki (seam 2), with the test speech-to-text backend."""
+import shutil
+import subprocess
 from pathlib import Path
 import unittest
 
@@ -143,6 +145,26 @@ class OldestFirst(CourseTestCase):
             run_json("recordings", "approve", "--course", course, *reversed(oldest_first))
             done = run_json("recordings", "transcribe", "--course", course, *reversed(oldest_first))["transcripts"]
         self.assertEqual([Path(p).parent.name for p in done], [Path(r).stem for r in oldest_first])
+
+
+@unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg not installed")
+class SilenceFilter(CourseTestCase):
+    def test_text_over_a_long_silence_is_dropped_from_the_transcript(self):
+        # Whisper invents "Thank you." over a silent break; the test engine writes a line every 20 s, 0 to 140 s.
+        own = self.tmp / "own"
+        (own / "Unit 4").mkdir(parents=True)
+        subprocess.run(["ffmpeg", "-v", "error", "-f", "lavfi", "-i",
+                        "aevalsrc='if(between(t,30,130),0,0.5*sin(2*PI*440*t))':d=150:s=16000",
+                        str(own / "Unit 4" / "lesson.m4a")], check=True)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--import", own, "--tier", "official")
+        with mock_env(UNISTUDENT_STT_BACKEND="fake"):
+            run_json("recordings", "approve", "--course", course, "official/Unit 4/lesson.m4a")
+            run_json("recordings", "transcribe", "--course", course, "official/Unit 4/lesson.m4a")
+        transcript = (folders(course).wiki / "recordings" / "lesson" / "transcript.md").read_text("utf-8")
+        self.assertIn("segment at 00:00:00", transcript)
+        self.assertNotIn("segment at 00:01:00", transcript)  # inside the silence
+        self.assertIn("segment at 00:02:20", transcript)
 
 
 class SyncedCourseFolder(CourseTestCase):

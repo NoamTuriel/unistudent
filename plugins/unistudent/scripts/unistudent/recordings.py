@@ -190,6 +190,22 @@ def extract_audio(path: Path, out: Path, start=None, seconds=None):
     subprocess.run(cmd, check=True)
 
 
+# Quieter than speech for 30 s or more. Measured on a real 2.5 h lesson: 35 invented lines dropped (a 17-minute break
+# of "Thank you." and one more), no real speech: a segment goes only when it lies wholly inside such a silence.
+SILENCE = "silencedetect=noise=-40dB:d=30"
+
+
+def silences(path: Path):
+    """[(start, end)] in seconds of the long silences in a recording; [] when ffmpeg can't read it."""
+    if not shutil.which("ffmpeg"):
+        return []
+    log = subprocess.run(["ffmpeg", "-nostats", "-i", str(path), "-vn", "-af", SILENCE, "-f", "null", "-"],
+                         capture_output=True, text=True, errors="replace").stderr
+    starts = [float(t) for t in re.findall(r"silence_start: (-?[\d.]+)", log)]
+    ends = [float(t) for t in re.findall(r"silence_end: ([\d.]+)", log)]
+    return list(zip(starts, ends + [math.inf] * (len(starts) - len(ends))))  # a silence to the very end has no end line
+
+
 def transcribe_audio(audio: Path, name: str, language: str):
     """[(start, end, text)] from the chosen backend."""
     model = model_for(name, language)
@@ -349,6 +365,8 @@ def transcribe(course, rel):
         else:
             extract_audio(source, audio)
         segments = transcribe_audio(audio, name, course.settings().get("language"))
+    quiet = silences(source)  # Whisper invents text over a silent break ("Thank you." again and again): drop it
+    segments = [s for s in segments if not any(a <= s[0] and s[1] <= b for a, b in quiet)]  # wholly inside only
     path = write_transcript(course, rel, segments, name)
     left = [r for r in approved(course) if r != rel]
     _approved_file(course).write_text(json.dumps(left, ensure_ascii=False), "utf-8")
