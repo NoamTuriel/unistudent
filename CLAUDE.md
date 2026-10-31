@@ -69,4 +69,5 @@ use only, not meant to be public. If in doubt about whether something is persona
 - Core skills share one conventions block (`us` / delegate / ask); `tests/test_skills.py` keeps it identical. Use existing tools before writing new ones (markitdown, ffmpeg, faster-whisper / mlx-whisper).
 - Skills and agents follow `writing-for-agents`: steps with "Done when" criteria, one source of truth per rule. The grounding rule's single source is `plugins/unistudent/scripts/unistudent/templates/context.md`; study-pack generic rules live in `plugins/unistudent/scripts/unistudent/reference/study-pack.md`.
 - University plugins never hold study-pack rules; per-course rules are the student's preferences file (ADR 0011).
+- A pull request that changes a plugin raises its version (`plugin.json`; for unistudent also `pyproject.toml` and `__init__.py`): students only get new code when the version goes up. CI (`version-bump`) fails otherwise.
 - Never commit course material.

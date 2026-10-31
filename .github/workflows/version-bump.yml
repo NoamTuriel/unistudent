@@ -1,0 +1,39 @@
+name: version-bump
+# Students only get new plugin code when its version goes up (Claude Code keeps the cached copy otherwise), so a pull
+# request that changes a plugin must raise that plugin's version in .claude-plugin/plugin.json.
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - shell: python
+        env:
+          BASE: ${{ github.event.pull_request.base.sha }}
+        run: |
+          import json, os, subprocess, sys
+          base = os.environ["BASE"]
+          def git(*args):
+              return subprocess.run(["git", *args], capture_output=True, text=True).stdout
+          def version(text):
+              return tuple(int(n) for n in json.loads(text)["version"].split("."))
+          failed = False
+          for plugin in sorted(os.listdir("plugins")):
+              manifest = f"plugins/{plugin}/.claude-plugin/plugin.json"
+              if not os.path.isfile(manifest) or not git("diff", "--name-only", f"{base}...HEAD", "--", f"plugins/{plugin}").strip():
+                  continue
+              before = git("show", f"{base}:{manifest}")
+              old, new = (version(before) if before else (0,)), version(open(manifest, encoding="utf-8").read())
+              if new <= old:
+                  failed = True
+                  print(f"::error file={manifest}::{plugin} changed but its version did not go up "
+                        f"({'.'.join(map(str, old))}). Raise it in {manifest}"
+                        + (", plugins/unistudent/pyproject.toml and plugins/unistudent/scripts/unistudent/__init__.py" if plugin == "unistudent" else "")
+                        + ", or students won't receive the change.")
+              else:
+                  print(f"{plugin}: {'.'.join(map(str, old))} -> {'.'.join(map(str, new))}")
+          sys.exit(1 if failed else 0)
