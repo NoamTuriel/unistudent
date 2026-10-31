@@ -105,9 +105,20 @@ def home() -> Path:
     return Path(os.environ.get("UNISTUDENT_HOME") or Path.home() / ".unistudent")
 
 
+def _retry(action):
+    """Run `action`, retrying for up to 2 s on PermissionError: Windows refuses to replace or open a file while another
+    command has it open for a moment, where macOS and Linux never refuse."""
+    for _ in range(40):
+        try:
+            return action()
+        except PermissionError:
+            time.sleep(0.05)
+    return action()
+
+
 def _read_json(path: Path, default):
     try:
-        return json.loads(path.read_text("utf-8"))
+        return json.loads(_retry(lambda: path.read_text("utf-8")))
     except FileNotFoundError:
         return default
 
@@ -116,7 +127,7 @@ def _write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
     tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")  # two commands at once never share one
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True), "utf-8")
-    os.replace(tmp, path)  # atomic, so an interrupted run never leaves half a file
+    _retry(lambda: os.replace(tmp, path))  # atomic, so an interrupted run never leaves half a file
 
 
 class Course:

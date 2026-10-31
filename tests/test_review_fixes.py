@@ -382,6 +382,21 @@ class CommandsAtOnce(CourseTestCase):
         self.assertEqual([p.wait(timeout=60) for p in procs], [0] * 4)
         self.assertEqual(len(run_json("manifest", "--course", course)["files"]), 24)
 
+    def test_a_file_another_command_holds_open_for_a_moment_is_saved_after_a_retry(self):
+        """Windows refuses to replace a file another command has open (PermissionError); the save waits and retries."""
+        real, refusals = os.replace, [PermissionError("in use"), PermissionError("in use")]
+
+        def replace(src, dst):
+            if refusals:
+                raise refusals.pop()
+            real(src, dst)
+
+        with mock.patch("unistudent.course.os.replace", replace):
+            run_json("setup", self.tmp / "Macro", "--name", "Macro", "--language", "en")
+        self.assertEqual(refusals, [])
+        settings = json.loads((self.tmp / "Macro" / ".unistudent" / "settings.json").read_text("utf-8"))
+        self.assertEqual(settings["course_name"], "Macro")
+
 
 if __name__ == "__main__":
     unittest.main()
