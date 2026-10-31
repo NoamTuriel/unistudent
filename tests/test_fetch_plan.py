@@ -350,6 +350,24 @@ class StatusWithoutASite(CourseTestCase):
         self.assertIn("Recordings  [" + "#" * 20 + "]  1 of 1", box)  # full, and no wider than the other bar
 
 
+class OfficeFiles(CourseTestCase):
+    """Setup offers LibreOffice when the approved plan or the student's folder holds Word or PowerPoint files."""
+
+    def test_word_and_powerpoint_files_are_counted_with_whether_libreoffice_works(self):
+        write(self.tmp / "own" / "Unit 1" / "lecture.pptx", b"\x00" * 64)
+        course = self.tmp / "Macro"
+        run("setup", course, "--name", "Macro", "--language", "en", "--university", "openu",
+            "--import", self.tmp / "own", "--tier", "official")
+        path = write(self.tmp / "listing.json", json.dumps(listing(SLIDES, NOTES)))
+        run_json("fetch-plan", "show", "--course", course, path)
+        run_json("fetch-plan", "apply", "--course", course, path)  # approved, nothing downloaded yet
+        with mock.patch("unistudent.convert._soffice", return_value=None):
+            status = run_json("fetch-plan", "status", "--course", course)
+        self.assertEqual((status["office_files"], status["libreoffice"]), (2, False))  # notes.docx + lecture.pptx
+        with mock.patch("unistudent.convert._soffice", return_value="/usr/bin/soffice"):
+            self.assertTrue(run_json("fetch-plan", "status", "--course", course)["libreoffice"])
+
+
 class TimeLeftFromRealSpeed(CourseTestCase):
     """The time left follows how fast this machine really transcribed, not an old benchmark."""
 

@@ -56,10 +56,14 @@ def kind(path) -> str:
 
 
 WORKS = {}  # program path → whether it runs: a wrapper left after LibreOffice was removed does not
+SOFFICE_PLACES = ["/Applications/LibreOffice.app/Contents/MacOS/soffice",  # its installers don't add it to the PATH
+                  r"C:\Program Files\LibreOffice\program\soffice.exe",
+                  r"C:\Program Files (x86)\LibreOffice\program\soffice.exe"]
 
 
 def _soffice():
-    path = shutil.which("soffice") or shutil.which("libreoffice")
+    path = (shutil.which("soffice") or shutil.which("libreoffice")
+            or next((p for p in SOFFICE_PLACES if Path(p).is_file()), None))
     if path and path not in WORKS:
         try:
             WORKS[path] = subprocess.run([path, "--version"], capture_output=True, timeout=60).returncode == 0
