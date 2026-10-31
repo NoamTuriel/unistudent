@@ -306,7 +306,7 @@ class SlidePictures(CourseTestCase):
         with mock.patch("unistudent.convert._soffice", return_value=None):
             [item] = run_json("wiki", "build", "--course", course)["needs_visual"]
         self.assertEqual(item["pages"], [2])
-        self.assertEqual([p.rsplit("/", 1)[-1] for p in item["pictures"]], ["page-2-1.png"])
+        self.assertEqual([Path(p).name for p in item["pictures"]], ["page-2-1.png"])
 
 
 @unittest.skipUnless(convert._soffice(), "LibreOffice not installed")
