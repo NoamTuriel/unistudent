@@ -92,13 +92,16 @@ if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentEl
         <p data-rise>You start it by saying "Set up my course with UniStudent". It asks one question at a time and says before each step whether it will take a while.</p>
       </div>
       <ol class="run">
-        <li data-rise><b>A few questions</b><span>Your language (it suggests your course's own), your university, your course, and where your files are.</span></li>
-        <li data-rise><b>Gathering your files</b><span>From the folder you point it to, from the course inbox, or, with a plugin for your university, straight from the course site. Downloading can be slow, and it tells you so.</span></li>
-        <li data-rise><b>Choosing what to do with recordings</b><span>Skip them, only download them, or decide one recording at a time. Analyzing video frames is a separate yes or no.</span></li>
-        <li data-rise><b>Reading everything and writing the Wiki</b><span>The long part. It reads each file and writes the Wiki pages for every subject.</span></li>
-        <li data-rise><b>What's next</b><span>It explains what it built, how to ask questions, how to add new files, and how to make your first study pack.</span></li>
+        <li data-rise><b>A few questions</b><em class="t">~10 min, you answer</em><span>Your language (it suggests your course's own), your university, your course, and where your files are. The only part where you need to be there.</span></li>
+        <li data-rise><b>Gathering your files</b><em class="t">~10 min for documents, ~2 h for a semester of recordings</em><span>From your folder or the course inbox, this takes seconds. With a plugin for your university, it scans the course site (about 3 minutes), shows you a plan of what it will download, how big it is and how long it should take, and downloads nothing until you say OK. Documents take a couple of minutes. Recordings are the big part: 18 lectures were 32 GB and took about 1.7 hours on a home connection.</span></li>
+        <li data-rise><b>Choosing what to do with recordings</b><em class="t">1 min, you answer</em><span>Skip them, only download them, or decide one recording at a time. Analyzing video frames is a separate yes or no. Before you choose, it shows how many hours of audio you have and how long they'll take on your computer.</span></li>
+        <li data-rise><b>Reading everything and writing the Wiki</b><em class="t">~1 h, plus the recordings</em><span>Documents and scans take about 15 minutes, the subject pages about an hour. Each hour of lecture takes about 10 minutes to transcribe on a recent Mac, or about 25 on a laptop without a graphics card. The first subjects are ready to use while the rest is still running.</span></li>
+        <li data-rise><b>What's next</b><em class="t">2 min</em><span>It explains what it built, how to ask questions, how to add new files, and how to make your first study pack. That first study pack takes about half an hour, whenever you want it.</span></li>
       </ol>
-      <p class="fine" data-rise style="margin-top:3rem">You can stop at any point. Running setup again picks up where you left off.</p>
+      <div class="totals" data-rise>
+        <p><b>Without recordings: about an hour. With a full semester of recordings (40 hours): about 10 hours.</b> About 2 of those hours are downloading, 7 are transcribing and 1 is everything else. You only need to be there for the first 10 minutes, so leave it running overnight.</p>
+        <p class="fine">Measured on one real course: 83 files and 18 lectures, on a recent Mac with a home connection. Your course, computer and internet will differ. You can stop at any point, and running setup again picks up where you left off.</p>
+      </div>
     </div>
   </section>
 

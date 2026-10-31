@@ -176,6 +176,10 @@ mark { background: var(--yellow); color: var(--ink); padding: 0 .1em; }
 .run li::before { content: counter(s); font-weight: 900; font-size: clamp(3rem, 5.5vw, 5rem); line-height: .85; letter-spacing: -.05em; margin-bottom: .5rem; }
 .run b { font-size: clamp(1.2rem, 1.5vw, 1.4rem); font-weight: 800; letter-spacing: -.02em; line-height: 1.15; }
 .run span { font-size: 1.02rem; line-height: 1.45; }
+.run .t { font-style: normal; font-weight: 800; font-size: 1.02rem; letter-spacing: -.01em; border-left: 3px solid currentColor; padding-left: .55rem; }
+.setup-foot b, .totals b { font-weight: 800; }
+.totals { display: grid; gap: 1rem; max-width: 52rem; margin-top: clamp(3.5rem, 7vw, 6rem); }
+.totals p:first-child { font-size: clamp(1.15rem, 1.5vw, 1.4rem); line-height: 1.4; }
 .setup-foot { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 1.6rem 3rem; margin-top: clamp(3.5rem, 7vw, 6rem); }
 .setup-foot p { max-width: 42rem; font-size: clamp(1.1rem, 1.35vw, 1.3rem); }
 
