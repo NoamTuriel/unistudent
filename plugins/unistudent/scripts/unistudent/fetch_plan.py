@@ -12,7 +12,7 @@ import shutil
 from pathlib import Path
 
 from .common import UserError
-from .convert import DOCUMENTS, IMAGES, MARKITDOWN_ONLY, RECORDINGS
+from .convert import DOCUMENTS, IMAGES, MARKITDOWN_ONLY, OFFICE, RECORDINGS
 from .course import parse_unit, safe_name
 from .sorting import detect_unit
 
@@ -257,6 +257,7 @@ def _bar(done, total, width=20):
 
 
 def status(course):
+    from .convert import _soffice
     from .recordings import approved, recording_seconds, transcribing
     from .wiki import recording_pages
     path = approved_file(course)
@@ -303,7 +304,9 @@ def status(course):
     box = "\n".join(["+" + "-" * width + "+"] + [f"| {row.ljust(width - 2)} |" for row in rows]
                     + ["+" + "-" * width + "+"])
     (course.root / PROGRESS_FILE).write_text(box + "\n", "utf-8")
+    office = sum(1 for i in docs if Path(i.get("name") or i.get("url", "")).suffix.lower() in OFFICE)
     return {"documents": {"done": docs_done, "total": len(docs)},
             "recordings": {"downloaded": len(downloaded), "transcribed": len(transcribed),
                            "summarised": len(summarised), "total": len(recs)},
-            "hours": hours, "rough": rough, "box": box, "summary": box}
+            "hours": hours, "rough": rough, "box": box, "summary": box,
+            "office_files": office, "libreoffice": bool(office and _soffice())}  # setup offers LibreOffice from these
