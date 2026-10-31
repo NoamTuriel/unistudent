@@ -11,8 +11,7 @@ from pathlib import Path
 
 logging.getLogger("pypdf").setLevel(logging.CRITICAL)
 
-DEFAULT_PATTERNS = [
-    r"יחידה\s*(\d{1,2})(?!\d)",
+ENGLISH_PATTERNS = [  # always, whatever the course language
     r"(?i)\bunit[\s_\-]*(\d{1,2})(?!\d)",
     r"(?i)\bchapter[\s_\-]*(\d{1,2})(?!\d)",
 ]
@@ -39,9 +38,11 @@ def _pdf_first_lines(path: Path) -> str:
         return ""
 
 
-def detect_unit(rel_path: str, file_path: Path = None):
-    """Return (unit or None, reason)."""
-    patterns = DEFAULT_PATTERNS
+def detect_unit(rel_path: str, unit_label: str, file_path: Path = None):
+    """Return (unit or None, reason). `unit_label`: the course's label for a unit folder ("יחידה {n}"), whose word
+    before the number also names a unit, besides the English words."""
+    word = unit_label.split("{n}")[0].strip()  # ponytail: a language that puts the number first ("{n}. Kapitel") adds no word
+    patterns = ENGLISH_PATTERNS + ([rf"(?i){re.escape(word)}[\s_\-]*(\d{{1,2}})(?!\d)"] if word else [])
     parts = Path(rel_path).parts
     name = parts[-1]
     for label, text in [("file name", Path(name).stem)] + [

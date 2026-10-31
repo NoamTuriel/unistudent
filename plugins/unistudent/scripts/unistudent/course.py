@@ -1,41 +1,47 @@
 """Course folder, Settings, Manifest and Registry (see CONTEXT.md)."""
+import contextlib
 import json
 import os
 import re
+import time
 from pathlib import Path
 
 STATE_DIR = ".unistudent"
+MANIFEST_LOCK_STALE = 120  # seconds; the lock is held only while the Manifest is read, changed and saved
 
 LAYOUT = 2
 
-# The visible folder names and the labels inside them, one table per language (ADR 0007). A new language is one
-# more entry; a language with no entry falls back to English. The Hidden folder keeps English names.
+# The visible folder names and the labels inside them, one table per language (ADR 0007): the built-in ones. Any other
+# language gets its table translated once at setup and kept in the Settings (`labels`, see `Course.labels`); a key it
+# lacks falls back to English. The Hidden folder keeps English names.
 LABELS = {
     "he": {"inbox": "1-קבצים-חדשים", "material": "2-חומרי-הקורס", "study": "3-{course}-ללמוד-מכאן",
            "official": "חומר-רשמי-של-הקורס", "added": "חומר-לא-רשמי", "unit": "יחידה {n}",
            "general": "חומר-כללי-לכל-היחידות", "unsorted": "עוד-לא-שויך-ליחידה", "roadmap": "מפת הקלטות",
-           "lessons": "הקלטות מפגשים", "before_test": "לקראת מבחן", "question_pages": "עמודי שאלות"},
+           "lessons": "הקלטות מפגשים", "before_test": "לקראת מבחן", "question_pages": "עמודי שאלות",
+           "model_answer": "תשובה לדוגמה", "say_it": "ככה אומרים", "sources": "מקורות", "from": "מתוך"},
     "en": {"inbox": "1-inbox", "material": "2-course-material", "study": "3-{course}-study-from-here",
            "official": "official", "added": "added", "unit": "Unit {n}", "general": "General", "unsorted": "Unsorted",
            "roadmap": "Recordings roadmap", "lessons": "Recorded lessons",
-           "before_test": "Before the test", "question_pages": "Question pages"},
+           "before_test": "Before the test", "question_pages": "Question pages",
+           "model_answer": "Model answer", "say_it": "Say it", "sources": "Sources", "from": "From"},
 }
 # Hebrew names used before 0.5.0: still recognized (and renamed by `ensure_layout`) in folders made with them.
 OLD_LABELS = [{"official": "רשמי", "added": "נוסף", "unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין"}]
 
 DEFAULT_SETTINGS = {
     "course_name": "",
-    "language": "he",
+    "language": "en",            # the course language; `us setup` asks for it, so no course gets it by default
     "format": "obsidian",          # obsidian | markdown
-    "course_skill": None,          # e.g. "macro"; None → generic rules
     "university": None,            # e.g. "openu"; None → core only
     "recording_level": None,       # None (not asked yet) | 0 skip | 1 download only | 3 transcript + summary
     "frame_analysis": None,        # None (not asked yet) | True | False: per-segment vision calls (opt-in, costly)
+    "keep_video": None,            # None (not asked yet: kept) | True | False: keep only an audio-only copy of each recording
     "recordings_dir": None,        # local non-synced folder when the course folder syncs
     "exam_date": None,
-    "tools": {},                   # picture tools offered before the first Study pack: name -> {state: accepted|skipped, date}
     "layout": 1,                   # 2 once the course folder has the three visible folders (LAYOUT)
     "folders": {},                 # the visible folder names chosen at setup: inbox, material, study
+    "labels": {},                  # a language with no built-in LABELS table: its labels, translated once at setup
 }
 
 
@@ -62,14 +68,16 @@ def parse_unit(value):
     return number
 
 
-def parse_tier_folder(name):
-    """"official" or "added" when `name` is a trust-level folder in any language, else None."""
-    return next((t for table in (*LABELS.values(), *OLD_LABELS) for t in ("official", "added") if name == table[t]), None)
+def parse_tier_folder(name, tables):
+    """"official" or "added" when `name` is a trust-level folder in any of `tables` (a course's `label_tables()`),
+    else None."""
+    return next((t for table in tables for t in ("official", "added") if name == table[t]), None)
 
 
-def parse_unit_folder(name):
-    """(True, unit) when `name` is a unit folder in any language: a number, "general", "lessons" or None (unsorted)."""
-    for table in (*LABELS.values(), *OLD_LABELS):
+def parse_unit_folder(name, tables):
+    """(True, unit) when `name` is a unit folder in any of `tables` (a course's `label_tables()`): a number,
+    "general", "lessons" or None (unsorted)."""
+    for table in tables:
         if name == table["general"]:
             return True, "general"
         if name == table.get("lessons"):  # the pre-0.5.0 names had no lessons folder
@@ -97,18 +105,29 @@ def home() -> Path:
     return Path(os.environ.get("UNISTUDENT_HOME") or Path.home() / ".unistudent")
 
 
+def _retry(action):
+    """Run `action`, retrying for up to 2 s on PermissionError: Windows refuses to replace or open a file while another
+    command has it open for a moment, where macOS and Linux never refuse."""
+    for _ in range(40):
+        try:
+            return action()
+        except PermissionError:
+            time.sleep(0.05)
+    return action()
+
+
 def _read_json(path: Path, default):
     try:
-        return json.loads(path.read_text("utf-8"))
+        return json.loads(_retry(lambda: path.read_text("utf-8")))
     except FileNotFoundError:
         return default
 
 
 def _write_json(path: Path, data):
     path.parent.mkdir(parents=True, exist_ok=True)
-    tmp = path.with_suffix(path.suffix + ".tmp")
+    tmp = path.with_suffix(path.suffix + f".{os.getpid()}.tmp")  # two commands at once never share one
     tmp.write_text(json.dumps(data, ensure_ascii=False, indent=2, sort_keys=True), "utf-8")
-    os.replace(tmp, path)  # atomic, so an interrupted run never leaves half a file
+    _retry(lambda: os.replace(tmp, path))  # atomic, so an interrupted run never leaves half a file
 
 
 class Course:
@@ -127,7 +146,7 @@ class Course:
     def folder_names(self, language=None, course_name=None):
         """The three visible folder names: the stored ones, or those the labels table gives."""
         settings = self.settings()
-        table = LABELS.get(language or settings["language"], LABELS["en"])
+        table = self.labels()
         name = safe_name(course_name or settings["course_name"] or self.root.name)
         computed = {k: table[k].format(course=name) for k in ("inbox", "material", "study")}
         return computed if language else {**computed, **settings.get("folders", {})}
@@ -147,10 +166,11 @@ class Course:
     def inbox(self):
         return self._folder("inbox")
 
-    def ensure_layout(self):
+    def ensure_layout(self, old_labels=None):
         """Create the Inbox and the Material folder in the settings' language (the Study vault only appears at the first
         Study pack, ADR 0008), renaming existing ones (and the trust-level and unit folders inside them) when it changed. Returns True when something was renamed. A rename that can't be done
-        stops everything before anything changes: the Settings never say a folder has a name it doesn't have."""
+        stops everything before anything changes: the Settings never say a folder has a name it doesn't have. `old_labels`:
+        the course's own labels before a language change, so folders named by them are recognized and renamed too."""
         from .common import UserError
         settings = self.settings()
         wanted = self.folder_names(settings["language"])
@@ -175,10 +195,12 @@ class Course:
         self.save_settings(settings)
         for key in ("inbox", "material"):
             (self.root / wanted[key]).mkdir(parents=True, exist_ok=True)
-        inner = self._rename_inner(self.material, tiers=True) | (self.study.is_dir() and self._rename_inner(self.study))
+        tables = (*self.label_tables(), *([{**LABELS["en"], **old_labels}] if old_labels else []))
+        inner = self._rename_inner(self.material, tables, tiers=True) | (self.study.is_dir()
+                                                                          and self._rename_inner(self.study, tables))
         return bool(renames) or inner
 
-    def _rename_inner(self, base, tiers=False):
+    def _rename_inner(self, base, tables, tiers=False):
         """Trust-level and unit folders inside `base` take the course language's names. Returns whether any changed."""
         def rename(folder, name):
             if folder.name == name or (folder.parent / name).exists():
@@ -187,7 +209,7 @@ class Course:
 
         changed = False
         for folder in sorted(p for p in base.iterdir() if p.is_dir()):
-            tier = parse_tier_folder(folder.name) if tiers else None
+            tier = parse_tier_folder(folder.name, tables) if tiers else None
             if tiers and not tier:
                 continue
             if tier:
@@ -197,13 +219,13 @@ class Course:
             else:
                 children = [folder]
             for child in children:
-                known, unit = parse_unit_folder(child.name)
+                known, unit = parse_unit_folder(child.name, tables)
                 if known:
                     changed |= rename(child, self.unit_folder(unit))[1]
         return changed
 
     def pack_folder(self, unit):
-        """Where a unit's study pack lives in the Study vault (the vault itself is made by the first Study pack request)."""
+        """Where a unit's study pack lives in the Study vault (the vault itself is made by the first Study pack)."""
         return self.study / self.unit_folder(unit)
 
     @property
@@ -217,6 +239,7 @@ class Course:
     def settings(self):
         data = dict(DEFAULT_SETTINGS)
         data.update(_read_json(self.state / "settings.json", {}))
+        data.pop("course_skill", None)  # left by versions that had course skills (ADR 0011)
         return data
 
     def save_settings(self, data):
@@ -234,15 +257,60 @@ class Course:
     def save_manifest(self, data):
         _write_json(self.state / "manifest.json", data)
 
+    @contextlib.contextmanager
+    def edit_manifest(self):
+        """Read, change and save the Manifest holding a lock file, so two commands running at once (a recording
+        ingested during a document ingest) never lose each other's entries. Saved only when the block ends without an
+        error."""
+        with self.locked("manifest.lock"):
+            manifest = self.manifest()
+            yield manifest
+            self.save_manifest(manifest)
+
+    @contextlib.contextmanager
+    def locked(self, name):
+        """Hold the lock file `name` in the Hidden folder for the block. A lock older than MANIFEST_LOCK_STALE was left
+        by a run that died, and is taken over."""
+        lock = self.state / name
+        while True:
+            try:
+                os.close(os.open(lock, os.O_CREAT | os.O_EXCL | os.O_WRONLY))
+                break
+            except (FileExistsError, PermissionError):  # Windows says PermissionError while a lock is being deleted
+                try:
+                    if time.time() - lock.stat().st_mtime > MANIFEST_LOCK_STALE:
+                        lock.unlink()  # ponytail: two waiters may both take over a stale lock; only after a crash
+                except OSError:
+                    pass
+                time.sleep(0.05)
+        try:
+            yield
+        finally:
+            lock.unlink(missing_ok=True)
+
     def read_state(self, name, default):
         return _read_json(self.state / name, default)
 
     def write_state(self, name, data):
         _write_json(self.state / name, data)
 
+    def labels(self):
+        """This course's label table: the student's own (Settings `labels`, translated at setup for a language with no
+        built-in table) over the built-in table of the course language, English for any key missing."""
+        settings = self.settings()
+        return {**LABELS["en"], **LABELS.get(settings["language"], {}), **settings.get("labels", {})}
+
+    def label_tables(self):
+        """Every table a folder name of this course may come from: the built-in ones, the older names, and its own."""
+        return (*LABELS.values(), *OLD_LABELS, self.labels())
+
+    def line_words(self, key):
+        """The words a "Sources:" or "From:" line (`key`) may open with: the English one always, and the course
+        language's."""
+        return {LABELS["en"][key], self.label(key)}
+
     def label(self, key, **kw):
-        lang = self.settings().get("language", "he")
-        return LABELS.get(lang, LABELS["en"])[key].format(**kw)
+        return self.labels()[key].format(**kw)
 
     def unit_folder(self, unit):
         """Folder name for a unit (in the Material folder and the Study vault), in the course language."""
@@ -323,30 +391,34 @@ def _slug(text: str) -> str:
     return re.sub(r"[^a-z0-9]+", "-", str(text).strip().casefold()).strip("-") or "unknown"
 
 
-# The university-to-plugin and subject-to-plugin mapping, in one place (ticket 12). A university plugin is matched
-# by its own test on the normalized name ("Open University UK" must not match the Israeli one); a subject plugin on a keyword inside the field or course name. One entry per plugin.
+# The university-to-plugin mapping, in one place (ticket 12). A university plugin is matched by its own test on the
+# normalized name ("Open University UK" must not match the Israeli one). One entry per plugin.
 PLUGIN_RECOMMENDATIONS = [
-    {"name": "openu", "kind": "university",
+    {"name": "openu",
      "gives": "downloads new material from your Open University of Israel course site",
      "match": lambda uni: (uni == "oui" or "פתוחה" in uni or "openu" in uni.replace("openuniversity", "")
                            or ("openuniversity" in uni and ("israel" in uni or "ישראל" in uni)))},
-    {"name": "economics", "kind": "subject",
-     "gives": "study-pack rules for economics courses, plus a skill for intro macroeconomics",
-     "keywords": {"economics", "economy", "כלכלה", "כלכלי"}},
 ]
 
+
+# The Tool list (ADR 0012): self-installing kinds and Recommended tools, hardcoded, each proven by one sample call in
+# CI (.github/workflows/tool-list.yml). Empty until a real course shows a picture no existing kind draws. Entry shape:
+#   {"name": "circuit",                      # what the student says in chat; `us tools add <name>`
+#    "label": "circuit drawer",              # the plain name the roadmap sentence uses
+#    "draws": "electric circuits",           # what it draws, in words
+#    "kinds": ["circuit"],                   # the Presentation kind words it serves
+#    "install": {"python": "<package>"} or {"mcp": ["<command>", "<arg>", ...], "node": True},
+#    "sample": "<a short text spec the CI job draws once>"}
+TOOL_LIST = []
 
 def _plain(text: str) -> str:
     """Lowercase, keeping only letters and digits in any script (Hebrew included), so spelling drift still matches."""
     return "".join(c for c in str(text or "").casefold() if c.isalnum())
 
 
-def recommend_plugins(university: str = "", field: str = "", course_name: str = "") -> list:
-    """The plugins that fit this university and course, university plugins first. Never installs anything."""
-    uni, subjects = _plain(university), [_plain(field), _plain(course_name)]  # matched apart: a keyword can't span the join
-    return [p for p in PLUGIN_RECOMMENDATIONS
-            if (p["kind"] == "university" and p["match"](uni))
-            or (p["kind"] == "subject" and any(_plain(k) in t for k in p["keywords"] for t in subjects))]
+def recommend_plugins(university: str) -> list:
+    """The plugins that fit this university. Never installs anything."""
+    return [p for p in PLUGIN_RECOMMENDATIONS if p["match"](_plain(university))]
 
 
 def generated_university_file(university: str) -> Path:
@@ -354,38 +426,38 @@ def generated_university_file(university: str) -> Path:
     return home() / "generated" / _slug(university) / "site.md"
 
 
-def generated_course_skill_file(field: str, course_name: str) -> Path:
-    """A once-interviewed, cached study-pack fallback for a course with no installed course skill (ADR 0005)."""
-    return home() / "generated" / _slug(field) / (_slug(course_name) + ".md")
-
-
-def write_generated_reference(path: Path, heading: str, sections: list) -> None:
-    """One interview-generate-persist mechanism, shared by the university and course/subject fallbacks (ADR 0005).
-
-    `sections` is [(title, words)]; `words` is joined with spaces, matching how the CLI collects free text.
-    """
-    path.parent.mkdir(parents=True, exist_ok=True)
-    body = (f"# {heading}\n\n"
-            "Written once from the student's own description, not independently verified — "
-            "a starting point, not gospel.\n\n")
-    for title, words in sections:
-        body += f"## {title}\n\n{' '.join(words)}\n\n"
-    path.write_text(body, "utf-8")
-
-
 def list_generated() -> list:
-    """Every generated fallback on disk (university and course/subject), with a one-line preview."""
+    """Every generated university fallback on disk, with a one-line preview."""
     folder = home() / "generated"
     out = []
-    for path in sorted(folder.rglob("*.md")) if folder.is_dir() else []:
+    for path in sorted(folder.rglob("site.md")) if folder.is_dir() else []:  # other files are course rules from before ADR 0011
         lines = [l.strip() for l in path.read_text("utf-8").splitlines() if l.strip()]
-        out.append({"path": str(path), "kind": "university" if path.name == "site.md" else "course",
+        out.append({"path": str(path),
                     "preview": lines[0].lstrip("# ") if lines else ""})
     return out
 
 
-SETUP_STAGES = ["university", "course", "language", "path", "format", "fetch", "sort", "recordings", "analyze", "capabilities"]
-RENAMED_STAGES = {"fetch-and-organize": "recordings"}  # recorded by versions that had one step for fetch, sort and recordings
+# The question block (language .. installs), the Fetch plan (plan), the unattended run (run), then capabilities.
+SETUP_STAGES = ["language", "university", "course", "path", "format", "material", "recordings", "installs", "plan",
+                "run", "capabilities"]
+# Stages recorded by older versions, read as the new stage they finished: fetch-and-organize was one step for fetch,
+# sort and the recordings question; fetch and sort brought the material in; analyze built the Wiki (the run's end).
+RENAMED_STAGES = {"fetch-and-organize": "recordings", "fetch": "material", "sort": "material", "analyze": "run"}
+
+
+# The answers step 7 applies, by the stage that asks them. A setup started on an older version may have passed the
+# stage without them: they are asked again before step 7, never guessed.
+STAGE_ANSWERS = {"material": ["source"], "recordings": ["transcribe", "frame_analysis", "keep_video"]}
+
+
+def missing_setup_answers(data) -> list:
+    """The answers of stages already done that step 7 (`installs`) still needs; none once it is done."""
+    if data["stage"] is None:
+        return []
+    done = SETUP_STAGES[:SETUP_STAGES.index(RENAMED_STAGES.get(data["stage"], data["stage"])) + 1]
+    if "installs" in done:
+        return []
+    return [k for stage in done for k in STAGE_ANSWERS.get(stage, []) if k not in data["answers"]]
 
 
 def _setup_progress_dir() -> Path:
@@ -401,6 +473,7 @@ def read_setup_progress(course_name: str) -> dict:
 
 
 def write_setup_progress(course_name: str, stage: str, answers: dict) -> dict:
+    stage = RENAMED_STAGES.get(stage, stage)
     if stage not in SETUP_STAGES:
         raise ValueError(f"Unknown setup stage {stage!r}; must be one of {', '.join(SETUP_STAGES)}.")
     data = read_setup_progress(course_name)

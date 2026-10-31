@@ -21,6 +21,14 @@ _Avoid_: study folder, summaries folder, output folder
 The per-course, local-only record of the student's choices for that course folder.
 _Avoid_: course.yaml, config
 
+**Course language**:
+The one language a course folder speaks: its folder names, the Wiki's notes, the answers, the study packs and the recording summaries. Kept in the Settings (`language`); by default the language the course is taught in, confirmed with the student at setup, or another language the student chose. Hebrew and English have built-in labels; any other language gets its labels translated once at setup and kept in the Settings.
+_Avoid_: UI language, folder language, default language
+
+**Lecture language**:
+The language spoken in one recording, detected when it is transcribed and written in its transcript. Never a setting and never asked: one course may have lectures in several languages, and their summaries are still in the Course language.
+_Avoid_: recording language setting, transcription language
+
 **Registry**:
 The per-student list of all their course folders.
 _Avoid_: course list
@@ -40,6 +48,10 @@ _Avoid_: source (reserved for citations)
 
 **Inbox**:
 The drop zone in a course folder for material the student adds by hand.
+
+**Fetch plan**:
+The list of files a fetch from the course site will download, with their sizes, that the student approves before anything downloads.
+_Avoid_: download list, listing, manifest
 
 **Recording**:
 The video file of one course session (מפגש).
@@ -63,17 +75,29 @@ _Avoid_: unit summary, unit pack
 The closing list of the Practice page of a Study pack: the must-do questions of the unit, one per distinct way of solving, past-exam questions first. It replaces the separate short practice page.
 _Avoid_: short practice, summary list
 
+**Presentation**:
+The form (table, steps, flowchart, or a picture named by its Kind) a course uses to teach one topic, as recorded on the unit's Wiki page.
+_Avoid_: layout, format
+
+**Known gaps**:
+The fixed closing part of a worker's return listing what it could not do, one line per item as kind, page, what's missing.
+_Avoid_: notes, warnings
+
 **Graph**:
 A picture in a study pack with X and Y axes and the lines or curves drawn on them, reproducing one the course material shows.
 _Avoid_: diagram, plot, chart, figure (a figure is the picture inside the course material itself)
 
-**Picture kind**:
-One sort of picture the plugin can draw from a short spec (a Graph is one; a circuit diagram would be another). Each kind has its own drawing tool, fetched the first time it is needed.
-_Avoid_: diagram type, chart type
+**Kind**:
+The one word naming a sort of picture a course shows (graph, circuit, …), used by the Presentation line, the Known gaps `picture` lines and the Tool list. A self-installing kind is one UniStudent draws itself with a Python library run through `uv run --with`, as graphs are.
+_Avoid_: picture type, picture kind
 
-**Tool offer**:
-The one message, before a course's first Study pack, that asks the student which of the picture tools that fit the course to add. The answer is remembered.
-_Avoid_: plugin recommendation (that is for plugins, not drawing tools)
+**Recommended tool**:
+A tool outside the plugin that draws a kind of picture the course shows, named in the Tool list, set up for the student on request.
+_Avoid_: plugin recommendation, tool offer
+
+**Tool list**:
+The hardcoded, CI-proven list of self-installing kinds and Recommended tools.
+_Avoid_: plugin recommendation, tool offer
 
 **Unit**:
 A chapter of the course as the course itself numbers it (יחידה).
@@ -82,17 +106,11 @@ A chapter of the course as the course itself numbers it (יחידה).
 One of the 4–6 sub-parts of a unit that every page of its study pack is organised by.
 _Avoid_: subject, section
 
-### Skill layers
-
-**Course skill**:
-A published skill holding the rules for one course's study packs that stay true across semesters.
-
-**Field skill**:
-A published skill holding study-pack rules shared by all courses in one academic field.
+### Rule layers
 
 **Student preferences**:
 The study-pack and material-handling rules a student set, in two levels: course preferences and general preferences.
-_Avoid_: own rules, local course skill, custom skill
+_Avoid_: own rules, course skill, field skill, custom skill
 
 **Course preferences**:
 Student preferences for one course, stored in its course folder; they win over general preferences.
@@ -109,9 +127,6 @@ _Avoid_: generic skill
 **University plugin**:
 A plugin holding everything specific to one university: site access, site structure and unit sorting.
 _Avoid_: adapter, connector
-
-**Subject plugin**:
-A plugin holding field skills and course skills; it never depends on a university.
 
 ### Grounding
 

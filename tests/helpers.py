@@ -98,8 +98,9 @@ def mock_env(**values):
                 os.environ[k] = v
 
 
-def make_pdf(path, pages):
-    """Write a minimal valid PDF with one line of ASCII text per page (no dependencies)."""
+def make_pdf(path, pages, pictures=()):
+    """Write a minimal valid PDF with one line of ASCII text per page (no dependencies); the page numbers in
+    `pictures` also show a small grey picture."""
     objects = []
 
     def obj(body):
@@ -107,14 +108,19 @@ def make_pdf(path, pages):
         return len(objects)
 
     font = obj(b"<< /Type /Font /Subtype /Type1 /BaseFont /Helvetica >>")
+    image = obj(b"<< /Type /XObject /Subtype /Image /Width 1 /Height 1 /ColorSpace /DeviceGray "
+                b"/BitsPerComponent 8 /Length 1 >>\nstream\n\x80\nendstream")
     kids = []
     pages_id = len(objects) + 1 + 2 * len(pages)  # reserved below
-    for text in pages:
+    for number, text in enumerate(pages, 1):
         stream = f"BT /F1 12 Tf 72 720 Td ({text}) Tj ET".encode("latin-1")
+        resources = b"/Font << /F1 %d 0 R >>" % font
+        if number in pictures:
+            stream += b" q 100 0 0 100 72 500 cm /Im1 Do Q"
+            resources += b" /XObject << /Im1 %d 0 R >>" % image
         content = obj(b"<< /Length %d >>\nstream\n" % len(stream) + stream + b"\nendstream")
-        kids.append(obj(b"<< /Type /Page /Parent %d 0 R /MediaBox [0 0 612 792] "
-                        b"/Resources << /Font << /F1 %d 0 R >> >> /Contents %d 0 R >>"
-                        % (pages_id, font, content)))
+        kids.append(obj(b"<< /Type /Page /Parent %d 0 R /MediaBox [0 0 612 792] /Resources << %s >> /Contents %d 0 R >>"
+                        % (pages_id, resources, content)))
     assert obj(b"<< /Type /Pages /Kids [%s] /Count %d >>"
                % (b" ".join(b"%d 0 R" % k for k in kids), len(kids))) == pages_id
     catalog = obj(b"<< /Type /Catalog /Pages %d 0 R >>" % pages_id)

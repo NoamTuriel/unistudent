@@ -5,7 +5,7 @@ disable-model-invocation: true
 ---
 
 <!-- conventions: keep identical in every UniStudent skill -->
-Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); as the Claude plugin, give them to the plugin's subagent of that name, which has the UniStudent tools (in parallel when there are several); in any other app, follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 <!-- /conventions -->
 
 ## 1. Course and exams
@@ -28,7 +28,7 @@ Read `<this skill's base directory>/../../reference/before-test.md` (or `us doc 
 
 ## 4. Index
 
-**Delegate** the exams to `exam-indexer` workers, one per two exams, in parallel. Output files `<hidden>/before-test/part-<k>.json` (`<hidden>` is `.unistudent` in the course folder). Re-run any worker whose file is missing or invalid. Then run `us before-test merge <the part files>`.
+**Delegate** the exams to `exam-indexer` workers, one per two exams, in parallel, each exam with its solution file when the solution is a separate file. Output files `<hidden>/before-test/part-<k>.json` (`<hidden>` is `.unistudent` in the course folder; create the `before-test` folder first). Re-run any worker whose file is missing or invalid. Then run `us before-test merge <the part files>`.
 
 Done when: `us before-test merge` reports the question count and it matches the exams' questions.
 

@@ -48,7 +48,7 @@ Works with Claude (Code, Desktop, Cowork), Cursor, VS Code, Codex, Gemini CLI an
 
 There are three pieces. The **MCP server** (`unistudent-mcp`) holds the tools: set up a course, add material, build and check the Wiki, keep track of study packs, process recordings. It works in any MCP app. The **skills** (Agent Skills format) are the step-by-step instructions that use those tools; apps with skill support load them directly, and other MCP apps show the core skills as prompts. The **Claude plugins** bundle both with some subagents and install in one step in Claude Code and Cowork.
 
-The skills are split across three plugins. `unistudent` is the core and works for any university. `openu` is for the Open University of Israel and downloads new material from your course site. `economics` holds study-pack rules for economics courses, plus a skill for the intro macroeconomics course.
+The skills are split across two plugins. `unistudent` is the core and works for any university and any course. `openu` is for the Open University of Israel and downloads new material from your course site.
 
 | Skill | Plugin | What it does |
 |---|---|---|
@@ -61,11 +61,14 @@ The skills are split across three plugins. `unistudent` is the core and works fo
 | course-recordings | `unistudent` | Transcribe and summarise recordings (heavy; always asks first) |
 | courses | `unistudent` | List and switch courses |
 | openu-sync | `openu` | Download what's new on your OpenU course site |
-| economics, macro | `economics` | Study-pack rules for economics courses; the intro macroeconomics course skill |
 
 ## Install
 
 You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything else) and, for recordings only, [ffmpeg](https://ffmpeg.org). On a Mac, the `uv` installer may leave `uvx` off the PATH that apps see (zsh doesn't read the file it edits): add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshenv`, restart the app, and in a desktop app's MCP settings use the full path from `which uvx`.
+
+Word or PowerPoint files with formulas (most exams written in Word are)? Install [LibreOffice](https://www.libreoffice.org) too: it is the only tool that draws old Word formulas, so without it they are missing from the Wiki (the build warns). Mac: `brew install --cask libreoffice`; Windows: `winget install TheDocumentFoundation.LibreOffice`; Linux: your package manager.
+
+**On Windows**, in PowerShell: `winget install astral-sh.uv` and, for recordings, `winget install ffmpeg`; then close and reopen the app so it sees them. Setup installs the speech-to-text engine (faster-whisper) itself when you ask for transcripts. It runs on the processor: about 25 minutes per hour of recording on a fast new laptop, longer on an older one (setup tells you, and `us recordings benchmark` measures your computer). With an NVIDIA graphics card it runs much faster once the card's CUDA libraries are installed (NVIDIA's CUDA 12 cuBLAS and cuDNN 9); without them it falls back to the processor by itself and says so.
 
 **Claude Code**
 
@@ -73,8 +76,9 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
 /plugin marketplace add NoamTuriel/unistudent
 /plugin install unistudent@unistudent
 /plugin install openu@unistudent        # Open University students
-/plugin install economics@unistudent    # economics courses
 ```
+
+Installed the `economics` plugin earlier? It is no longer needed (the core's study-pack rules now cover what it added) and can be uninstalled: `/plugin uninstall economics@unistudent`.
 
 **Claude Desktop, Cursor, VS Code, Windsurf**: add the MCP server to the app's MCP settings:
 
@@ -83,7 +87,7 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
   "mcpServers": {
     "unistudent": {
       "command": "uvx",
-      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+      "args": ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "--with", "matplotlib", "unistudent-mcp"]
     }
   }
 }
@@ -91,21 +95,29 @@ You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything 
 
 (VS Code calls the top-level key `servers` and wants `"type": "stdio"`. Desktop apps on a Mac often can't see `uvx`: if the server doesn't start, put the full path from `which uvx` in `"command"`, e.g. `/Users/you/.local/bin/uvx`.)
 
-**Codex CLI**: `codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" unistudent-mcp`, or in `~/.codex/config.toml`:
+**Codex CLI**: `codex mcp add unistudent -- uvx --from "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent" --with matplotlib unistudent-mcp`, or in `~/.codex/config.toml`:
 
 ```toml
 [mcp_servers.unistudent]
 command = "uvx"
-args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "unistudent-mcp"]
+args = ["--from", "git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent", "--with", "matplotlib", "unistudent-mcp"]
 ```
 
 **Gemini CLI**: the same `mcpServers` block as above, in `~/.gemini/settings.json`.
 
 **Skills, for apps that support them** (Codex, Cursor, Gemini CLI, Claude and others): `npx skills@latest add NoamTuriel/unistudent` (it reads the skills declared in this repo's Claude plugin files). The skills do their work through the UniStudent MCP server, so add the server too; alternatively, for advanced users, `uv tool install` below gives them the `unistudent` command.
 
-Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It first asks your university, and once it knows your university and course it tells you which of the plugins above to install, with the exact command (so you only need `unistudent` to start). If there's no installed plugin for it (like `openu` above), it interviews you once — course site URL, how you organize material — and remembers the answer, so the next course at the same university skips that question. Setup can be stopped and resumed at any point; running it again picks up where you left off.
+Then, for each course, start the **course-setup** skill or prompt (`/unistudent:course-setup` in Claude Code). It takes about 10 minutes of questions, then you can leave for a few hours:
 
-For advanced users, optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx), Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon) and matplotlib for the graphs in study packs. (The plugin and the `uvx` setups above need none of this: the drawing tools, matplotlib for graphs first, download by themselves the first time a picture is drawn.)
+1. **Questions (about 10 minutes).** Your language (by default the one your course is taught in, found for you), university, course, folder, the app you'll read in, where your material comes from, anything else the course gave you, the exam date, and three separate recording questions (transcribe and summarise, look at the screen, keep the video files), each with what it gives and what it costs. If your university has a plugin (like `openu` above), setup tells you which one; if not, it interviews you once (course site URL, how you organize material) and remembers the answer for your next course there. No university? Answer "none": you get the same course folder, Wiki and study packs from your own files.
+2. **One restart at most.** Anything that only works after the app restarts (the university plugin) is installed after the last question.
+3. **Approve the download (5 to 10 minutes).** You log in to your course site in Chrome. Setup scans it without downloading and shows the **Fetch plan**: what would be downloaded, how big it is, whether it fits on your disk and roughly how long it takes. Nothing downloads until you say OK. A box then tells you to keep the computer on, plugged in and awake, keep the app and Chrome open, and roughly how many hours it needs.
+4. **The run (hours; you can leave).** It installs what recordings need, downloads the documents and builds the Wiki from them first, then downloads, transcribes and summarises the recordings, and updates the Wiki. It asks nothing; a failure is tried once more, then reported.
+5. **Come back (about 5 minutes).** A short report (what's in, what failed and what to do), one question about gaps worth fixing, and how to use it.
+
+Setup can be stopped at any point (a usage limit, a closed laptop); running it again picks up where it stopped. To add material later, drop the files in the course's inbox folder and run **course-add**.
+
+For advanced users, optional, for better results: `uv tool install "unistudent[all] @ git+https://github.com/NoamTuriel/unistudent#subdirectory=plugins/unistudent"` adds document converters (markitdown, pypdf, python-docx, python-pptx), Hebrew speech-to-text (faster-whisper, or mlx-whisper on Apple silicon) and matplotlib for the graphs in study packs. (The plugin and the `uvx` setups above already include matplotlib.)
 
 ## Works well with
 
@@ -113,7 +125,7 @@ UniStudent uses existing tools instead of reinventing them:
 
 - **[MarkItDown](https://github.com/microsoft/markitdown)** (Microsoft): converts Word, PowerPoint, Excel, HTML and EPUB files when installed. PDFs are converted page by page so answers can cite a page.
 - **[ivrit.ai](https://huggingface.co/ivrit-ai) Whisper models**: Hebrew speech-to-text, run locally through faster-whisper or mlx-whisper.
-- **[mcp-video-analyzer](https://github.com/guimatheus92/mcp-video-analyzer)**: add it next to UniStudent to let the AI look at the slides on screen while indexing a recording. Every transcript is also saved as WebVTT, which it (and video players) can use.
+- Looking at the screen while indexing a recording (frame analysis) is built in: `us recordings frame` takes the picture at a given minute with ffmpeg. Every transcript is also saved as WebVTT, which video players can use.
 - **A browser tool** (Claude in Chrome, or a browser MCP server) for downloading from your course site with your own login.
 - **[Obsidian](https://obsidian.md)**: the best way to read the Wiki and study packs (links between pages, callouts). Setup also offers Word, OneNote and Google Docs: the packs stay Markdown and you copy a finished pack into them.
 
@@ -126,6 +138,7 @@ You see two folders at setup, and a third once you ask for a study pack. They ar
   AGENTS.md / CLAUDE.md          course context: grounding rules, exam facts, other courses
   README.md                      how it works, for the student
   course-preferences.md
+  progress.txt                   during a long run (downloads, transcripts): how far it got, and the time left
   1-inbox/                       drop new material here; it is moved out once it's added
   2-course-material/             the real files: official/ and added/, then by unit
   3-<course>-study-from-here/    your Study vault: appears with your first study pack; study packs and a recordings roadmap per unit

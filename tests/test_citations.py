@@ -52,6 +52,7 @@ class Citations(CourseTestCase):
             self.assertTrue(disk_path(link).exists(), link)
             self.assertNotIn(".unistudent", link)
         self.assertIn("[00:12:47]", roadmap.read_text("utf-8"))
+        self.assertIn("session%205.mp4#t=767)", roadmap.read_text("utf-8"))  # the time it shows, not its heading's
         self.assertEqual(self.check(roadmap), [])
 
     def test_check_flags_a_pack_that_links_into_the_wiki_or_at_a_deleted_file(self):

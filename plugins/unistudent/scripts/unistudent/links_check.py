@@ -14,7 +14,16 @@ MD_LINK = re.compile(r'(?<!!)\[([^\]]*)\]\((<[^>]+>|[^)\s]+)(?:\s+"[^"]*")?\)')
 WIKILINK = re.compile(r"!?\[\[([^\]|#]*)(#[^\]|]*)?(\|[^\]]*)?\]\]")
 HEADING = re.compile(r"^#{1,6}\s+(.+?)\s*#*\s*$", re.M)
 FRONTMATTER = re.compile(r"\A---\n(.*?)\n---\n", re.S)
-SOURCES_LINE = re.compile(r"(?im)^\s*(?:[-*>]\s*)?(?:\*\*)?(sources|מקורות|source|מקור)(?:\*\*)?\s*:")
+
+
+def opening_words(words):
+    """A line that opens with one of `words` and a colon, in any case ("Sources:", "**מקורות**:", "- From:").
+    `words`: a course's `line_words(...)`."""
+    return re.compile(r"(?im)^\s*(?:[-*>]\s*)*(?:\*\*)?(?:" + "|".join(map(re.escape, sorted(words)))
+                      + r")(?:\*\*)?\s*:")
+
+
+SOURCES_LINE = opening_words(["Sources"])  # the line UniStudent and its workers write
 STUB_MARK = "<!-- unistudent:stub -->"
 CODE_BLOCK = re.compile(r"```.*?```|<!--.*?-->", re.S)
 HREF = re.compile(r'href="([^"]+)"')
@@ -93,14 +102,14 @@ def check_links(page: Path, root: Path):
     return problems
 
 
-def has_sources(page: Path) -> bool:
+def has_sources(page: Path, sources_line) -> bool:
     text = page.read_text("utf-8")
     if STUB_MARK in text:
         return True
     front = FRONTMATTER.match(text)
     if front and re.search(r"(?m)^source:", front.group(1)):
         return True
-    if SOURCES_LINE.search(text):
+    if sources_line.search(text):
         return True
     # Pages of entries (glossary, question bank) cite per entry: a link into the material counts.
     body = CODE_BLOCK.sub("", text)
@@ -128,14 +137,35 @@ def check_vault_page(page: Path, hidden: Path):
 
 PRACTICE_PAGE = re.compile(r"^\d+\.3(?!\d)")
 WALKTHROUGH_PAGE = re.compile(r"^\d+\.2(?!\d)")
-CLOSING_FROM = re.compile(r"(?im)^\s*(?:[-*>]\s*)?(?:\*\*)?(?:from|מתוך)(?:\*\*)?\s*:")
 STAGE = re.compile(r"(?im)^\s*(?:#+\s*|[-*>]\s*)?(?:\*\*)?(?:stage|שלב)\s+\d")
 TOPIC_TAG = re.compile(r"(?<![\w&])#(?:unit-\d+/|י\d+/)")
 IMAGE = re.compile(r"!\[[^\]]*\]\(|!\[\[")
+TIME = re.compile(r"(?<![\d:])\d{1,2}:\d\d:\d\d(?![\d:])")
 
 
-def check_pack_page(page: Path):
-    """Study pack shape (ticket 18): a walkthrough topic closes with a "From:" line; the Practice page has no stages, tags or graphs; no `N.3b` page."""
+def recording_link_problems(page: Path, text: str):
+    """Per section: one link per recording, and every time in the text follows a recording's link (ticket 29)."""
+    from .convert import RECORDINGS
+    problems = []
+    for section in re.split(r"(?m)^#{1,6} ", text):
+        seen, first = set(), None
+        for match in MD_LINK.finditer(section):
+            target, _, anchor = match.group(2).strip("<>").partition("#")
+            if not (anchor.startswith("t=") or Path(unquote(target)).suffix.lower() in RECORDINGS):
+                continue
+            first = match.start() if first is None else first
+            if target in seen:
+                problems.append({"kind": "repeated-recording-link", "page": str(page), "link": match.group(2)})
+            seen.add(target)
+        for time in TIME.finditer(section):
+            if first is None or time.start() < first:
+                problems.append({"kind": "time-without-link", "page": str(page), "text": time.group(0)})
+    return problems
+
+
+def check_pack_page(page: Path, from_line):
+    """Study pack shape (ticket 18): a walkthrough topic closes with a "From:" line (`from_line`, in the course
+    language or English); the Practice page has no stages, tags or graphs; no `N.3b` page."""
     text = CODE_BLOCK.sub("", page.read_text("utf-8"))
     problems = []
 
@@ -150,6 +180,111 @@ def check_pack_page(page: Path):
                 problem(kind, hit.group(0).strip())
     elif WALKTHROUGH_PAGE.match(page.name):
         for section in re.split(r"(?m)^## ", text)[1:]:
-            if re.search(r"(?m)^### ", section) and not CLOSING_FROM.search(section):
+            if re.search(r"(?m)^### ", section) and not from_line.search(section):
                 problem("topic-missing-from-line", section.splitlines()[0][:80])
+    if re.match(r"\d+\.\d", page.name):  # pack pages only: the generated recordings roadmap links every line
+        problems += recording_link_problems(page, text)
     return problems
+
+
+SECTION = re.compile(r"(?ms)^## (Notation|Assumptions)\s*$(.*?)(?=^## |\Z)")
+# A Latin symbol: up to four Latin letters, then digits or a _subscript (Y, MPC, C0, Y_d); a longer word is not one.
+SYMBOL = re.compile(r"(?<![A-Za-z0-9_./#])[A-Za-z]{1,4}(?:_[A-Za-z0-9]+|[0-9]+)?(?!\.?[A-Za-z0-9])")
+ASSUMPTION = re.compile(r"(?i)(?<!\w)(?:assumptions?|[בהלמשו]{0,2}הנחה)\s*(?:no\.?\s*|#|מס['׳]?\s*)?(\d+)\b")
+MATH = re.compile(r"\$\$?(.+?)\$\$?", re.S)
+
+
+def _latex(text):
+    """LaTeX ready for SYMBOL: \\text{...} prose and control words (\\frac, \\cdot) gone, X_{d} written X_d."""
+    text = re.sub(r"\\(?:text|mbox)\{[^}]*\}|\\[A-Za-z]+", " ", text)
+    return re.sub(r"_\{([A-Za-z0-9]+)\}", r"_\1", text)
+
+NOT_PROSE = re.compile(r"!?\[\[[^\]]*\]\]|!?\[[^\]]*\]\([^)]*\)|https?://\S+|<!--.*?-->|</?[A-Za-z][^>\n]*>"  # a tag, not $a < b$
+                       r"|\[![^\]]*\]|\A---\n.*?\n---\n", re.S)
+QUOTE = re.compile(r'(?<!\w)["“„](.+?)["”“](?!\w)', re.S)
+LABEL_LINE = re.compile(r"^\s*(?:>\s*)*(?:[-*+]\s+)?\*\*([^*]+)\*\*")
+
+
+def _normal(text):
+    """Text with whitespace and punctuation gone, so a quote matches its source however it was wrapped."""
+    return re.sub(r"[\W_]+", "", unicodedata.normalize("NFKC", text)).casefold()
+
+
+def check_pack_against_unit(page: Path, course):
+    """Notation and quotes of a pack page against its unit's Wiki (ticket 30): every Latin symbol and assumption number
+    is listed in the unit page's Notation or Assumptions sections; every quote in a Say it or Model answer block occurs
+    in the unit's source pages. Course-language terms are left to the verifier (the glossary)."""
+    from .course import parse_unit_folder, unit_dir
+    known, unit = parse_unit_folder(page.parent.name, course.label_tables())
+    if not known or not isinstance(unit, int) or not re.match(r"\d+\.\d", page.name):  # not the generated roadmap
+        return []
+    unit_page = course.wiki / "units" / f"{unit_dir(unit)}.md"
+    sections = {m.group(1): NOT_PROSE.sub(" ", m.group(2))  # no links: their page anchors are not assumption numbers
+                for m in SECTION.finditer(unit_page.read_text("utf-8") if unit_page.is_file() else "")}
+    listed = " ".join(sections.values())
+    earlier = [m.group(2) for k in range(1, unit) for f in [course.wiki / "units" / f"{unit_dir(k)}.md"] if f.is_file()
+               for m in SECTION.finditer(f.read_text("utf-8"))]  # a later unit may use what an earlier one taught
+    allowed = listed + " " + NOT_PROSE.sub(" ", " ".join(earlier))
+    text = NOT_PROSE.sub(" ", CODE_BLOCK.sub("", page.read_text("utf-8")))
+    problems = []
+
+    def problem(kind, text_):
+        problems.append({"kind": kind, "page": str(page), "text": text_})
+
+    if listed:  # a unit page with neither section is not written yet: nothing to check against
+        language = course.settings()["language"]
+        # In English every short word looks Latin: only math counts. Elsewhere a concept heading's English name goes.
+        prose = _latex(" ".join(MATH.findall(text)) if language == "en"
+                       else re.sub(r"(?m)^(###\s.*?)\s+—\s.*$", r"\1", text))
+        symbols = set(SYMBOL.findall(_latex(allowed)))
+        numbers = (set(re.findall(r"(?m)^\s*(\d+)[.)]", sections.get("Assumptions", "")))
+                   | {hit.group(1) for hit in ASSUMPTION.finditer(allowed)})
+        for symbol in dict.fromkeys(SYMBOL.findall(prose)):
+            if symbol not in symbols:
+                problem("notation", symbol)
+        for hit in ASSUMPTION.finditer(text):
+            if hit.group(1) not in numbers:
+                problem("notation", hit.group(0))
+
+    labels = {_normal(table[key]) for table in course.label_tables() for key in ("model_answer", "say_it") if key in table}
+    sources = None
+    lines = text.split("\n")
+    for i, line in enumerate(lines):
+        head = LABEL_LINE.match(line)
+        if not head or _normal(head.group(1)) not in labels:
+            continue
+        block = [line[head.end():]]
+        for more in lines[i + 1:]:
+            if not more.strip() or LABEL_LINE.match(more):
+                break
+            block.append(more)
+        for quote in QUOTE.findall("\n".join(block)):
+            if sources is None:
+                folder = course.wiki / "sources"
+                sources = _normal(" ".join(p.read_text("utf-8") for name in (unit_dir(unit), "general")
+                                           for p in sorted((folder / name).glob("*.md"))))
+            if _normal(quote) and _normal(quote) not in sources:
+                problem("quote", quote.strip()[:80])
+    return problems
+
+
+RETURN_PAGE = re.compile(r"^\s*(?:[-*]\s+)?\d+\.\d\b\S*\s+\S")
+RETURN_GAP = re.compile(r"^\s*[-*]\s+\w+\s+·\s+[^·]*\S[^·]*·\s*\S")
+
+
+def check_return(path: Path):
+    """The writer's return (ticket 30): the page list, one line per page, then `Known gaps:` and one line per gap as
+    kind · page · what's missing (or `Known gaps: none`). One `return` problem names the first line out of shape."""
+    lines = [line for line in path.read_text("utf-8").splitlines() if line.strip()]
+    gaps = next((i for i, line in enumerate(lines) if re.match(r"^\s*(?:\*\*)?Known gaps:", line)), None)
+    if gaps is None:
+        bad = "no `Known gaps:` line"
+    elif gaps == 0:
+        bad = "no page list before `Known gaps:`"
+    else:
+        tail = lines[gaps].split(":", 1)[1].strip(" *")
+        wrong = ([line for line in lines[:gaps] if not RETURN_PAGE.match(line)]
+                 + ([lines[gaps]] if tail and tail.lower() != "none" else [])
+                 + [line for line in lines[gaps + 1:] if not RETURN_GAP.match(line)])
+        bad = wrong[0].strip()[:80] if wrong else None
+    return [{"kind": "return", "page": str(path), "text": bad}] if bad else []

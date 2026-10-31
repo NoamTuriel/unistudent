@@ -51,8 +51,8 @@ class SeveralCourses(CourseTestCase):
     def test_list_switch_and_detect_the_current_course(self):
         macro = self.tmp / "Macro"
         stats = self.tmp / "Statistics"
-        run("setup", macro, "--name", "Macro")
-        run("setup", stats, "--name", "Statistics")
+        run("setup", macro, "--name", "Macro", "--language", "he")
+        run("setup", stats, "--name", "Statistics", "--language", "he")
 
         names = [c["name"] for c in run_json("courses", "list")["courses"]]
         self.assertEqual(names, ["Macro", "Statistics"])
@@ -70,8 +70,8 @@ class SeveralCourses(CourseTestCase):
             os.chdir(cwd)
 
     def test_current_says_how_the_course_was_found_and_lists_the_others(self):
-        run("setup", self.tmp / "Macro", "--name", "Macro")
-        run("setup", self.tmp / "Statistics", "--name", "Statistics")
+        run("setup", self.tmp / "Macro", "--name", "Macro", "--language", "he")
+        run("setup", self.tmp / "Statistics", "--name", "Statistics", "--language", "he")
         current = run_json("courses", "current")
         self.assertEqual((current["name"], current["found_by"]), ("Statistics", "last active"))
         self.assertEqual(sorted(c["name"] for c in current["courses"]), ["Macro", "Statistics"])
@@ -95,7 +95,7 @@ class SeveralCourses(CourseTestCase):
         self.assertFalse(list(folders(stats).wiki.rglob("Unit 1 macro.md")))
 
     def test_unknown_course_is_an_error(self):
-        run("setup", self.tmp / "Macro", "--name", "Macro")
+        run("setup", self.tmp / "Macro", "--name", "Macro", "--language", "he")
         code, out = run("courses", "switch", "Physics")
         self.assertEqual(code, 1)
         self.assertIn("No course named Physics", out)

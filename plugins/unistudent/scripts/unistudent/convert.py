@@ -1,13 +1,17 @@
 """Turning course documents into text pages. Best available tool first, pure-Python fallback.
 
 Returns a Conversion: a list of page texts, the method used, and warnings.
-Pages whose text layer is (almost) empty are reported, so Claude can read them visually.
+Pages whose text layer is (almost) empty or OCR noise, and slides with a picture, are reported, so Claude can read
+them visually.
 """
 import logging
+import re
 import shutil
 import subprocess
 import tempfile
+import unicodedata
 import warnings
+import zipfile
 from dataclasses import dataclass, field
 from pathlib import Path
 
@@ -28,12 +32,16 @@ class Conversion:
     pages: list
     method: str
     warnings: list = field(default_factory=list)
+    picture_pages: list = field(default_factory=list)  # pages with a picture (often a graph) that has no text
+    view: Path = None  # LibreOffice's PDF of an Office file, kept so a worker can look at a page (Read can't open .pptx)
 
     @property
     def empty_pages(self):
+        """The pages to read visually: no text layer, or a picture (a slide's, a Word file's)."""
         if self.method in NOT_PAGED:  # a short text file is not a page with a missing text layer
-            return []
-        return [i + 1 for i, text in enumerate(self.pages) if len(text.strip()) < EMPTY_PAGE_CHARS]
+            return sorted(self.picture_pages)
+        return sorted({i + 1 for i, text in enumerate(self.pages) if len(text.strip()) < EMPTY_PAGE_CHARS}
+                      | set(self.picture_pages))
 
 
 def kind(path) -> str:
@@ -47,8 +55,17 @@ def kind(path) -> str:
     return "other"
 
 
+WORKS = {}  # program path → whether it runs: a wrapper left after LibreOffice was removed does not
+
+
 def _soffice():
-    return shutil.which("soffice") or shutil.which("libreoffice")
+    path = shutil.which("soffice") or shutil.which("libreoffice")
+    if path and path not in WORKS:
+        try:
+            WORKS[path] = subprocess.run([path, "--version"], capture_output=True, timeout=60).returncode == 0
+        except (OSError, subprocess.TimeoutExpired):
+            WORKS[path] = False
+    return path if path and WORKS[path] else None
 
 
 def _pdf_pages(path: Path) -> Conversion:
@@ -74,14 +91,16 @@ def _pdf_pages(path: Path) -> Conversion:
 
 def _via_pdf(path: Path) -> Conversion:
     """Office → PDF with LibreOffice first: direct text export loses formulas."""
-    with tempfile.TemporaryDirectory() as out:
-        result = subprocess.run([_soffice(), "--headless", "--convert-to", "pdf", "--outdir", out, str(path)],
-                                capture_output=True, timeout=300)
-        pdf = Path(out) / (path.stem + ".pdf")
-        if result.returncode == 0 and pdf.exists():
-            conversion = _pdf_pages(pdf)
-            conversion.method = "soffice+" + conversion.method
-            return conversion
+    out = tempfile.mkdtemp()  # the build moves the PDF into the hidden folder (Conversion.view)
+    result = subprocess.run([_soffice(), "--headless", "--convert-to", "pdf", "--outdir", out, str(path)],
+                            capture_output=True, timeout=300)
+    pdf = Path(out) / (path.stem + ".pdf")
+    if result.returncode == 0 and pdf.exists():
+        conversion = _pdf_pages(pdf)
+        conversion.method = "soffice+" + conversion.method
+        conversion.view = pdf
+        return conversion
+    shutil.rmtree(out, ignore_errors=True)
     return None
 
 
@@ -118,8 +137,114 @@ def _pptx_text(path: Path) -> Conversion:
     return Conversion(slides, "python-pptx")
 
 
+METAFILES = {"wmf", "emf"}  # Windows metafiles (an old Word file's formulas, mostly): only LibreOffice draws them
+
+
+def _word_pictures(path) -> list:
+    """[(extension, bytes)] of the pictures in a .docx's body (word/media; a header's logo is left out)."""
+    try:
+        with zipfile.ZipFile(path) as docx:
+            rels = docx.read("word/_rels/document.xml.rels").decode("utf-8", "replace")
+            return [(Path(name).suffix.lstrip(".").lower(), docx.read("word/" + name))
+                    for name in re.findall(r'Target="[^"]*?(media/[^"]+)"', rels)]
+    except (KeyError, OSError, zipfile.BadZipFile):
+        return []
+
+
+def _pictures(path) -> dict:
+    """{page: [(extension, bytes)]}: a .pptx's pictures by slide (needs python-pptx), a .docx's all on page 1 (a Word
+    file has no pages of its own)."""
+    suffix = Path(path).suffix.lower()
+    if suffix == ".docx":
+        found = [picture for picture in _word_pictures(path) if picture[0] not in METAFILES]  # Read can't open those
+        return {1: found} if found else {}
+    if suffix != ".pptx":
+        return {}
+    try:
+        from pptx import Presentation
+        from pptx.enum.shapes import MSO_SHAPE_TYPE
+    except ImportError:
+        return {}
+    return {number: [(s.image.ext, s.image.blob) for s in pictures]  # ponytail: top-level pictures only
+            for number, slide in enumerate(Presentation(str(path)).slides, 1)
+            if (pictures := [s for s in slide.shapes if s.shape_type == MSO_SHAPE_TYPE.PICTURE])}
+
+
+def _pages_with_pictures(pdf, count) -> list:
+    """The pages of a PDF that show a picture: poppler's pdfimages, else pypdf, else every page."""
+    if shutil.which("pdfimages"):
+        rows = subprocess.run(["pdfimages", "-list", str(pdf)], capture_output=True, text=True).stdout.splitlines()
+        return sorted({int(row.split()[0]) for row in rows[2:] if row.split() and row.split()[0].isdigit()})
+    try:
+        from pypdf import PdfReader
+        return [n for n, page in enumerate(PdfReader(str(pdf)).pages, 1) if page.images]
+    except Exception:  # no pypdf, or a picture it can't open
+        return list(range(1, count + 1))
+
+
+def picture_files(path, pages, folder) -> list:
+    """The pictures on these pages of a .pptx or .docx, saved as image files a worker can open (Read can't open
+    either), named page-<page>-<n>."""
+    found, out = _pictures(path), []
+    for number in pages:
+        for k, (ext, blob) in enumerate(found.get(number, []), 1):
+            target = Path(folder) / f"page-{number}-{k}.{ext}"
+            target.parent.mkdir(parents=True, exist_ok=True)
+            target.write_bytes(blob)
+            out.append(str(target))
+    return out
+
+
+ANSWER_LINES = re.compile(r"([^\w\s]|_)\1{2,}")  # a question's ____ lines, a contents page's .... leaders
+WORD = re.compile(r"[^\W\d_]+|\d+")
+EAST_ASIAN = {"CJK", "HIRAGANA", "KATAKANA", "HANGUL", "IDEOGRAPHIC"}  # written without spaces, several scripts in one run
+
+
+def _script(char):
+    name = unicodedata.name(char, "?").split()[0].split("-")[0]  # KATAKANA-HIRAGANA PROLONGED SOUND MARK
+    return "CJK" if name in EAST_ASIAN else name
+
+
+def is_noise(text) -> bool:
+    """A text layer that is OCR noise, as a handwritten scan's ("'fr Eg- I d 4 Lh tL"): under half of its characters
+    are in numbers or words (2+ letters of one script; 3+ for Latin, since noise is short Latin runs). Bidi marks and
+    vowel points are left out first: a Hebrew table is full of them."""
+    text = "".join(c for c in text if unicodedata.category(c) not in ("Cf", "Mn"))
+    text = ANSWER_LINES.sub(" ", text)
+    total = sum(not c.isspace() for c in text)
+    words = 0
+    for word in WORD.findall(text):
+        scripts = {_script(c) for c in word}
+        if word[0].isdigit() or (len(scripts) == 1 and len(word) >= (3 if scripts == {"LATIN"} else 2)):
+            words += len(word)
+    return words < total / 2
+
+
 def convert(path) -> Conversion:
     path = Path(path)
+    conversion = _convert(path)
+    if conversion.method not in NOT_PAGED:  # an unreadable text layer is no text layer: the page is read visually
+        conversion.pages = ["" if is_noise(text) else text for text in conversion.pages]
+    word = _word_pictures(path) if path.suffix.lower() == ".docx" else []
+    metafiles = sum(ext in METAFILES for ext, _ in word)
+    if conversion.view and word:  # where LibreOffice put them; it draws a metafile as lines, which could be on any page
+        conversion.picture_pages = (list(range(1, len(conversion.pages) + 1)) if metafiles
+                                    else _pages_with_pictures(conversion.view, len(conversion.pages)))
+    elif conversion.pages:
+        conversion.picture_pages = sorted(n for n in _pictures(path) if n <= len(conversion.pages))
+        if metafiles:
+            conversion.warnings.append(f"{metafiles} pictures (Windows metafiles, often formulas) can be read only "
+                                       "with LibreOffice installed.")
+    return conversion
+
+
+def _slides(conversion):
+    """MarkItDown's .pptx text, one page per slide (it marks each slide), so pages can be cited and read."""
+    parts = re.split(r"<!-- Slide number: \d+ -->\n?", conversion.pages[0])
+    return Conversion([p.strip() for p in parts[1:]], "markitdown-slides") if len(parts) > 1 else conversion
+
+
+def _convert(path) -> Conversion:
     suffix = path.suffix.lower()
     if suffix in (".txt", ".md"):
         return Conversion([path.read_text("utf-8", errors="replace")], "text")
@@ -134,7 +259,7 @@ def convert(path) -> Conversion:
                 return conversion
         conversion = _markitdown(path)
         if conversion is not None and conversion.pages:
-            return conversion
+            return _slides(conversion) if suffix == ".pptx" else conversion
         try:
             if suffix == ".docx":
                 return _docx_text(path)

@@ -4,10 +4,10 @@ description: Transcribe and summarise course recordings into the Wiki (heavy and
 disable-model-invocation: true
 ---
 
-Heavy work starts only after the student says yes to real numbers.
+Heavy work starts only after the student says yes to real numbers. Course setup transcribes the recordings its Fetch plan approved; this skill is for recordings added later (the inbox, a later sync) and for ones skipped in setup.
 
 <!-- conventions: keep identical in every UniStudent skill -->
-Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); give them to a subagent if you can run subagents (in parallel when there are several), otherwise follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
+Conventions. `us <command>`: the UniStudent tool for that command, the MCP tool named by its words joined with `_` (`us wiki build` → `wiki_build`, options as named arguments) when the unistudent MCP server is connected; otherwise run `unistudent <command> --json` in a shell (inside the plugin: `python3 <this skill's base directory>/../../../us.py <command> --json`; `python` on Windows). **Delegate** to a worker: its instructions are in `<this skill's base directory>/../../agents/<worker>.md` (if that file isn't there, get them with `us doc <worker>`); as the Claude plugin, give them to the plugin's subagent of that name, which has the UniStudent tools (in parallel when there are several); in any other app, follow them yourself, one at a time. **Ask**: use your question tool if you have one, otherwise ask in the chat.
 <!-- /conventions -->
 
 ## 1. What and how much
@@ -20,23 +20,27 @@ If `realtime_factor` is empty and a recording exists, offer a one-minute benchma
 
 ## 2. Ask
 
-Show the totals: number of recordings, hours of audio, GB, estimated time on this machine, and that Claude will also read each transcript (tokens). Then show **one numbered list** of the recordings still without a transcript (`files` from the estimate), each as `N. <full path> - X min, estimated Y on this machine`. Ask which to transcribe: the student answers with numbers ("1, 4, 7") or "none". "All" is not an answer: ask for numbers. Record "none" with `us context --recording-level 0` and a choice with `us context --recording-level 3`.
+Show the totals: number of recordings, hours of audio, GB, estimated time on this machine (and the estimate's `warning`, when it has one, in plain words), and that Claude will also read each transcript (tokens). Then show **one numbered list** of the recordings still without a transcript (`files` from the estimate), each as `N. <full path> - X min, estimated Y on this machine`. Ask which to transcribe: the student answers with numbers ("1, 4, 7") or "none". "All" is not an answer: ask for numbers. Record "none" with `us context --recording-level 0` and a choice with `us context --recording-level 3`.
 
-Then ask a **separate** question about frame analysis (looking at what's on screen, e.g. slides), only if a video-analysis tool is installed: show `frame_analysis_segments` from the same estimate (one extra AI call per segment — real cost, distinct from transcription) and ask yes/no. Default to no unless the student asks for it. Record with `us context --frame-analysis <0 off|1 on>`. Skip this question (and never turn it on) if no video-analysis tool is installed, or if it was already answered for this course.
+Then ask a **separate** question about frame analysis (looking at what's on screen, e.g. slides; built in, it needs only ffmpeg): show `frame_analysis_segments` from the same estimate (one extra AI call per segment — real cost, distinct from transcription) and ask yes/no. Default to no unless the student asks for it. Record with `us context --frame-analysis <0 off|1 on>`. Skip this question if it was already answered for this course.
+
+When the chosen recordings' estimate is over 3 hours and the estimate has a `faster_option`, ask one more question: **Accurate** (recommended, the default) or **Faster: about 3x faster, a few more misheard words** (with both times). Faster → `us context --transcription fast`; never offer it otherwise.
 
 Done when: the student named recordings by number, or said none; and, if relevant, frame analysis is explicitly on or off.
 
 ## 3. Transcribe
 
-Run `us recordings approve "<path>" ...` with exactly the recordings the student numbered: `transcribe` refuses any recording not approved. Tell the student "Sit back and relax, this might take a while.", then run `us recordings transcribe "<path>" ... --background`: it returns at once and writes progress to a log. Tell the student they can keep working, and check with `us recordings list` until every chosen recording has a transcript.
+Run `us recordings approve "<path>" ...` with exactly the recordings the student numbered: `transcribe` refuses any recording not approved. Tell the student "Sit back and relax, this might take a while.", then run `us recordings transcribe "<path>" ... --background`: it returns at once and writes progress to a log. It transcribes oldest first. Tell the student they can keep working, and check with `us recordings list` until every chosen recording has a transcript, doing step 4 for each transcript as soon as it lands (its line reads `partial`): the oldest recordings are summarised while the newer ones are still being transcribed.
 
 Done when: every chosen recording has a `transcript.md`.
 
 ## 4. Table of contents and summary
 
-For each transcript, **delegate** to one `recording-summarizer` worker, telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `summary.md` next to the transcript (in the hidden Wiki) and returns a three-line summary. Only those three lines come back to you.
+For each transcript, as soon as it lands, **delegate** to one `recording-summarizer` worker, giving it the recording's `attachments` from `us recordings list --json` (their `page`s, the files the lecturer hung on it), and telling it explicitly whether frame analysis is on for this course (`.unistudent/settings.json`'s `frame_analysis`: on only if `true`, off for `false` or unset — never let the worker decide from tool availability alone). Each writes `toc.md` and `recording-summary.md` next to the transcript (in the hidden Wiki) and returns a three-line summary. Only those three lines come back to you.
 
-Done when: every transcript has `toc.md` and `summary.md`.
+If frame analysis is on and the course's `keep_video` is `false`, run `us recordings audio-only "<path>"` for each recording once its summary is written: the video is replaced by a sound-only copy under the same name, so the time links still work.
+
+Done when: every transcript has `toc.md` and `recording-summary.md`, and no video is kept that `keep_video` says not to keep.
 
 ## 5. Where each recording belongs
 
@@ -46,8 +50,8 @@ Done when: every class session is assigned to `lessons` or the student deferred 
 
 ## 6. Update
 
-Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, and the Recorded lessons roadmap, with the announcements and exam hints, is written into the student's Study vault), then `us wiki check`.
+Run `us wiki build` (the unit pages now link the summaries, and each unit's recordings roadmap, and the Recorded lessons roadmap, with the announcements and exam hints, is written into the student's Study vault), then **delegate** each unit in its `units_touched` to one `wiki-unit-writer` worker (a new table of contents lets it fill "Solved in a recording"; it merges its own glossary and question-bank entries), then `us wiki check`.
 
-Done when: `us wiki check` reports 0 problems. If a new recorded lesson covers a unit that has a study pack (read the lesson's first summary line for the units), offer `/unistudent:study-pack N` for that unit; `us study changes` cannot see lessons, since they belong to no unit.
+Done when: every unit in `units_touched` was rewritten and `us wiki check` reports 0 problems. If a new recorded lesson covers a unit that has a study pack (`us study changes --unit N` lists the lesson's summary and table of contents as `new`), offer `/unistudent:study-pack N recordings page`, which names the page so it rebuilds that unit's Recordings index page.
 
 Report: which recordings are done (and that each unit's roadmap, and the Recorded lessons roadmap, is in the study vault), and the announcements and "this will be on the exam" moments the summarizers found.

@@ -1,11 +1,13 @@
 """The MCP server: any MCP client (Claude, Cursor, VS Code, Codex, Gemini) gets the same commands as tools."""
+import base64
 import json
 import os
 import subprocess
 import sys
 import unittest
+from unittest import mock
 
-from helpers import SCRIPTS, CourseTestCase
+from helpers import SCRIPTS, CourseTestCase, write
 
 
 class McpServer(CourseTestCase):
@@ -39,6 +41,10 @@ class McpServer(CourseTestCase):
         init = self.rpc(self.proc, "initialize", {"protocolVersion": "2025-06-18", "capabilities": {},
                                                   "clientInfo": {"name": "t", "version": "0"}}, id_=9)
         self.assertIn("course_context", init["result"]["instructions"])
+        plugin = json.loads((SCRIPTS.parent / ".claude-plugin" / "plugin.json").read_text("utf-8"))
+        self.assertEqual(init["result"]["serverInfo"]["version"], plugin["version"])  # one version everywhere
+        pyproject = (SCRIPTS.parent / "pyproject.toml").read_text("utf-8")
+        self.assertIn(f'\nversion = "{plugin["version"]}"\n', pyproject)
         names = [t["name"] for t in self.rpc(self.proc, "tools/list", id_=10)["result"]["tools"]]
         self.assertIn("course_context", names)
 
@@ -95,6 +101,10 @@ class McpServer(CourseTestCase):
         self.assertEqual(tools["courses_switch"]["required"], ["target"])
         self.assertNotIn("force", tools["wiki_check"]["properties"])
         self.assertIn("text", tools["prefs_add"]["required"])
+        self.assertEqual(tools["fetch_plan_show"]["required"], ["listing"])
+        self.assertEqual(sorted(tools["fetch_plan_apply"]["properties"]), ["course", "listing", "unit"])
+        self.assertEqual(tools["fetch_plan_apply"]["required"], ["listing"])
+        self.assertEqual(list(tools["fetch_plan_status"]["properties"]), ["course"])
 
     def test_a_student_error_comes_back_as_a_tool_error(self):
         result = self.call("study_changes", {"course": str(self.tmp / "nowhere"), "unit": "4"})
@@ -108,6 +118,25 @@ class McpServer(CourseTestCase):
         text = got["messages"][0]["content"]["text"]
         self.assertIn("inbox", text)
         self.assertNotIn("disable-model-invocation", text)  # frontmatter stripped
+
+
+class ImagesFromTools(CourseTestCase):
+    """Q17: a command whose result names `images` shows them to the AI as images, not as paths it can't open."""
+
+    def test_the_images_a_result_names_come_after_its_text(self):
+        from unistudent import mcp
+        frame = write(self.tmp / "frame.jpg", b"\xff\xd8\xff a frame")
+
+        def main(argv):
+            print(json.dumps({"images": [str(frame), str(self.tmp / "gone.jpg")], "summary": "1 frame"}))
+            return 0
+
+        with mock.patch("unistudent.cli.main", main):
+            result = mcp.call_tool(mcp.build_tools(), "courses_list", {})
+        text, image = result["content"]
+        self.assertEqual(json.loads(text["text"])["images"], [str(frame), str(self.tmp / "gone.jpg")])
+        self.assertEqual(image, {"type": "image", "mimeType": "image/jpeg",
+                                 "data": base64.b64encode(frame.read_bytes()).decode("ascii")})
 
 
 if __name__ == "__main__":

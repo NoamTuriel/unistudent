@@ -21,6 +21,9 @@ HASH_KEY = "unistudent-graph"
 PALETTE = ["#1f77b4", "#d62728", "#2ca02c", "#9467bd", "#ff7f0e", "#8c564b"]
 FUNCTIONS = {"sqrt": math.sqrt, "log": math.log, "exp": math.exp, "sin": math.sin, "cos": math.cos}
 FORMULA_HELP = "Use x, numbers, + - * / ^ and the functions sqrt, log, exp, sin, cos."
+NO_DRAWING = ("Could not draw this graph: the drawing library (matplotlib) is not available here. If the UniStudent "
+              "MCP tool `graph` is available, call it instead: it includes matplotlib. Otherwise write no image: "
+              "link the slide page and describe the graph in words, in one line.")
 KINDS = ("points", "vertical", "horizontal", "formula", "sketch")
 
 
@@ -152,7 +155,7 @@ def load_spec(path):
     try:
         raw = json.loads(Path(path).read_text("utf-8"))
     except (OSError, ValueError) as error:
-        raise UserError(f"Can't read the Graph spec {path}: {error}")
+        raise UserError(f"it is not readable JSON ({error})")
     if not isinstance(raw, dict) or not isinstance(raw.get("curves"), list) or not raw["curves"]:
         raise UserError('The Graph spec needs a "curves" list with at least one curve.')
     curves, names = [], set()
@@ -167,7 +170,9 @@ def load_spec(path):
         if len(kinds) != 1:
             raise UserError(f'Curve "{name}" needs exactly one of: {", ".join(KINDS)}.')
         kind = kinds[0]
-        curve = {"name": name, "kind": kind, "shift_of": item.get("shift_of")}
+        if item.get("dashed") not in (None, True, False):
+            raise UserError(f'"dashed" on curve "{name}" must be true or false.')
+        curve = {"name": name, "kind": kind, "shift_of": item.get("shift_of"), "dashed": item.get("dashed")}
         if kind == "points":
             curve["data"] = _pairs(item["points"], f'"{name}" points', 2)
         elif kind == "sketch":
@@ -319,14 +324,15 @@ def point_positions(spec, lines):
     return out
 
 
-def shift_arrow(original, moved):
-    """From the middle of the original curve to the nearest point on the moved one."""
+def shift_arrow(original, moved, spans=(1, 1)):
+    """From the middle of the original curve to the nearest point on the moved one, nearest as drawn: `spans` are the
+    axes' widths, so Q 0-140 against P 0-14 doesn't turn a shift to the right into an arrow pointing up."""
     ok = [p for p in original if all(math.isfinite(v) for v in p)]
     others = [p for p in moved if all(math.isfinite(v) for v in p)]
     if not ok or not others:
         return None
     start = ok[len(ok) // 2]
-    end = min(others, key=lambda p: (p[0] - start[0]) ** 2 + (p[1] - start[1]) ** 2)
+    end = min(others, key=lambda p: ((p[0] - start[0]) / spans[0]) ** 2 + ((p[1] - start[1]) / spans[1]) ** 2)
     return start, end
 
 
@@ -450,14 +456,19 @@ def _avoid_overlaps(fig, labels, obstacles):
 def draw(spec_path, force=False):
     """Draw the spec to a PNG beside it. Returns {png, drawn}."""
     spec_path = Path(spec_path)
-    spec = load_spec(spec_path)
-    lines, ((xlo, xhi), (ylo, yhi)), sketch_only = layout(spec)
-    points = point_positions(spec, lines)
+    try:
+        spec = load_spec(spec_path)
+        lines, ((xlo, xhi), (ylo, yhi)), sketch_only = layout(spec)
+        points = point_positions(spec, lines)
+    except UserError as error:
+        raise UserError(f"The Graph spec {spec_path} has a mistake: {error} Fix the spec and draw again.")
     png = spec_path.with_suffix(".png")
     digest = spec_hash(spec_path)
     if not force and stored_hash(png) == digest:
         return {"png": str(png), "drawn": False}
-    Figure = _matplotlib()  # the dispatcher (draw.py) has already made sure matplotlib is importable
+    Figure = _matplotlib()
+    if Figure is None:
+        raise UserError(NO_DRAWING)
 
     fig = Figure(figsize=(5.2, 4.0), dpi=150)
     ax = fig.subplots()
@@ -476,7 +487,8 @@ def draw(spec_path, force=False):
         line = lines[c["name"]]
         shown = line
         xs_, ys_ = [p[0] for p in shown], [p[1] for p in shown]
-        dashed = bool(c["shift_of"]) is False and any(o["shift_of"] == c["name"] for o in spec["curves"])
+        dashed = c["dashed"] if c["dashed"] is not None else (  # the course's style when the spec gives it
+            not c["shift_of"] and any(o["shift_of"] == c["name"] for o in spec["curves"]))
         ax.plot(xs_, ys_, color=colours[c["name"]], linewidth=2.2, solid_capstyle="round",
                 linestyle=(0, (5, 3)) if dashed else "-")
         end = next((p for p in reversed(shown) if all(math.isfinite(v) for v in p)), None)
@@ -487,7 +499,8 @@ def draw(spec_path, force=False):
                             (-5, -14, "right", "baseline"), (-5, 3, "right", "baseline")]))
     for c in spec["curves"]:
         if c["shift_of"]:
-            arrow = shift_arrow(lines[c["shift_of"]], lines[c["name"]])
+            arrow = shift_arrow(lines[c["shift_of"]], lines[c["name"]],
+                                (abs(ax.get_xlim()[1] - ax.get_xlim()[0]) or 1, abs(ax.get_ylim()[1] - ax.get_ylim()[0]) or 1))
             if arrow:
                 ax.annotate("", arrow[1], arrow[0], arrowprops={"arrowstyle": "-|>", "color": "#444444", "lw": 1.6})
     for label, (px, py) in points:
