@@ -1,7 +1,13 @@
 name: windows-transcription
-# Run by hand (Actions tab, "Run workflow"): a real speech-to-text run on Windows, the way a student's laptop does it:
-# faster-whisper on the processor, the "tiny" model, a 4-second synthetic Hebrew clip (made with macOS `say`).
-on: workflow_dispatch
+# A real speech-to-text run on Windows, the way a student's laptop does it: faster-whisper on the processor, the
+# "tiny" model, a 4-second synthetic Hebrew clip (made with macOS `say`). Runs on pull requests that change
+# transcription, or by hand (Actions tab, "Run workflow"; GitHub offers that only once this file is on main).
+on:
+  workflow_dispatch:
+  pull_request:
+    paths:
+      - plugins/unistudent/scripts/unistudent/recordings.py
+      - .github/workflows/windows-transcription.yml
 jobs:
   transcribe:
     runs-on: windows-latest
