@@ -7,6 +7,8 @@
 <p align="center"><strong>An AI plugin for university students.</strong><br>
 It builds a Wiki (a hidden set of Markdown pages that only the AI reads) out of your course's own files, so the AI answers from what your course teaches and nothing else.</p>
 
+<p align="center"><a href="https://noamturiel.github.io/unistudent/"><strong>Website: watch the 35-second video and install in three steps</strong></a></p>
+
 <p align="center">
   <a href="https://github.com/NoamTuriel/unistudent/actions/workflows/tests.yml"><img src="https://img.shields.io/github/actions/workflow/status/NoamTuriel/unistudent/tests.yml?branch=main&label=tested&logo=github&logoColor=white" alt="tested" /></a>
   <a href="LICENSE"><img src="https://img.shields.io/badge/license-MIT-8b5cf6.svg" alt="license: MIT" /></a>
