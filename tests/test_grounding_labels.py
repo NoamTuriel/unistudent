@@ -34,7 +34,13 @@ class GroundingRule(CourseTestCase):
 
     def check(self, text):
         answer = write(self.course / "answer.md", text)
-        return run_json("check", "--course", self.course, answer, "--labels")
+        return run_json("check", "--course", self.course, answer, "--labels", "--full")
+
+    def test_without_full_the_check_returns_the_summary_and_problems_only(self):
+        answer = write(self.course / "answer.md", "The multiplier is 1/r.\n\nThe reserve ratio is in [x](nope.md) here.\n")
+        report = run_json("check", "--course", self.course, answer, "--labels")
+        self.assertEqual(sorted(report), ["problems", "summary"])
+        self.assertEqual(sorted(p["kind"] for p in report["problems"]), ["broken-link", "no-citation"])
 
     def kinds(self, text):
         return sorted(p["kind"] for p in self.check(text)["problems"])

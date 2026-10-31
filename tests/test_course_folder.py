@@ -8,8 +8,8 @@ from helpers import CourseTestCase, folders, run, run_json, write
 class CourseFromOwnFolder(CourseTestCase):
     def make_own_folder(self):
         own = self.tmp / "own"
-        write(own / "יחידה 1 - מבוא" / "שאלות עם תשובות.pdf", b"%PDF unit1")
-        write(own / "שקפים" / "שיעור 2 - יחידה 2.pdf", b"%PDF unit2")
+        write(own / "Unit 1 - מבוא" / "שאלות עם תשובות.pdf", b"%PDF unit1")
+        write(own / "שקפים" / "שיעור 2 - unit 2.pdf", b"%PDF unit2")
         write(own / "מבחנים לדוגמא" / "מבחן 2024.pdf", b"%PDF exam")
         write(own / "הקלטות" / "01 - מפגש מספר 1.mp4", b"\x00" * 2048)
         return own
@@ -17,7 +17,7 @@ class CourseFromOwnFolder(CourseTestCase):
     def test_setup_creates_course_folder_and_registers_it(self):
         own = self.make_own_folder()
         course = self.tmp / "Macro"
-        code, out = run("setup", course, "--name", "מבוא למקרו-כלכלה", "--import", own, "--tier", "official")
+        code, out = run("setup", course, "--name", "מבוא למקרו-כלכלה", "--language", "he", "--import", own, "--tier", "official")
         self.assertEqual(code, 0, out)
 
         settings = json.loads((course / ".unistudent" / "settings.json").read_text("utf-8"))
@@ -39,7 +39,7 @@ class CourseFromOwnFolder(CourseTestCase):
         run_json("import", self.make_own_folder(), "--course", course)
         units = {rel: e["unit"] for rel, e in run_json("manifest", "--course", course)["files"].items()}
         self.assertEqual(units["added/Unit 1/שאלות עם תשובות.pdf"], 1)
-        self.assertEqual(units["added/Unit 2/שיעור 2 - יחידה 2.pdf"], 2)
+        self.assertEqual(units["added/Unit 2/שיעור 2 - unit 2.pdf"], 2)
 
     def test_every_imported_file_is_in_the_manifest_once_and_copied_not_moved(self):
         own = self.make_own_folder()
@@ -63,7 +63,7 @@ class CourseFromOwnFolder(CourseTestCase):
 
         material = folders(course).material / "official"
         self.assertTrue((material / "Unit 1" / "שאלות עם תשובות.pdf").is_file())
-        self.assertTrue((material / "Unit 2" / "שיעור 2 - יחידה 2.pdf").is_file())
+        self.assertTrue((material / "Unit 2" / "שיעור 2 - unit 2.pdf").is_file())
 
         unsorted = run_json("unsorted", "--course", course)["files"]
         self.assertEqual(sorted(unsorted), sorted(["official/Unsorted/מבחן 2024.pdf", "official/Unsorted/01 - מפגש מספר 1.mp4"]))

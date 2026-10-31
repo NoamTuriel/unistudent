@@ -221,7 +221,7 @@ class RoadmapsAndAnnouncements(CourseTestCase):
             run_json("recordings", "transcribe", "--course", self.course, "official/Unit 4/session 5.mp4")
         self.rec = self.f.wiki / "recordings" / "session 5"
         write(self.rec / "toc.md", "Sources: [transcript](transcript.md)\n\n| 00:01:00 | exam question | [00:01:00](transcript.md#000100) |\n")
-        write(self.rec / "summary.md", "Session 5: a lesson about unit 4.\n\nSources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n\n"
+        write(self.rec / "recording-summary.md", "Session 5: a lesson about unit 4.\n\nSources: [transcript](transcript.md)\n\n## Announcements\n\nHomework due Sunday.\n\n"
                                        '## "This will be on the exam"\n\n- The multiplier, at 00:12:47.\n\n## Topics\n\nMoney.\n')
         self.roadmap = self.f.study / "Unit 4" / "Recordings roadmap.md"
 
@@ -242,7 +242,7 @@ class RoadmapsAndAnnouncements(CourseTestCase):
     def test_a_roadmap_goes_when_its_recording_loses_its_summary_or_is_deleted(self):  # T3
         run_json("wiki", "build", "--course", self.course)
         self.assertTrue(self.roadmap.exists())
-        (self.rec / "summary.md").unlink()
+        (self.rec / "recording-summary.md").unlink()
         run_json("wiki", "build", "--course", self.course)
         self.assertFalse(self.roadmap.exists())
 
@@ -271,27 +271,27 @@ def step(number):
 
 class SetupSkill(CourseTestCase):
     def test_the_overview_counts_the_numbered_steps_and_the_stages_match_the_cli(self):  # S4
-        from unistudent.course import SETUP_STAGES
+        from unistudent.course import RENAMED_STAGES, SETUP_STAGES
         numbered = re.findall(r"(?m)^## (\d+)\.", SETUP_TEXT)
         self.assertIn(f"Step 5 of {len(numbered) - 1}", SETUP_TEXT)  # step 0 is bookkeeping
         self.assertNotIn("fetch-and-organize", SETUP_TEXT)
-        for stage in ("fetch", "sort", "recordings"):
-            self.assertIn(f"--stage {stage}", SETUP_TEXT)
-            self.assertIn(stage, SETUP_STAGES)
-        self.assertEqual([m for m in re.findall(r"--stage ([a-z-]+)", SETUP_TEXT) if m not in SETUP_STAGES], [])
+        self.assertIn("--stage recordings", SETUP_TEXT)
+        accepted = SETUP_STAGES + list(RENAMED_STAGES)  # the CLI still takes the older names
+        self.assertEqual([m for m in re.findall(r"--stage ([a-z-]+)", SETUP_TEXT) if m not in accepted], [])
 
-    def test_a_progress_file_from_the_old_single_step_resumes_at_analyze(self):  # S4
+    def test_a_progress_file_from_the_old_single_step_resumes_after_the_recordings_question(self):  # S4
         write(self.home / "setup-progress" / "Macro.json", json.dumps({"stage": "fetch-and-organize", "answers": {}}))
-        self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"], "analyze")
+        self.assertEqual(run_json("setup-progress", "status", "--course-name", "Macro")["next_stage"], "installs")
 
-    def test_the_university_is_recorded_before_the_install_stop_and_a_restart_is_explained(self):  # S2
-        one = step(1)
-        self.assertLess(one.index("--stage university"), one.index("us plugins recommend"))
-        self.assertRegex(one, r"(?i)close and reopen|reload|restart")
-        self.assertIn("run setup again", one)
+    def test_the_university_is_recorded_before_the_install_stop_and_a_restart_is_explained(self):  # S2, ADR 0013
+        two = step(2)
+        self.assertLess(two.index("--stage university"), two.index("us plugins recommend"))
+        seven = step(7)
+        self.assertRegex(seven, r"(?i)close and reopen|reload|restart")
+        self.assertIn("run setup again", seven)
 
     def test_fetching_with_a_generated_fallback_can_fail_without_being_an_error(self):  # S5
-        five = step(5)
+        five = step(8)
         self.assertIn("can't log in", five)
         self.assertIn("not an error", five)
         self.assertIn("only record how the university organizes", five)
@@ -322,12 +322,12 @@ class SetupSkill(CourseTestCase):
         self.assertIn("a vault is just a folder", (ROOT / "README.md").read_text("utf-8"))
 
     def test_no_plugin_found_still_tells_a_non_claude_student_what_to_do(self):  # S6
-        out = run_json("plugins", "recommend", "--university", "Nowhere U", "--course-name", "Basket weaving")
+        out = run_json("plugins", "recommend", "--university", "Nowhere U")
         self.assertEqual(out["plugins"], [])
         self.assertIn("npx skills", out["summary"])
 
     def test_coverage_is_shown_after_sorting_and_pending_is_explained(self):  # S7
-        eight = step(8)
+        eight = step(10)
         self.assertIn("pending", eight)
         self.assertLess(SETUP_TEXT.index("## 6."), SETUP_TEXT.index("us wiki coverage"))
 
@@ -362,6 +362,40 @@ class WindowsPaths(CourseTestCase):
         self.assertEqual(code, 1)
         self.assertIn("too long for Windows", out)
         self.assertTrue((folders(course).inbox / name).is_file())
+
+
+class CommandsAtOnce(CourseTestCase):
+    def test_commands_running_at_the_same_time_never_lose_each_others_files(self):
+        """The setup run ingests recordings while documents are ingested: every entry must survive."""
+        import subprocess
+        import sys
+        from helpers import SCRIPTS
+        course = self.tmp / "Macro"
+        run_json("setup", course, "--name", "Macro", "--language", "en")
+        for n in range(4):
+            for m in range(6):
+                write(self.tmp / f"own{n}" / f"Unit {m + 1} notes {n}-{m}.txt", f"notes {n} {m}")
+        env = dict(os.environ, UNISTUDENT_HOME=str(self.home))
+        procs = [subprocess.Popen([sys.executable, str(SCRIPTS / "us.py"), "import", "--course", str(course),
+                                   str(self.tmp / f"own{n}"), "--json"], env=env, stdout=subprocess.DEVNULL)
+                 for n in range(4)]
+        self.assertEqual([p.wait(timeout=60) for p in procs], [0] * 4)
+        self.assertEqual(len(run_json("manifest", "--course", course)["files"]), 24)
+
+    def test_a_file_another_command_holds_open_for_a_moment_is_saved_after_a_retry(self):
+        """Windows refuses to replace a file another command has open (PermissionError); the save waits and retries."""
+        real, refusals = os.replace, [PermissionError("in use"), PermissionError("in use")]
+
+        def replace(src, dst):
+            if refusals:
+                raise refusals.pop()
+            real(src, dst)
+
+        with mock.patch("unistudent.course.os.replace", replace):
+            run_json("setup", self.tmp / "Macro", "--name", "Macro", "--language", "en")
+        self.assertEqual(refusals, [])
+        settings = json.loads((self.tmp / "Macro" / ".unistudent" / "settings.json").read_text("utf-8"))
+        self.assertEqual(settings["course_name"], "Macro")
 
 
 if __name__ == "__main__":

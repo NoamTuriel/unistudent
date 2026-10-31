@@ -7,12 +7,15 @@ from the current folder, then from the Registry's active course.
 import argparse
 import json
 import os
+import re
+import string
 import sys
 from pathlib import Path
 
 from . import material
 from .common import UserError, resolve_course
-from .course import Course, Registry, find_course, general_preferences_file, safe_name
+from .links_check import MD_LINK
+from .course import LABELS, Course, Registry, find_course, general_preferences_file, safe_name
 from .recordings import is_synced_folder, recordings_root
 
 TEMPLATES = Path(__file__).resolve().parent / "templates"
@@ -30,33 +33,32 @@ def _rel(course: Course, folder: Path) -> str:
     return folder.relative_to(course.root).as_posix()
 
 
-def _tools_section(answers):
-    from . import draw
-    lines = [f"- {name}: {a['state']} ({a['date']})" for name, a in sorted(answers.items())]
-    return ("- Picture tools the student answered about (offered once, before the first Study pack; `us tools`):\n"
-            + ("\n".join("  " + l for l in lines) if lines else "  - none offered yet")
-            + "\n- This course can draw: " + ", ".join(draw.supports(answers)) + ".")
+def _course_page_has_exam_information(course: Course) -> bool:
+    """True once the Wiki's course page says something real: a line that cites its source (an unknown, in any
+    language, cites nothing)."""
+    page = course.wiki / "course.md"
+    text = re.sub(r"<!--.*?-->", "", page.read_text("utf-8"), flags=re.S) if page.exists() else ""
+    return any(not line.startswith("#") and MD_LINK.search(line) for line in text.splitlines())
 
 
 def write_context_files(course: Course):
     settings = course.settings()
-    exam = []
+    exam = []  # written only when the course has an exam to speak of (a self-learner's may not)
     if settings.get("exam_date"):
         exam.append(f"- Exam date: {settings['exam_date']}")
-    exam.append(f"- Exam format, formula sheet and lecturer emphasis: see `{_rel(course, course.wiki)}/course.md` "
-                "(filled when the Wiki is built).")
+    if _course_page_has_exam_information(course):
+        exam.append(f"- Exam format, formula sheet and what the course stresses: see `{_rel(course, course.wiki)}/course.md`.")
     others = [c for c in Registry().courses() if c["path"] != str(course.root)]
     other_lines = [f"- {c['name']}: `{Course(c['path']).wiki}`" for c in others] or ["- None."]
     context = render("context.md",
                      course_name=settings["course_name"],
-                     language=settings.get("language", "he"),
+                     language=settings["language"],
                      official=course.label("official"), added=course.label("added"),
                      wiki=_rel(course, course.wiki), inbox=_rel(course, course.inbox),
                      study=_rel(course, course.study), material=_rel(course, course.material),
                      general_preferences=general_preferences_file(),
                      other_courses="\n".join(other_lines),
-                     exam_section="\n".join(exam),
-                     tools_section=_tools_section(settings.get("tools") or {}))
+                     exam_section="\n## Exam\n\n" + "\n".join(exam) + "\n" if exam else "")
     # The full context lives in .unistudent/context.md. AGENTS.md (read by Codex, Cursor, Gemini
     # and others) carries it in full; CLAUDE.md and GEMINI.md import it. A student's own file is kept and gets
     # one pointer line instead.
@@ -92,19 +94,61 @@ def refresh_other_contexts(course: Course):
             write_context_files(other)
 
 
+def translatable_labels():
+    """Every label UniStudent writes, in English: the folder and page names (LABELS) and the Before-the-test page's
+    wording (`test_` keys). Setup has the AI translate them once for a language with no built-in table."""
+    from .before_test import TEXT
+    return {**LABELS["en"], **{f"test_{k}": v for k, v in TEXT["en"].items()}}
+
+
+def parse_labels(text):
+    """The student's labels from `us setup --labels`: known keys, the English value's {placeholders} kept, and names
+    that are valid file names. Raises ValueError, so nothing is saved."""
+    try:
+        labels = json.loads(text)
+    except ValueError:
+        labels = None
+    if not isinstance(labels, dict):
+        raise ValueError('--labels must be a JSON object of label: translation, e.g. {"inbox": "1-boite"}.')
+    english = translatable_labels()
+    fields = lambda value: {f for _, f, _, _ in string.Formatter().parse(value) if f}
+    for key, value in labels.items():
+        if key not in english:
+            raise ValueError(f"Unknown label {key!r}: the labels are those `us labels` prints.")
+        if not isinstance(value, str) or not value.strip():
+            raise ValueError(f"The label {key!r} needs a text.")
+        if fields(value) != fields(english[key]):
+            raise ValueError(f"The label {key!r} must keep {sorted(fields(english[key]))} exactly, as in {english[key]!r}.")
+        if key in LABELS["en"] and safe_name(value) != value:
+            raise ValueError(f'The label {key!r} names a folder or file: leave out \\ / : * ? " < > | # ^ [ ].')
+    return labels
+
+
 # --- commands ---------------------------------------------------------------
+
+def cmd_labels(args):
+    table = translatable_labels()
+    return {"labels": table,
+            "summary": "Translate each value into the course language once (keep every {placeholder} as it is), show "
+                       "the student, then pass the JSON object with `us setup --labels`.\n"
+                       + "\n".join(f"{k}: {v}" for k, v in table.items())}
+
 
 def cmd_setup(args):
     course = Course(args.path)
     if course.exists():
         material.require_new_layout(course)
+    elif not args.language:  # no language is assumed: an existing course keeps the one it stored
+        raise UserError("Say which language the course is in: --language he, en, or another language code.")
     before = course.settings() if course.exists() else None
     settings = course.settings()
+    labels = parse_labels(args.labels) if args.labels else None
+    if labels is not None or (args.language and args.language != settings["language"]):
+        settings["labels"] = labels or {}  # another language's labels never carry over
     settings.update({k: v for k, v in {
         "course_name": args.name or settings["course_name"] or course.root.name,
         "language": args.language,
         "format": args.format,
-        "course_skill": args.course_skill,
         "university": args.university,
     }.items() if v is not None})
     synced = is_synced_folder(course.root)
@@ -112,7 +156,7 @@ def cmd_setup(args):
         settings["recordings_dir"] = str(recordings_root() / safe_name(settings["course_name"]))
     course.save_settings(settings)
     try:
-        renamed = course.ensure_layout()
+        renamed = course.ensure_layout(before and before.get("labels"))
     except UserError:
         if before is not None:
             course.save_settings(before)  # the choice that couldn't be carried out is not remembered
@@ -142,6 +186,12 @@ def cmd_setup(args):
 
 def cmd_import(args):
     course = resolve_course(args)
+    if args.dry_run:
+        from .fetch_plan import human, plural
+        paths = material.import_folder(course, args.folder, tier=args.tier, dry_run=True)
+        size = sum(p.stat().st_size for p in paths)
+        return {"files": len(paths), "bytes": size,
+                "summary": f"{plural(len(paths), 'file')}, {human(size)}, will be copied in from {args.folder}."}
     added = material.import_folder(course, args.folder, tier=args.tier)
     return {"imported": added, "unsorted": material.unsorted(course),
             "summary": f"{len(added)} new or changed files copied in; {len(material.unsorted(course))} unsorted."}
@@ -202,7 +252,9 @@ def cmd_context(args):
     course = resolve_course(args)
     course.update_settings(exam_date=args.exam_date,
                            recording_level=int(args.recording_level) if args.recording_level is not None else None,
-                           frame_analysis=(args.frame_analysis == "1") if args.frame_analysis is not None else None)
+                           frame_analysis=(args.frame_analysis == "1") if args.frame_analysis is not None else None,
+                           keep_video=(args.keep_video == "1") if args.keep_video is not None else None,
+                           transcription=args.transcription)
     write_context_files(course)
     return {"summary": f"Context file written: {course.root / 'CLAUDE.md'}"}
 
@@ -226,16 +278,20 @@ def build_parser():
     p = add("setup", cmd_setup, "create or update a course folder")
     p.add_argument("path")
     p.add_argument("--name")
-    p.add_argument("--language")
+    p.add_argument("--language", help="the course language (he, en, or another code); required for a new course")
+    p.add_argument("--labels", help="JSON object: the labels `us labels` prints, translated into a course language "
+                                    "that has no built-in table")
     p.add_argument("--format", choices=["obsidian", "markdown"])
-    p.add_argument("--course-skill")
     p.add_argument("--university")
     p.add_argument("--import", dest="import_dir")
     p.add_argument("--tier", choices=["official", "added"], default="added")
 
+    add("labels", cmd_labels, "the folder, page and label names in English, for translating into a new course language")
+
     p = with_course(add("import", cmd_import, "copy a folder's files into the Material folder (the originals stay where they are)"))
     p.add_argument("folder")
     p.add_argument("--tier", choices=["official", "added"], default="added")
+    p.add_argument("--dry-run", action="store_true", help="only count the files and their size; copy nothing")
 
     with_course(add("manifest", cmd_manifest, "print the Manifest"))
     with_course(add("unsorted", cmd_unsorted, "list files with no unit"))
@@ -254,6 +310,10 @@ def build_parser():
                    help="0 skip, 1 download only, 3 transcript and summary")
     p.add_argument("--frame-analysis", choices=["0", "1"],
                    help="0 off, 1 on: per-segment vision calls when indexing recordings (separate opt-in, costly)")
+    p.add_argument("--transcription", choices=["accurate", "fast"],
+                   help="accurate (default) or fast: about 3x faster on a Mac, a few more misheard words")
+    p.add_argument("--keep-video", choices=["0", "1"],
+                   help="1 keep the recordings' video to watch; 0 keep only their sound (the time links still work)")
 
     from . import commands
     commands.register(add, with_course)

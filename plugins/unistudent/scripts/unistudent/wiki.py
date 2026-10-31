@@ -5,17 +5,20 @@ unit page. Claude writes the rest (glossary, question bank, course page, the
 methods/notation/assumptions of each unit) through the wiki skill; those parts are
 never touched by a rebuild.
 """
+import json
 import os
+import posixpath
 import re
+import shutil
 from pathlib import Path
 from urllib.parse import unquote, urlparse
 from urllib.request import url2pathname
 
 from . import material
 from .common import problems_summary
-from .convert import convert, kind
-from .course import LABELS, safe_name, unit_dir
-from .links_check import MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources
+from .convert import convert, kind, picture_files
+from .course import safe_name, unit_dir
+from .links_check import FRONTMATTER, MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources, opening_words
 
 GEN_START = "<!-- unistudent:generated:start -->"
 GEN_END = "<!-- unistudent:generated:end -->"
@@ -32,9 +35,10 @@ STUBS = {
     "question-bank.md": """# Question bank
 
 {stub}
-<!-- One entry per question found in the course material (Q&A files, assignments, past exams):
+<!-- One entry per question found in the course material (Q&A files, assignments, past exams), one tag per unit it
+exercises (a question on two units: #unit-05/<topic-tag> #unit-06/<topic-tag>):
 ### <short title>  #unit-NN/<topic-tag>
-- Where: [..](sources/..#page-N) · Solved in a recording: [..](recordings/../toc.md#..) or "no"
+- Where: [..](sources/..#page-N) · Solved in a recording: [<time>](recordings/../toc.md#solved-in-this-recording) or "no"
 - Question: <short paraphrase>
 -->
 """,
@@ -44,17 +48,18 @@ STUBS = {
 <!-- Filled from exam information files and past exams. Each line cites its source.
 ## Exam format
 ## Formula sheet and aids allowed
-## What the lecturer stresses
+## What the course stresses
 -->
 """,
 }
 
 
 def _plan_pages(course):
-    """Stable Material folder path → Wiki page mapping (sorted, so collisions resolve the same way every time)."""
+    """Stable Material folder path → Wiki page mapping for documents and images (sorted, documents first, so
+    collisions resolve the same way every time and an image never takes a document's page)."""
     plan, used = {}, set()
-    for rel, entry in sorted(course.manifest()["files"].items()):
-        if kind(rel) != "document":
+    for rel, entry in sorted(course.manifest()["files"].items(), key=lambda i: (kind(i[0]) != "document", i[0])):
+        if kind(rel) not in ("document", "image"):
             continue
         folder = unit_dir(entry.get("unit"))
         stem = safe_name(Path(rel).stem)
@@ -66,7 +71,35 @@ def _plan_pages(course):
     return plan
 
 
-def _source_page(rel, entry, conversion):
+def _read_visually(course, rel, fp, page):
+    """Whether the source-reader worker has read `rel` as it is now: `page` names it and the fingerprint it read."""
+    path = course.wiki / page
+    if not path.is_file():
+        return False
+    head = path.read_text("utf-8").split("\n---", 1)[0] + "\n"
+    return f"\nsource: {rel}\n" in head and f"\nfingerprint: {fp}\n" in head
+
+
+def _visual_item(course, rel, pages, page, entry):
+    """One file for the source-reader; a .pptx or .docx also gets its pictures as files, since Read can't open it."""
+    path = material.path_of(course, rel).resolve()  # the file to open: the worker needn't find the Material folder
+    item = {"source": rel, "path": str(path), "pages": pages, "page": page, "fingerprint": entry.get("fingerprint")}
+    pictures = picture_files(path, pages, course.state / "visual" / Path(page).with_suffix(""))
+    return {**item, "pictures": pictures} if pictures else item
+
+
+def _keep_view(course, page, conversion):
+    """The Office file's PDF goes to `.unistudent/view/<page>.pdf`; returns that path in the course folder, or None."""
+    if not conversion.view:
+        return None
+    target = course.state / "view" / Path(page).with_suffix(".pdf")
+    target.parent.mkdir(parents=True, exist_ok=True)
+    shutil.move(str(conversion.view), str(target))
+    shutil.rmtree(Path(conversion.view).parent, ignore_errors=True)
+    return target.relative_to(course.root).as_posix()
+
+
+def _source_page(rel, entry, conversion, view=None):
     lines = [
         "---",
         f"source: {rel}",
@@ -75,13 +108,14 @@ def _source_page(rel, entry, conversion):
         *([f"origin_note: {entry['origin_note']}"] if entry.get("origin_note") else []),
         f"unit: {entry.get('unit') if entry.get('unit') is not None else 'unsorted'}",
         f"converted_with: {conversion.method}",
+        *([f"view: {view}"] if view else []),  # the pages as they look, for a worker that can't open the original
         "---",
         "",
         f"# {Path(rel).name}",
         "",
     ]
     if conversion.empty_pages:
-        lines += [f"> Pages with no text layer (read them visually): {', '.join(map(str, conversion.empty_pages))}", ""]
+        lines += [f"> Pages to read visually (no text layer, or a picture): {', '.join(map(str, conversion.empty_pages))}", ""]
     for number, text in enumerate(conversion.pages, 1):
         lines += [f"## Page {number}", "", text.rstrip(), ""]
     return "\n".join(lines).rstrip() + "\n"
@@ -108,11 +142,32 @@ def _link(label, target):
     return f"[{label}](<{target}>)" if " " in target else f"[{label}]({target})"
 
 
+SUMMARY = "recording-summary.md"  # not summary.md: Claude Code refuses a subagent's new file by that name
+
+
+def summary_file(course, folder):
+    """A recording's summary page (summary.md from an older version until the next Wiki build renames it)."""
+    path = course.wiki / folder / SUMMARY
+    legacy = path.with_name("summary.md")
+    return legacy if legacy.is_file() and not path.exists() else path
+
+
+def _rename_old_summaries(course):
+    """{old page: new page} for the summaries an older version wrote as summary.md, renamed now."""
+    renamed = {}
+    for folder in material.wiki_folders(course.manifest()["files"]).values():
+        old = course.wiki / folder / "summary.md"
+        if old.is_file() and not (course.wiki / folder / SUMMARY).exists():
+            old.rename(course.wiki / folder / SUMMARY)
+            renamed[f"{folder}/summary.md"] = f"{folder}/{SUMMARY}"
+    return renamed
+
+
 def recording_pages(course):
     """Recordings and their Wiki folders (filled by the recordings pipeline). The folder is kept in the Manifest entry."""
     files = course.manifest()["files"]
     return {rel: {"folder": folder, "unit": files[rel].get("unit"),
-                  "processed": (course.wiki / folder / "summary.md").exists()}
+                  "processed": summary_file(course, folder).exists()}
             for rel, folder in material.wiki_folders(files).items()}
 
 
@@ -161,7 +216,8 @@ def build(course, force=False):
     found = material.scan(course)  # the folder is the truth: follow moves, drop deletions, take new files as added
     manifest = course.manifest()["files"]
     state = course.read_state("wiki.json", {})
-    plan = _plan_pages(course)
+    pages = _plan_pages(course)
+    plan = {rel: page for rel, page in pages.items() if kind(rel) == "document"}
 
     # Pages whose file was deleted, moved or renamed (the scan above already followed it in the Manifest).
     moved_pages = {}
@@ -183,11 +239,12 @@ def build(course, force=False):
         target = wiki / page
         info = state.get(rel)
         if not force and info and info.get("fingerprint") == entry.get("fingerprint") and target.exists():
-            needs_visual += [{"source": rel, "pages": info.get("empty_pages", [])}] if info.get("empty_pages") else []
+            if info.get("empty_pages") and not _read_visually(course, rel, entry.get("fingerprint"), page):
+                needs_visual.append(_visual_item(course, rel, info["empty_pages"], page, entry))
             continue
         conversion = convert(material.path_of(course, rel))
         target.parent.mkdir(parents=True, exist_ok=True)
-        target.write_text(_source_page(rel, entry, conversion), "utf-8")
+        target.write_text(_source_page(rel, entry, conversion, _keep_view(course, page, conversion)), "utf-8")
         state[rel] = {"page": page, "fingerprint": entry.get("fingerprint"),
                       "method": conversion.method, "empty_pages": conversion.empty_pages,
                       "warnings": list(conversion.warnings)}
@@ -195,44 +252,80 @@ def build(course, force=False):
         touched.add(unit_dir(entry.get("unit")))
         warnings_out += [f"{rel}: {w}" for w in conversion.warnings]
         if conversion.empty_pages:
-            needs_visual.append({"source": rel, "pages": conversion.empty_pages})
+            needs_visual.append(_visual_item(course, rel, conversion.empty_pages, page, entry))
     course.write_state("wiki.json", state)
-    _relink_pages(wiki, {old: new for old, new in moved_pages.items() if (wiki / new).exists()})
+    _relink_pages(wiki, {**{old: new for old, new in moved_pages.items() if (wiki / new).exists()},
+                         **_rename_old_summaries(course)})
 
-    images = [rel for rel in manifest if kind(rel) == "image"]
+    images = [{"source": rel, "path": str(material.path_of(course, rel).resolve()), "page": page,
+               "fingerprint": manifest[rel].get("fingerprint"),
+               "origin": manifest[rel].get("origin"), "tier": manifest[rel].get("tier"),  # the image page's frontmatter
+               "unit": manifest[rel].get("unit") if manifest[rel].get("unit") is not None else "unsorted"}
+              for rel, page in pages.items()
+              if kind(rel) == "image" and not _read_visually(course, rel, manifest[rel].get("fingerprint"), page)]
     recordings = recording_pages(course)
+    for info in recordings.values():  # `us recordings frame` pictures can show a private screen: gone after the summary
+        if info["processed"]:
+            shutil.rmtree(course.state / "frames" / Path(info["folder"]).name, ignore_errors=True)
     for name, template in STUBS.items():
         if not (wiki / name).exists():
             (wiki / name).write_text(template.replace("{stub}", STUB_MARK), "utf-8")
 
     # Unit pages: generated block only.
     by_unit = {}
-    for rel, page in plan.items():
-        by_unit.setdefault(unit_dir(manifest[rel].get("unit")), []).append((rel, page))
+    for rel, page in pages.items():  # documents, and images once the source-reader wrote their page
+        if rel in plan or (wiki / page).exists():
+            by_unit.setdefault(unit_dir(manifest[rel].get("unit")), []).append((rel, page))
+    covers = {rel: lesson_units(course, info) for rel, info in recordings.items()}
     for rel, info in recordings.items():
         by_unit.setdefault(unit_dir(info["unit"]), [])
+        for folder in covers[rel]:  # a unit taught only in a lesson (a printed textbook, no files on the site)
+            by_unit.setdefault(folder, [])  # still gets its page
+    # A new table of contents makes its units' pages stale: the unit writer can now fill "Solved in a recording".
+    seen = set(course.read_state("tocs.json", []))
+    for rel, info in recordings.items():
+        if info["processed"] and (wiki / info["folder"] / "toc.md").exists() and info["folder"] not in seen:
+            seen.add(info["folder"])
+            touched |= covers[rel] & set(by_unit) if info["unit"] == "lessons" else {unit_dir(info["unit"])}
+    course.write_state("tocs.json", sorted(seen))
+    # A unit whose covering lessons changed (a lesson now covers it, or no longer does) goes back to its writer too.
+    lessons = {folder: sorted(i["folder"] for r, i in recordings.items()
+                              if i["processed"] and (unit_dir(i["unit"]) == folder or folder in covers[r]))
+               for folder in by_unit}
+    before = course.read_state("covering.json", None)  # None: the first build that keeps it, nothing to compare
+    touched |= {folder for folder in by_unit if before is not None and lessons[folder] != before.get(folder, [])}
+    course.write_state("covering.json", lessons)
+    if "unsorted" not in by_unit and (wiki / "units" / "unsorted.md").exists():
+        (wiki / "units" / "unsorted.md").unlink()  # every file got its unit (a unit page keeps what was written on it)
+    unit_of = lambda folder: {"unsorted": None, "general": "general", "lessons": "lessons"}.get(folder, folder[len("unit-"):])
+    for page in sorted((wiki / "units").glob("*.md")):  # no file or lesson covers this unit any more: what the writer
+        if page.stem not in by_unit:                    # wrote stays, the generated block says so
+            _write_generated(page, f"# {course.unit_label(unit_of(page.stem))}\n\n"
+                                   f"No material yet: no file or recording of the course covers this unit now.\n\n{STUB_MARK}")
     unit_pages = []
     for folder in sorted(by_unit):
-        unit = {"unsorted": None, "general": "general", "lessons": "lessons"}.get(folder, folder[len("unit-"):])
+        unit = unit_of(folder)
         lines = [f"# {course.unit_label(unit)}", "", "Sources:", ""]
         for rel, page in sorted(by_unit[folder], key=lambda item: item[1]):
             lines.append(f"- {_link(Path(page).stem, '../' + page)} ({manifest[rel].get('tier')}, {manifest[rel].get('origin')})")
-        recs = [(r, i) for r, i in recordings.items() if unit_dir(i["unit"]) == folder]
+        recs = [(r, i) for r, i in recordings.items()  # its own, and the recorded lessons that cover it
+                if unit_dir(i["unit"]) == folder or folder in covers.get(r, ())]
         if recs:
             lines += ["", "Recordings:", ""]
             for r, i in recs:
-                status = _link("summary", f"../{i['folder']}/summary.md") if i["processed"] else "not processed yet"
+                status = _link("summary", f"../{i['folder']}/" + SUMMARY) if i["processed"] else "not processed yet"
                 lines.append(f"- {Path(r).name}: {status}")
             for title, heading in (("Announcements", "Announcements"), ("This will be on the exam", "This will be on the exam")):
-                found_in = [(r, i, _section((wiki / i["folder"] / "summary.md").read_text("utf-8"), heading))
+                found_in = [(r, i, _section((wiki / i["folder"] / SUMMARY).read_text("utf-8"), heading))
                             for r, i in recs if i["processed"]]
                 if any(items for _, _, items in found_in):
                     lines += ["", f"{title} (the lecturer said, in a recording):", ""]
                     for r, i, items in found_in:
                         # the summary's links are relative to its own folder; the unit page is one level over
-                        here = lambda m, f=i["folder"]: f"](<../{f}/transcript.md{m.group(1)}>)"
-                        lines += [f"- {Path(r).name} ({_link('summary', '../' + i['folder'] + '/summary.md')}): "
-                                  + re.sub(r"\]\(<?transcript\.md(#\d+)>?\)", here, item)
+                        here = lambda m, f=i["folder"]: (m.group(0) if re.match(r"\w+:|#", m.group(1) or m.group(2)) else
+                                                         f"](<{posixpath.normpath(f'../{f}/' + (m.group(1) or m.group(2)))}>)")
+                        lines += [f"- {Path(r).name} ({_link('summary', '../' + i['folder'] + '/' + SUMMARY)}): "
+                                  + re.sub(r"\]\((?:<([^<>]+)>|([^)\s<>]+))\)", here, item)  # every relative link
                                   for item in items]
         lines += ["", f"Questions: {_link('question bank', '../question-bank.md')} (tag #{folder})"]
         path = wiki / "units" / f"{folder}.md"
@@ -248,7 +341,7 @@ def build(course, force=False):
     if recordings:
         index += ["", "## Recordings", ""]
         for rel, info in recordings.items():
-            status = _link("summary", info["folder"] + "/summary.md") if info["processed"] else "not processed"
+            status = _link("summary", info["folder"] + "/" + SUMMARY) if info["processed"] else "not processed"
             index.append(f"- {Path(rel).name} ({course.unit_label(info['unit'])}): {status}")
     index += ["", "## What was and wasn't analyzed", "", f"- {_link('Coverage of every file', 'coverage.md')}"]
     (wiki / "index.md").write_text("\n".join(index) + "\n", "utf-8")
@@ -258,6 +351,9 @@ def build(course, force=False):
             text = transcript.read_text("utf-8")
             patched = re.sub(r"(?m)^Sources: \[recording\]\(.*\)$",
                              lambda _: "Sources: " + video_link(course, rel, transcript.parent), text, count=1)
+            unit = info["unit"] if info["unit"] is not None else "unsorted"  # the recording may have moved
+            patched = re.sub(r"\A(---\n(?:.*\n)*?)source: .*\n", lambda m: f"{m.group(1)}source: {rel}\n", patched, count=1)
+            patched = re.sub(r"\A(---\n(?:.*\n)*?)unit: .*\n", lambda m: f"{m.group(1)}unit: {unit}\n", patched, count=1)
             if patched != text:
                 transcript.write_text(patched, "utf-8")
     covered = coverage(course, write=True)
@@ -280,10 +376,164 @@ def build(course, force=False):
     }
 
 
+def lesson_units(course, info):
+    """The unit folders a processed Recorded lesson covers (none for any other recording): the `units: [3, 4]` line
+    the recording-summarizer writes in its summary's frontmatter (ADR 0015). A summary written before that line
+    existed: the units its first line names in words."""
+    if info["unit"] != "lessons" or not info["processed"]:
+        return set()
+    text = summary_file(course, info["folder"]).read_text("utf-8")
+    front = FRONTMATTER.match(text)
+    listed = re.search(r"(?m)^units:\s*\[([^\]]*)\]\s*$", front.group(1)) if front else None
+    numbers = {int(n) for n in re.findall(r"\d+", listed.group(1))} if listed else _units_named(description_line(text) or "")
+    return {unit_dir(n) for n in numbers}
+
+
+def covering(course, folder, recordings):
+    """The recordings that cover a unit: its own, and the Recorded lessons whose summary names it."""
+    return {rel: info for rel, info in recordings.items()
+            if unit_dir(info["unit"]) == folder or folder in lesson_units(course, info)}
+
+
+def _split(text):
+    """(what comes before the first entry, each `### ` entry) of a glossary or question bank; the example in the
+    page's format comment is no entry."""
+    masked = re.sub(r"<!--.*?-->", lambda m: re.sub(r"[^\n]", " ", m.group()), text, flags=re.S)
+    starts = [m.start() for m in re.finditer(r"(?m)^### ", masked)]
+    return (text[:starts[0]] if starts else text), [text[a:b].strip() for a, b in zip(starts, starts[1:] + [len(text)])]
+
+
+def entries(text):
+    return _split(text)[1]
+
+
+TAG = re.compile(r"#(?:unit-\d+|general)(?:/\S*)?")
+
+
+def _heading(entry):
+    return entry.split("\n", 1)[0]
+
+
+def _merge_term(old, new):
+    """One glossary entry per term: the first definition stays and gains the citations it lacked."""
+    missing = [f"[{label}]({target})" for label, target in MD_LINK.findall(new) if target not in old]
+    return old + "".join(" " + link for link in missing)
+
+
+def _merge_question(old, new):
+    """One question-bank entry per question: the latest text, with every unit tag either one carried."""
+    tags = dict.fromkeys(TAG.findall(_heading(old)) + TAG.findall(_heading(new)))
+    heading, _, body = new.partition("\n")
+    return f"{' '.join(TAG.sub('', heading).split())}  {' '.join(tags)}" + (f"\n{body}" if body else "")
+
+
+def merge_entries(course, glossary=None, question_bank=None):
+    """Merge a unit writer's entries (files of `### ` entries) into the Wiki's glossary and question bank, one writer
+    at a time, so writers working in parallel never overwrite each other's entries."""
+    counts = {}
+    with course.locked("wiki.lock"):
+        for name, path, key, combine in (
+                ("glossary.md", glossary, lambda e: " ".join(_heading(e).split()), _merge_term),
+                ("question-bank.md", question_bank, lambda e: " ".join(TAG.sub("", _heading(e)).split()), _merge_question)):
+            if not path:
+                continue
+            page = course.wiki / name
+            head, have = _split(page.read_text("utf-8") if page.is_file() else STUBS[name].replace("{stub}", STUB_MARK))
+            where = {key(e): i for i, e in enumerate(have)}
+            added = updated = 0
+            for entry in entries(Path(path).read_text("utf-8")):
+                if key(entry) in where:
+                    have[where[key(entry)]] = combine(have[where[key(entry)]], entry)
+                    updated += 1
+                else:
+                    where[key(entry)] = len(have)
+                    have.append(entry)
+                    added += 1
+            if have:
+                head = head.replace(STUB_MARK, "")
+            page.parent.mkdir(parents=True, exist_ok=True)
+            page.write_text(re.sub(r"\n{3,}", "\n\n", head).rstrip() + "\n\n" + "\n\n".join(have) + "\n", "utf-8")
+            counts[name] = {"added": added, "updated": updated}
+    return {**counts, "summary": "Merged: " + "; ".join(f"{name} {c['added']} added, {c['updated']} updated"
+                                                       for name, c in counts.items()) + "."}
+
+
+def tagged(entry, folder):
+    """Whether a question-bank entry's heading carries the unit's tag (`#unit-03/<topic>`)."""
+    return re.search(rf"#{re.escape(folder)}(?![\w-])", entry.split("\n", 1)[0]) is not None
+
+
+def unit_context(course, unit):
+    """A unit writer's whole starting set, as one text: the course rules, the unit page, the unit's glossary and
+    question-bank entries and indexed past-exam questions, the table of contents and summary of every recording that
+    covers it, and only the methods and notation of the other units."""
+    folder, wiki = unit_dir(unit), course.wiki
+    read = lambda path: path.read_text("utf-8").strip() if path.is_file() else "(none yet)"
+    recs = covering(course, folder, recording_pages(course))
+    places = (f"sources/{folder}/", *(f"{i['folder']}/" for i in recs.values()))
+    glossary = [e for e in entries(read(wiki / "glossary.md")) if any(p in e for p in places)]
+    every_question = entries(read(wiki / "question-bank.md"))
+    bank = [e for e in every_question if tagged(e, folder)]
+    relink = []  # questions written before their file arrived: they name it, but don't link its page yet
+    for rel, info in sorted(course.read_state("wiki.json", {}).items()):
+        page = info.get("page", "")
+        if page.startswith(f"sources/{folder}/") and len(Path(rel).stem) >= 4:  # ponytail: matched by file name only
+            relink += [f"- {_heading(e)}: names {Path(rel).name}; link {_link(Path(rel).stem, page)}"
+                       for e in every_question if Path(rel).stem in e and Path(page).name not in e]
+    index = course.state / "before-test" / "index.json"
+    exams = []
+    for row in json.loads(index.read_text("utf-8")) if index.is_file() else []:
+        try:
+            if unit_dir(row.get("unit")) == folder:
+                exams.append(f"- {row.get('exam')}, question {row.get('q')}: {row.get('topic')}; {row.get('skill')}"
+                             f" ({row.get('points')} points)")
+        except ValueError:  # an indexer's unit that names no unit
+            pass
+    parts = [("../context.md: the course rules", read(course.state / "context.md")),
+             (f"units/{folder}.md: the unit page (it links the unit's source pages)", read(wiki / "units" / f"{folder}.md")),
+             ("glossary.md: the entries citing this unit", "\n\n".join(glossary) or "(none yet)"),
+             (f"question-bank.md: the entries tagged #{folder}", "\n\n".join(bank) or "(none yet)"),
+             ("question-bank.md: entries to relink (they name a file of this unit, but don't link its page)",
+              "\n".join(relink) or "(none)"),
+             ("../before-test/index.json: past-exam questions indexed to this unit", "\n".join(exams) or "(none yet)")]
+    for rel, info in recs.items():
+        parts += [(f"{info['folder']}/{name}: {Path(rel).name}", read(wiki / info["folder"] / name))
+                  for name in ("toc.md", SUMMARY)]
+    for page in sorted((wiki / "units").glob("*.md")):
+        if page.stem not in (folder, "unsorted"):
+            parts.append((f"units/{page.name}: only its methods and notation",
+                          _only_sections(page.read_text("utf-8"), "Approved methods", "Notation") or "(none yet)"))
+    text = f"Unit context for {folder}. Paths are relative to the Wiki: {wiki}\n\n" + "\n\n".join(
+        f"==> {title} <==\n{body}" for title, body in parts)
+    return {"unit": folder, "wiki": str(wiki), "summary": text}
+
+
+def _units_named(line):
+    """The unit numbers an old summary's one-line description says it covers ("a lesson about units 7-9"). Only for
+    summaries written before the `units:` line; English and Hebrew words, as they were written then."""
+    units = set()  # only numbers right after a unit word: "היחידה הראשונה ... שאלה 11" names no unit
+    for numbers in re.findall(r"(?i)(?<![a-z])(?:unit|chapter|יחיד|פרק)\w*\s+(\d+(?:\s*(?:[-–,]|עד|to|through|and|ו-?)\s*\d+)*)",
+                              line):  # OpenU books say "פרק" (chapter)
+        numbers = re.sub(r"(?:and|ו-?)\s*(?=\d)", ",", numbers)  # "2 ו-3" lists two; only -, עד, to make a range
+        for a, b in re.findall(r"(\d+)(?:\s*(?:[-–]|עד|to|through)\s*(\d+))?", numbers):
+            units.update(range(int(a), int(b or a) + 1))
+    return units
+
+
 def _section(text, title):
     """The lines under the `## ` heading that contains `title`, up to the next `## ` heading."""
     match = re.search(rf'(?ms)^## [^\n]*{re.escape(title)}[^\n]*\n(.*?)(?=^## |\Z)', text)
     return [re.sub(r"^\s*[-*]\s+", "", l).strip() for l in match.group(1).splitlines() if l.strip()] if match else []
+
+
+def _video_seconds(label, anchor):
+    """Where a time link opens the video: the exact time it shows ("[00:12:47](transcript.md#001230)" opens at
+    12:47), else the transcript heading it links (headings come about once a minute)."""
+    shown = re.fullmatch(r"\s*(?:(\d{1,2}):)?(\d{1,2}):(\d\d)\s*", label)
+    stamp = shown or re.fullmatch(r"(\d\d)(\d\d)(\d\d)", anchor)
+    if not stamp:
+        return None
+    return int(stamp[1] or 0) * 3600 + int(stamp[2]) * 60 + int(stamp[3])
 
 
 def _for_the_vault(text: str, video=None) -> str:
@@ -292,21 +542,20 @@ def _for_the_vault(text: str, video=None) -> str:
     text = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)
 
     def keep(match):  # a time in the transcript becomes a time in the video; other links into the hidden Wiki go
-        stamp = re.fullmatch(r"(?:.*transcript\.md)?#(\d\d)(\d\d)(\d\d)", match.group(2).strip("<>"))
+        stamp = re.fullmatch(r"(?:.*transcript\.md)?#(\d{6})", match.group(2).strip("<>"))
         if not (video and stamp):
             return match.group(1)
-        seconds = int(stamp[1]) * 3600 + int(stamp[2]) * 60 + int(stamp[3])
-        return _link(match.group(1), f"{video}#t={seconds}")
+        return _link(match.group(1), f"{video}#t={_video_seconds(match.group(1), stamp[1])}")
 
     return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(keep, text)).strip()
 
 
-def description_line(text):
+def description_line(text, sources_line=SOURCES_LINE):
     """The one line a recording summary opens with (what the recording is), or None when it opens with a heading or
-    its Sources line instead."""
+    its Sources line (`sources_line`: the course's, default English) instead."""
     body = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S).strip()
     first = body.split("\n", 1)[0].strip() if body else ""
-    return None if not first or first.startswith("#") or SOURCES_LINE.match(first) else first
+    return None if not first or first.startswith("#") or sources_line.match(first) else first
 
 
 def _without_sections(text, *titles):
@@ -339,7 +588,7 @@ def write_roadmaps(course, recordings):
     for rel, info in recordings.items():
         if info["processed"]:
             by_unit.setdefault(unit_dir(info["unit"]), []).append((rel, info))
-    written = []
+    written, sources_line = [], opening_words(course.line_words("sources"))
     for folder, recs in sorted(by_unit.items()):
         unit = recs[0][1]["unit"]
         page = course.pack_folder(unit) / f"{course.label('roadmap')}.md"
@@ -347,11 +596,11 @@ def write_roadmaps(course, recordings):
         for rel, info in recs:
             video = material.path_of(course, rel).as_uri()
             where = course.wiki / info["folder"]
-            summary = (where / "summary.md").read_text("utf-8") if (where / "summary.md").exists() else ""
+            summary = (where / SUMMARY).read_text("utf-8") if (where / SUMMARY).exists() else ""
             toc = (where / "toc.md").read_text("utf-8") if (where / "toc.md").exists() else ""
             lines += [f"## {Path(rel).name}", "", _link("recording", video), ""]
-            if description_line(summary):
-                lines += [description_line(summary), ""]
+            if description_line(summary, sources_line):
+                lines += [description_line(summary, sources_line), ""]
             for part in (_only_sections(summary, "Announcements", "This will be on the exam"),
                          _without_type_column(_without_sections(toc, "Solved in this recording"))):
                 if part.strip():
@@ -398,15 +647,14 @@ def relink_vault(course):
                     return f"[{label}{', page ' + where[1] if where else ''}]({material.path_of(course, rel).as_uri()})"
                 folder = inner.rsplit("/", 1)[0]
                 if folder in recording_source:
-                    stamp = re.fullmatch(r"(\d\d)(\d\d)(\d\d)", anchor)
-                    secs = int(stamp[1]) * 3600 + int(stamp[2]) * 60 + int(stamp[3]) if stamp else None
+                    secs = _video_seconds(label, anchor)
                     video = material.path_of(course, recording_source[folder]).as_uri()
                     return f"[{label}]({video}{'#t=' + str(secs) if secs is not None else ''})"
                 return label  # nothing of the student's to point at
             if parsed.scheme != "file" or local.exists():
                 return match.group(0)
             parts = local.parts  # a moved course folder: the same place under the Material folder now
-            names = {course.material.name, *(t["material"] for t in LABELS.values())}
+            names = {course.material.name, *(t["material"] for t in course.label_tables() if "material" in t)}
             for i, part in enumerate(parts):
                 if part in names and (course.material / Path(*parts[i + 1:])).exists():
                     return _link(label, (course.material / Path(*parts[i + 1:])).as_uri() + (("#" + anchor) if anchor else ""))
@@ -423,7 +671,7 @@ def relink_vault(course):
 def _remove_stale_roadmaps(course, written):
     """A roadmap whose recordings are gone, or lost their summaries, is removed (what the student added around the
     generated block stays)."""
-    names = {table["roadmap"] + ".md" for table in LABELS.values()}
+    names = {table["roadmap"] + ".md" for table in course.label_tables() if "roadmap" in table}
     keep = {course.root / w for w in written}
     for page in sorted(course.study.rglob("*.md")) if course.study.is_dir() else []:
         if page.name not in names or page in keep:
@@ -450,34 +698,39 @@ def coverage(course, write=False):
     state = course.read_state("wiki.json", {})
     level = course.settings().get("recording_level")
     recordings = recording_pages(course)
-    files, rows = course.manifest()["files"], []
+    files, rows, pages = course.manifest()["files"], [], _plan_pages(course)
     for rel in sorted(files):
         what = kind(rel)
         info = state.get(rel)
+        page = info["page"] if info and what == "document" else None
         if what == "document":
             if info is None or info.get("fingerprint") != files[rel].get("fingerprint"):
                 status, why = "pending", "new or changed since the last build: run the Wiki build"
             elif info.get("method") == "none":
                 status, why = "failed", " ".join(info.get("warnings") or ["could not be read"])
-            elif info.get("empty_pages"):
+            elif info.get("empty_pages") and not _read_visually(course, rel, files[rel].get("fingerprint"), info["page"]):
                 status = "analyzed"
-                why = f"pages with no text layer need visual reading: {', '.join(map(str, info['empty_pages']))}"
+                why = f"pages to read visually (no text layer, or a picture): {', '.join(map(str, info['empty_pages']))}"
             else:
                 status, why = "analyzed", ""
         elif what == "recording":
             if recordings[rel]["processed"]:
                 status, why = "analyzed", ""
+            elif (course.wiki / recordings[rel]["folder"] / "transcript.md").exists():
+                status, why = "pending", "transcribed, waiting for its summary (/unistudent:course-recordings)"
             elif level in (0, 1):
                 status, why = "skipped", "you chose " + ("not to process recordings" if level == 0 else "download only, no transcript")
             elif level is None:
                 status, why = "pending", "you haven't chosen yet whether to transcribe recordings"
             else:
                 status, why = "pending", "waiting for transcription (/unistudent:course-recordings)"
+        elif what == "image" and _read_visually(course, rel, files[rel].get("fingerprint"), pages[rel]):
+            status, why, page = "analyzed", "", pages[rel]
         elif what == "image":
             status, why = "skipped", "images are listed but not read"
         else:
             status, why = "skipped", "not a file type the Wiki reads"
-        rows.append({"path": rel, "status": status, "why": why, "page": info["page"] if info and what == "document" else None})
+        rows.append({"path": rel, "status": status, "why": why, "page": page})
     counts = {name: sum(1 for r in rows if r["status"] == name) for name in ("analyzed", "failed", "skipped", "pending")}
     lines = ["# Coverage: what the Wiki has and hasn't read", "",
              "Anything not marked analyzed is NOT in the Wiki: never present it as from the course material.", ""]
@@ -497,13 +750,13 @@ def coverage(course, write=False):
 
 
 def check(course):
-    problems = []
+    problems, sources_line = [], opening_words(course.line_words("sources"))
     for page in sorted(course.wiki.rglob("*.md")):
         problems += check_links(page, course.wiki)
-        if page.name not in ("index.md", "coverage.md") and not has_sources(page):
+        if page.name not in ("index.md", "coverage.md") and not has_sources(page, sources_line):
             problems.append({"kind": "no-sources", "page": str(page)})
-        if page.name == "summary.md" and page.parent.parent.name == "recordings" \
-                and not description_line(page.read_text("utf-8")):
+        if page.name == SUMMARY and page.parent.parent.name == "recordings" \
+                and not description_line(page.read_text("utf-8"), sources_line):
             problems.append({"kind": "no-description", "page": str(page)})
     return {"problems": problems,
             "summary": problems_summary(problems, lambda p: f"{p['kind']}: {p['page']} {p.get('link', '')}")}

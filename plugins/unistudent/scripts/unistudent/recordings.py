@@ -10,25 +10,41 @@ import json
 import math
 import os
 import platform
+import re
 import shutil
 import subprocess
+import sys
 import tempfile
 import time
+import wave
+import zlib
 from pathlib import Path
 
 from . import material
 from .common import UserError
+from .convert import RECORDINGS
 from .course import home
 from .course import unit_dir
 from .wiki import recording_pages, video_link
 
-# Hebrew-tuned models by ivrit.ai; other languages use the multilingual model.
+# The spoken language is detected per recording (ADR 0014), then the model is picked for it: Hebrew-tuned models by
+# ivrit.ai, the multilingual model for any other language.
 MODELS = {
     ("faster", "he"): "ivrit-ai/whisper-large-v3-turbo-ct2",
     ("faster", None): "large-v3-turbo",
     ("mlx", "he"): "mlx-community/ivrit-ai-whisper-large-v3-mlx",
     ("mlx", None): "mlx-community/whisper-large-v3-turbo",
 }
+# The student's choice when a run is long ("transcription": "fast"): measured on two real Hebrew lessons, 3.0 and 2.7
+# times faster than the accurate model, with about 3 and 5 more misheard words per 10 minutes.
+FAST_MODELS = {("mlx", "he"): "mlx-community/ivrit-ai-whisper-large-v3-turbo-mlx"}
+FAST_SPEEDUP = 2.7
+# Detecting takes a small multilingual model: a language-tuned one hears every language as its own (measured: the Hebrew
+# model wrote an English clip out in Hebrew; tiny agreed with the large multilingual model on 30 of 31 real lecture
+# clips, the one miss a clip with no speech, in under a second each).
+DETECT_MODELS = {"faster": "tiny", "mlx": "mlx-community/whisper-tiny"}
+DETECT_SECONDS = 30
+MIN_SPEECH_CHARACTERS = 20  # a clip whose text is shorter held no speech (silence came out as "Thank you.")
 PARAGRAPH_SECONDS = 60
 
 SYNCED_MARKERS = ("mobile documents", "icloud", "google drive", "googledrive", "my drive",
@@ -62,6 +78,19 @@ def duration(path: Path):
         return float(result.stdout.strip())
     except ValueError:
         return None
+
+
+def recording_seconds(course, rel):
+    """A recording's length, measured once and kept in its Manifest entry while the file's content stays the same."""
+    entry = course.manifest()["files"].get(rel, {})
+    if entry.get("seconds") is not None and entry.get("seconds_of") == entry.get("fingerprint"):
+        return entry["seconds"]
+    seconds = duration(material.path_of(course, rel))
+    if seconds is not None:
+        with course.edit_manifest() as manifest:
+            if rel in manifest["files"]:
+                manifest["files"][rel].update(seconds=seconds, seconds_of=manifest["files"][rel].get("fingerprint"))
+    return seconds
 
 
 def install_run(name):
@@ -153,14 +182,26 @@ def backend_available(name):
         return False
 
 
-def model_for(name, language):
-    return MODELS.get((name, language)) or MODELS[(name, None)] if name != "fake" else "fake"
+def model_for(name, language, fast=False):
+    if name == "fake":
+        return "fake"
+    if os.environ.get("UNISTUDENT_STT_MODEL"):  # a chosen model, e.g. "tiny" for the Windows check in CI
+        return os.environ["UNISTUDENT_STT_MODEL"]
+    return (fast and FAST_MODELS.get((name, language))) or MODELS.get((name, language)) or MODELS[(name, None)]
 
 
-def extract_audio(path: Path, out: Path, start=None, seconds=None):
+def _fast(course):
+    return course.settings().get("transcription") == "fast"
+
+
+def _require_ffmpeg():
     if not shutil.which("ffmpeg"):
         raise RuntimeError("ffmpeg is needed for recordings. Install it (macOS: brew install ffmpeg; "
                            "Windows: winget install ffmpeg; Linux: your package manager).")
+
+
+def extract_audio(path: Path, out: Path, start=None, seconds=None):
+    _require_ffmpeg()
     cmd = ["ffmpeg", "-y", "-v", "error"]
     if start is not None:
         cmd += ["-ss", str(start)]
@@ -171,19 +212,96 @@ def extract_audio(path: Path, out: Path, start=None, seconds=None):
     subprocess.run(cmd, check=True)
 
 
-def transcribe_audio(audio: Path, name: str, language: str):
-    """[(start, end, text)] from the chosen backend."""
-    model = model_for(name, language)
+# Quieter than speech for 30 s or more. Measured on a real 2.5 h lesson: 35 invented lines dropped (a 17-minute break
+# of "Thank you." and one more), no real speech: a segment goes only when it lies wholly inside such a silence.
+SILENCE = "silencedetect=noise=-40dB:d=30"
+
+
+def silences(path: Path):
+    """[(start, end)] in seconds of the long silences in a recording; [] when ffmpeg can't read it."""
+    if not shutil.which("ffmpeg"):
+        return []
+    log = subprocess.run(["ffmpeg", "-nostats", "-i", str(path), "-vn", "-af", SILENCE, "-f", "null", "-"],
+                         capture_output=True, text=True, errors="replace").stderr
+    starts = [float(t) for t in re.findall(r"silence_start: (-?[\d.]+)", log)]
+    ends = [float(t) for t in re.findall(r"silence_end: ([\d.]+)", log)]
+    return list(zip(starts, ends + [math.inf] * (len(starts) - len(ends))))  # a silence to the very end has no end line
+
+
+def _sound(audio: Path):
+    """A WAV file as faster-whisper takes it, decoded here: its own reader fails with PyAV 19 (open() has no
+    metadata_errors any more)."""
+    try:
+        import numpy  # installed with faster-whisper
+        with wave.open(str(audio)) as pcm:
+            return numpy.frombuffer(pcm.readframes(pcm.getnframes()), numpy.int16).astype(numpy.float32) / 32768
+    except ImportError:
+        return str(audio)
+
+
+def _is_speech(text):
+    """Whether a clip's text is speech: long enough, and not Whisper's loop over silence ("yn ymthio, yn ymthio, ...",
+    which compresses as no real sentence does; 2.4 is Whisper's own threshold)."""
+    data = text.strip().encode("utf-8")
+    return len(text.strip()) >= MIN_SPEECH_CHARACTERS and len(data) / len(zlib.compress(data)) < 2.4
+
+
+def detect_language(audio: Path, name: str):
+    """The language spoken in a recording ("he", "en", ...), or None when no clip had speech: the most heard among five
+    30-second clips spread over it that hold speech. A clip of silence or a break names a random language (measured on
+    real lectures, with every model size), and a lecture's first minutes often are one."""
     if name == "fake":
+        return "en"
+    length = duration(audio) or 0
+    heard = []
+    with tempfile.TemporaryDirectory() as tmp:
+        for i, part in enumerate((0.5, 0.3, 0.7, 0.1, 0.9)):
+            clip = Path(tmp) / f"clip{i}.wav"
+            extract_audio(audio, clip, start=int(max(0, min(length * part, length - DETECT_SECONDS))),
+                          seconds=DETECT_SECONDS)
+            if name == "mlx":
+                import mlx_whisper
+                result = mlx_whisper.transcribe(str(clip), path_or_hf_repo=DETECT_MODELS[name],
+                                                condition_on_previous_text=False)
+                language, text = result["language"], result["text"]
+            else:
+                from faster_whisper import WhisperModel
+                detector = WhisperModel(DETECT_MODELS[name], device="cpu", compute_type="auto")  # tiny: no GPU needed
+                segments, info = detector.transcribe(_sound(clip))
+                language, text = info.language, " ".join(s.text for s in segments)
+            if _is_speech(text):
+                heard.append(language)
+    return max(heard, key=heard.count) if heard else None  # a tie: the clip nearest the middle
+
+
+def transcribe_audio(audio: Path, name: str, language: str, fast=False):
+    """[(start, end, text)] from the chosen backend."""
+    model = model_for(name, language, fast)
+    if name == "fake":
+        time.sleep(float(os.environ.get("UNISTUDENT_FAKE_STT_SECONDS", 0)))
         return [(t, t + 20, f"segment at {hms(t)}") for t in range(0, 150, 20)]
     if name == "mlx":
         import mlx_whisper
-        result = mlx_whisper.transcribe(str(audio), path_or_hf_repo=model, language=language)
+        # Not conditioning on the previous text stops Whisper's repetition loop over silence and the audio's end
+        # (mlx has no VAD filter); measured on a lecture: no invented lines, three times faster.
+        result = mlx_whisper.transcribe(str(audio), path_or_hf_repo=model, language=language,
+                                        condition_on_previous_text=False)
         return [(s["start"], s["end"], s["text"].strip()) for s in result["segments"]]
     from faster_whisper import WhisperModel
-    whisper = WhisperModel(model, device="auto", compute_type="auto")
-    segments, _ = whisper.transcribe(str(audio), language=language, vad_filter=True)
-    return [(s.start, s.end, s.text.strip()) for s in segments]
+    sound = _sound(audio)
+
+    def run(device):
+        whisper = WhisperModel(model, device=device, compute_type="auto")
+        segments, _ = whisper.transcribe(sound, language=language, vad_filter=True)
+        return [(s.start, s.end, s.text.strip()) for s in segments]  # the work happens here, so its errors too
+    try:
+        return run("auto")
+    except (RuntimeError, OSError) as error:  # an NVIDIA card without its CUDA libraries (cuBLAS, cuDNN)
+        if not re.search(r"cuda|cublas|cudnn", str(error), re.I):
+            raise
+        print("This computer's graphics card is missing its CUDA libraries (cuBLAS, cuDNN), so transcription runs on "
+              "the processor instead: slower, same result.", file=sys.stderr)
+        return run("cpu")
 
 
 def _benchmark_file():
@@ -200,25 +318,110 @@ def benchmark(course, rel):
     with tempfile.TemporaryDirectory() as tmp:
         audio = Path(tmp) / "sample.wav"
         extract_audio(source, audio, start=0, seconds=SAMPLE_SECONDS)
+        language = detect_language(audio, name)
         began = time.monotonic()
-        transcribe_audio(audio, name, course.settings().get("language"))
+        transcribe_audio(audio, name, language)
         spent = time.monotonic() - began
     factor = spent / SAMPLE_SECONDS
-    _benchmark_file().parent.mkdir(parents=True, exist_ok=True)
-    _benchmark_file().write_text(json.dumps({"backend": name, "realtime_factor": factor}), "utf-8")
+    _save_speeds({**_speeds(), "backend": name, "realtime_factor": factor})
     return factor
+
+
+# Hours of work per hour of audio, before anything is measured on this machine. mlx: 0.16 measured on real lessons
+# (Apple M4). faster: 0.39 measured on a fast processor with no graphics card (Apple M4 CPU, 10 minutes of a Hebrew
+# lesson); an NVIDIA card is much faster, an older processor slower.
+ROUGH_REALTIME_FACTOR = {"mlx": 0.15, "faster": 0.4}
+
+
+def has_nvidia_gpu():
+    """Whether faster-whisper can use an NVIDIA graphics card here (otherwise it runs on the processor)."""
+    try:
+        import ctranslate2  # installed with faster-whisper
+        return ctranslate2.get_cuda_device_count() > 0
+    except ImportError:
+        return shutil.which("nvidia-smi") is not None
+
+
+def _speeds():
+    try:
+        return json.loads(_benchmark_file().read_text("utf-8"))
+    except (FileNotFoundError, ValueError):
+        return {}
+
+
+def _save_speeds(data):
+    _benchmark_file().parent.mkdir(parents=True, exist_ok=True)
+    _benchmark_file().write_text(json.dumps(data), "utf-8")
+
+
+def realtime_factor(course, fast=None):
+    """(hours of work per hour of audio, measured?): from the transcripts this machine finished with this model, else
+    the one-minute benchmark (made with the accurate model), else a rough guess. `fast`: the course's choice by default."""
+    name, language = backend_name(), course.settings().get("language")
+    fast = _fast(course) if fast is None else fast
+    data = _speeds()
+    done = data.get("transcripts", {}).get(model_for(name, language, fast))
+    if done and done["audio"]:
+        return done["spent"] / done["audio"], True
+    speedup = FAST_SPEEDUP if model_for(name, language, fast) != model_for(name, language) else 1
+    if data.get("realtime_factor") is not None:
+        return data["realtime_factor"] / speedup, True
+    return ROUGH_REALTIME_FACTOR.get(name, 0.5) / speedup, False
+
+
+def _running_file(course):
+    return course.state / "transcribing.json"
+
+
+def transcribing(course):
+    """The recording being transcribed right now: {path, started (HH:MM), minutes_left, elapsed}, or None."""
+    try:
+        job = json.loads(_running_file(course).read_text("utf-8"))
+    except (FileNotFoundError, ValueError):
+        return None
+    elapsed = time.time() - job["started"]
+    if elapsed > max(2 * job["expected"], 3600):  # ponytail: a job killed hard (a restart) leaves its file; stale by time
+        return None
+    return {"path": job["path"], "started": time.strftime("%H:%M", time.localtime(job["started"])),
+            "minutes_left": max(0, round((job["expected"] - elapsed) / 60)), "elapsed": elapsed}
+
+
+DATE = re.compile(r"(\d{4})-(\d{2})-(\d{2})|(\d{1,2})[./](\d{1,2})[./](\d{4})")
+
+
+def oldest_first(course, rels):
+    """Recordings in the order they were made: the last date in the name (a site title ends with it, 2026-07-16 or
+    16.07.2026), else the file's time; the same day by the numbers in the name ("session 2" before "session 10")."""
+    def key(rel):
+        found = DATE.findall(Path(rel).name)
+        if found:
+            y, m, d, d2, m2, y2 = found[-1]
+            day = f"{y or y2}-{int(m or m2):02d}-{int(d or d2):02d}"
+        else:
+            path = material.path_of(course, rel)
+            day = time.strftime("%Y-%m-%d", time.localtime(path.stat().st_mtime)) if path.exists() else "9999"
+        return day, [int(t) if t.isdigit() else t for t in re.split(r"(\d+)", Path(rel).name)]
+    return sorted(rels, key=key)
 
 
 def listing(course, unit=None):
     rows = []
-    for rel, info in recording_pages(course).items():
+    pages = recording_pages(course)
+    files, source_pages = course.manifest()["files"], course.read_state("wiki.json", {})
+    now = transcribing(course)
+    for rel in oldest_first(course, pages):
+        info = pages[rel]
         if unit is not None and unit_dir(info["unit"]) != unit_dir(unit):
             continue
         path = material.path_of(course, rel)
+        site = files[rel].get("site_url")  # files the lecturer hung on this recording on the course site
+        attachments = [{"path": a, "page": source_pages.get(a, {}).get("page")}
+                       for a, entry in files.items() if site and entry.get("attached_to") == site]
         rows.append({"path": rel, "unit": info["unit"], "processed": info["processed"],
                      "has_transcript": (course.wiki / info["folder"] / "transcript.md").exists(),
-                     "wiki_folder": info["folder"], "seconds": duration(path),
-                     "bytes": path.stat().st_size if path.exists() else None})
+                     "transcribing": (now or {}).get("path") == rel,
+                     "wiki_folder": info["folder"], "seconds": recording_seconds(course, rel),
+                     "bytes": path.stat().st_size if path.exists() else None, "attachments": attachments})
     return rows
 
 
@@ -227,11 +430,12 @@ def estimate(course, unit=None):
     seconds = sum(r["seconds"] or 0 for r in rows)
     unknown = sum(1 for r in rows if r["seconds"] is None)
     size = sum(r["bytes"] or 0 for r in rows)
-    try:
-        factor = json.loads(_benchmark_file().read_text("utf-8"))["realtime_factor"]
-    except (FileNotFoundError, KeyError, ValueError):
-        factor = None
+    factor, measured = realtime_factor(course)
+    factor = factor if measured else None
     name = backend_name()
+    offer = not _fast(course) and model_for(name, course.settings().get("language"), True) != \
+        model_for(name, course.settings().get("language"))
+    fast_factor = realtime_factor(course, fast=True)[0] if offer and factor else None
     # One vision call per ~PARAGRAPH_SECONDS segment (toc.md's row spacing): a separate,
     # explicit opt-in (ticket 04), never triggered just because a video-analysis tool is installed.
     segments = sum(math.ceil(r["seconds"] / PARAGRAPH_SECONDS) for r in rows if r["seconds"])
@@ -242,20 +446,27 @@ def estimate(course, unit=None):
         "install_run": None if backend_available(name) else install_run(name),
         "realtime_factor": factor,
         "estimated_hours": round(seconds * factor / 3600, 2) if factor else None,
+        "warning": None if name != "faster" or has_nvidia_gpu() else (
+            "This computer has no NVIDIA graphics card, so speech-to-text runs on the processor: about 25 minutes "
+            "per hour of recording on a fast new processor, longer on an older one. `us recordings benchmark` "
+            "measures this computer."),
+        "faster_option": {"estimated_hours": round(seconds * fast_factor / 3600, 2)} if fast_factor else None,
+        "transcription": "fast" if _fast(course) else "accurate",
         "files": [r["path"] for r in rows],
         "frame_analysis_segments": segments,
         "frame_analysis": course.settings().get("frame_analysis"),
+        "keep_video": course.settings().get("keep_video"),
     }
 
 
-def write_transcript(course, rel, segments, name):
+def write_transcript(course, rel, segments, name, language):
     info = recording_pages(course)[rel]
     folder = course.wiki / info["folder"]
     folder.mkdir(parents=True, exist_ok=True)
     source = material.path_of(course, rel)
     total = segments[-1][1] if segments else 0
     lines = ["---", f"source: {rel}", f"unit: {info['unit'] if info['unit'] is not None else 'unsorted'}",
-             f"duration: {hms(total)}", f"backend: {name}", "---", "",
+             f"duration: {hms(total)}", f"backend: {name}", f"language: {language or 'unknown'}", "---", "",
              f"# {Path(rel).name}: transcript", "",
              "Sources: " + video_link(course, rel, folder), ""]
     block_start, block = None, []
@@ -270,7 +481,7 @@ def write_transcript(course, rel, segments, name):
     (folder / "transcript.md").write_text("\n".join(lines), "utf-8")
     vtt = _vtt(segments)
     (folder / "transcript.vtt").write_text(vtt, "utf-8")
-    # A sidecar next to the video lets video tools (e.g. mcp-video-analyzer) use this transcript,
+    # A sidecar next to the video lets video players show this transcript as subtitles,
     # but only where the video lives in a folder the plugin owns.
     real = source.resolve()
     owned = [course.material.resolve()] + ([Path(course.settings()["recordings_dir"]).resolve()]
@@ -295,17 +506,105 @@ def transcribe(course, rel):
     if not backend_available(name):
         raise RuntimeError(install_hint(name))
     source = material.path_of(course, rel)
-    with tempfile.TemporaryDirectory() as tmp:
-        audio = Path(tmp) / "audio.wav"
-        if name == "fake":
-            audio.write_bytes(b"")
-        else:
-            extract_audio(source, audio)
-        segments = transcribe_audio(audio, name, course.settings().get("language"))
-    path = write_transcript(course, rel, segments, name)
+    seconds = recording_seconds(course, rel)
+    _running_file(course).write_text(json.dumps({"path": rel, "started": time.time(),
+                                                 "expected": (seconds or 0) * realtime_factor(course)[0]}), "utf-8")
+    _write_progress(course)
+    began = time.monotonic()
+    try:
+        with tempfile.TemporaryDirectory() as tmp:
+            audio = Path(tmp) / "audio.wav"
+            if name == "fake":
+                audio.write_bytes(b"")
+            else:
+                extract_audio(source, audio)
+            language = detect_language(audio, name)  # the lecture's own language, whatever the course's
+            segments = transcribe_audio(audio, name, language, _fast(course))
+    finally:
+        _running_file(course).unlink()
+    if seconds:  # the time estimates follow this machine's real speed from now on
+        data = _speeds()
+        done = data.setdefault("transcripts", {}).setdefault(model_for(name, language, _fast(course)),
+                                                             {"audio": 0, "spent": 0})
+        done["audio"] += seconds
+        done["spent"] += time.monotonic() - began
+        _save_speeds(data)
+    quiet = silences(source)  # Whisper invents text over a silent break ("Thank you." again and again): drop it
+    segments = [s for s in segments if not any(a <= s[0] and s[1] <= b for a, b in quiet)]  # wholly inside only
+    path = write_transcript(course, rel, segments, name, language)
     left = [r for r in approved(course) if r != rel]
     _approved_file(course).write_text(json.dumps(left, ensure_ascii=False), "utf-8")
+    _write_progress(course)
     return path
+
+
+def _write_progress(course):
+    """Refresh the progress box file in the course folder, so the student sees it even when nobody pastes it."""
+    from .fetch_plan import status
+    try:
+        status(course)
+    except (OSError, ValueError, KeyError):
+        pass  # the box is a courtesy: never let it stop a transcription
+
+
+def audio_only_fetch(course):
+    """Whether recordings are fetched with their sound only: nothing needs the video (no frame analysis) and the
+    student chose not to keep it. Not asked yet means kept."""
+    settings = course.settings()
+    return not settings.get("frame_analysis") and settings.get("keep_video") is False
+
+
+def keep_audio_only(course, rel):
+    """Replace a recording's video, once its frame analysis is done, by an audio-only copy under the same name, so
+    every time link to it still opens the right minute. Only when the student chose not to keep the video."""
+    if course.settings().get("keep_video") is not False:
+        raise UserError("The student keeps the video files (keep_video), so the video stays.")
+    info = recording_pages(course).get(rel)
+    if info is None:
+        raise UserError(f"Not a recording in this course: {rel}")
+    if not info["processed"]:
+        raise UserError(f"{rel} has no summary yet: replace its video only once its analysis is done.")
+    _require_ffmpeg()
+    source = material.path_of(course, rel)
+    with tempfile.TemporaryDirectory(dir=source.parent) as tmp:  # same disk, so the swap is one rename
+        audio = Path(tmp) / source.name
+        subprocess.run(["ffmpeg", "-y", "-v", "error", "-i", str(source), "-vn", "-c:a", "copy", str(audio)], check=True)
+        os.replace(audio, source)
+    return rel
+
+
+FRAME_WIDTH = 1280  # a 720p lesson's own width: its whiteboard handwriting reads well at it (checked on a real lesson)
+TIME = re.compile(r"^\d{1,2}:\d{2}:\d{2}(\.\d+)?$")
+
+
+def frames(course, rel, times):
+    """The screen of a recording at these times (HH:MM:SS), as JPEG files at most FRAME_WIDTH wide. They wait in the
+    Hidden folder until the recording's summary is written: the next Wiki build deletes them (a frame can show the
+    lecturer's private screen)."""
+    info = recording_pages(course).get(rel)
+    if info is None:
+        raise UserError(f"Not a recording in this course: {rel}")
+    bad = [t for t in times if not TIME.match(t)]
+    if bad or not times:
+        raise UserError("Give each time as HH:MM:SS (for example 00:12:30), not: " + ", ".join(bad or ["nothing"]))
+    _require_ffmpeg()
+    source = material.path_of(course, rel)
+    folder = course.state / "frames" / Path(info["folder"]).name
+    folder.mkdir(parents=True, exist_ok=True)
+    images = []
+    for at in times:
+        target = folder / (at.replace(":", "") + ".jpg")
+        if target.exists():
+            target.unlink()
+        result = subprocess.run(["ffmpeg", "-v", "error", "-y", "-ss", at, "-i", str(source), "-frames:v", "1",
+                                 "-vf", f"scale='min({FRAME_WIDTH},iw)':-2", "-q:v", "4", str(target)],
+                                capture_output=True, text=True)
+        if not target.is_file():
+            raise UserError(f"No picture at {at} in {rel}: " + (
+                "the recording has sound only." if "does not contain any stream" in result.stderr
+                else "the time may be past its end."))
+        images.append(str(target.resolve()))
+    return images
 
 
 def fetch_streams(listing_path, folder, audio_only=False):
@@ -317,11 +616,13 @@ def fetch_streams(listing_path, folder, audio_only=False):
                            "Windows: winget install ffmpeg; Linux: your package manager).")
     listing_path, folder = Path(listing_path), Path(folder)
     data = json.loads(listing_path.read_text("utf-8"))
-    downloaded, failed = [], []
+    downloaded, failed, reasons = [], [], {}
     for item in data.get("items", []):
         if item.get("kind") != "recording" or not item.get("stream_url") or item.get("file"):
             continue
-        stem = Path(safe_name(item.get("name") or "recording")).stem
+        stem = safe_name(item.get("name") or "recording")
+        if Path(stem).suffix.lower() in RECORDINGS:  # only a real media suffix: "Lesson 3 12.10.2025" keeps its year
+            stem = Path(stem).stem
         name = stem + (".m4a" if audio_only else ".mp4")
         target = folder / name
         part = folder / (name + ".part" + target.suffix)
@@ -337,5 +638,8 @@ def fetch_streams(listing_path, folder, audio_only=False):
             if part.exists():
                 part.unlink()
             failed.append(item.get("name") or item["url"])
+            error = result.stderr.decode("utf-8", "replace").strip().splitlines()
+            reasons[failed[-1]] = (error[-1].replace(item["stream_url"], "<link>") if error
+                                   else f"ffmpeg exit code {result.returncode}")  # the link holds a token
     listing_path.write_text(json.dumps(data, ensure_ascii=False, indent=1), "utf-8")
-    return {"downloaded": downloaded, "failed": failed}
+    return {"downloaded": downloaded, "failed": failed, "reasons": reasons}

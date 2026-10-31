@@ -30,7 +30,7 @@ If you have the assumptions sheet, drop it into `{inbox}/` and run `/unistudent:
 Rules that decide the mark:
 
 - Official material wins over added material. When citing added material, name its origin ("from added material: friend's summary").
-- Use only the methods, notation and assumptions that `{wiki}/units/` lists for that unit. A method the course hasn't taught gets the warning, even when it is correct.
+- Use only the methods, notation and assumptions that `{wiki}/units/` lists for that unit, or for an earlier unit (say which). A method the course hasn't taught gets the warning, even when it is correct.
 - Before saying the Wiki lacks something, read `{wiki}/coverage.md` (or run `us wiki coverage` for the live status): it lists every file as analyzed, failed, skipped or not analyzed yet. When the file exists but failed, is pending or was skipped, say exactly that ("it's in your folder, but it failed to convert / hasn't been analyzed yet / you chose to skip it"), never "the course doesn't cover it".
 - When the Wiki doesn't cover the question, say so and suggest dropping a source into `{inbox}/` and running the course-add skill (`/unistudent:course-add` in Claude Code).
 - Outside knowledge only when the student asks for it, with the warning.
@@ -53,12 +53,8 @@ A change to one paragraph or explanation: just make it. A change to a whole unit
 Two folders are visible to the student from setup and a third once the first Study pack is made; everything else is in the hidden `.unistudent` folder.
 
 - `{inbox}/`: where the student drops new material. `/unistudent:course-add` moves it into the Material folder and empties the inbox.
-- `{material}/`: the real files of the course, in `{official}/` (the lecturer's and the university's) and `{added}/` (everything else), then by unit. The student may move, rename or delete files there; where a file sits is the truth.
-- `{study}/`: the Study vault, created by the first Study pack request (it may not exist yet: never treat that as a problem), holding only what was made for the student to study from (Markdown for a human: study packs and recording roadmaps, by unit); it never links into the hidden folder. Study packs belong to the student: propose changes, never overwrite.
+- `{material}/`: the real files of the course, in `{official}/` (the course's own: the lecturer's and the university's, when there are any) and `{added}/` (everything else), then by unit. The student may move, rename or delete files there; where a file sits is the truth.
+- `{study}/`: the Study vault, created by the first Study pack (it may not exist yet: never treat that as a problem), holding only what was made for the student to study from (Markdown for a human: study packs and recording roadmaps, by unit); it never links into the hidden folder. Study packs belong to the student: propose changes, never overwrite.
 - Hidden: settings `.unistudent/settings.json`, Manifest of every file `.unistudent/manifest.json`, and the Wiki at `{wiki}/` (never shown to the student).
 - Student preferences: `course-preferences.md` here, and general preferences at `{general_preferences}`. Course preferences win.
-
-## Exam
-
 {exam_section}
-{tools_section}

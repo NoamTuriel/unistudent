@@ -83,8 +83,8 @@ class CourseContext(CourseTestCase):
         self.assertIn("@.unistudent/context.md", (course / "GEMINI.md").read_text("utf-8"))
         other = self.tmp / "Mine"
         write(other / "GEMINI.md", "# Mine\n")
-        run_json("setup", other, "--name", "Mine")
-        run_json("setup", other, "--name", "Mine")
+        run_json("setup", other, "--name", "Mine", "--language", "he")
+        run_json("setup", other, "--name", "Mine", "--language", "he")
         text = (other / "GEMINI.md").read_text("utf-8")
         self.assertTrue(text.startswith("# Mine"))
         self.assertEqual(text.count("@.unistudent/context.md"), 1)

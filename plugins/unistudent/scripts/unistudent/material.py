@@ -139,12 +139,11 @@ def add_file(course, path, tier="added", origin="inbox", hint=None, replace_rel=
     require_new_layout(course)
     path = Path(path)
     name = name or path.name
-    manifest = course.manifest()
-    files = manifest["files"]
+    files = course.manifest()["files"]
     stale = None
     if replace_rel in files:
         rel = replace_rel
-        old = files.pop(rel)
+        old = files[rel]
         tier, unit, reason = old["tier"], old.get("unit"), old.get("sort_reason")
         stale = Path(old.get("stored_at") or course.material / rel)
         if Path(name).suffix.lower() != Path(rel).suffix.lower():  # the new version is another kind of file
@@ -152,7 +151,7 @@ def add_file(course, path, tier="added", origin="inbox", hint=None, replace_rel=
             if (course.material / rel).exists():
                 rel = f"{os.path.dirname(rel)}/{_free_name((course.material / rel).parent, Path(rel).name)}"
     else:
-        unit, reason = (site_unit, "site listing") if site_unit is not None else detect_unit(hint or name, path)
+        unit, reason = (site_unit, "site listing") if site_unit is not None else detect_unit(hint or name, course.labels()["unit"], path)
         slot = _slot(course, tier, unit)
         target = course.material / slot / name
         if target.exists() and fingerprint(target) == fingerprint(path):
@@ -168,15 +167,18 @@ def add_file(course, path, tier="added", origin="inbox", hint=None, replace_rel=
         entry["stored_at"] = str(stored)
     if note:
         entry["origin_note"] = note
-    files[rel] = entry
-    assign_wiki_folders(files)
-    course.save_manifest(manifest)
+    with course.edit_manifest() as manifest:  # read again: another command may have changed it meanwhile
+        files = manifest["files"]
+        if stale:
+            files.pop(replace_rel, None)
+        files[rel] = entry
+        assign_wiki_folders(files)
     return rel
 
 
-def import_folder(course, folder, tier="added"):
+def import_folder(course, folder, tier="added", dry_run=False):
     """Copy every file of the student's own `folder` into the Material folder, once; the originals stay.
-    Returns the new or changed files' paths."""
+    Returns the new or changed files' paths (dry_run: the files that would be copied, copying nothing)."""
     require_new_layout(course)
     folder = Path(folder).resolve()
     scan(course)  # the student may have moved or renamed what was copied before: know where it is now
@@ -185,10 +187,17 @@ def import_folder(course, folder, tier="added"):
         files = course.manifest()["files"]
         origin_path = str(path)
         before = next((r for r, e in files.items() if e.get("imported_from") == origin_path), None)
-        if before and files[before].get("fingerprint") == fingerprint(path):
+        source = fingerprint(path)
+        # Compared with the original as it was copied, not with the copy: the copy may have changed since (a video
+        # replaced by its sound only, a note the student edited) while the original did not.
+        if before and files[before].get("imported_fingerprint", files[before].get("fingerprint")) == source:
             continue  # copied once already: never again
+        if dry_run:
+            added.append(path)
+            continue
         rel = add_file(course, path, tier=tier, origin="student-folder", hint=path.relative_to(folder).as_posix(),
-                       replace_rel=before, copy=True, extra={"imported_from": origin_path})
+                       replace_rel=before, copy=True,
+                       extra={"imported_from": origin_path, "imported_fingerprint": source})
         added.append(rel)
     return added
 
@@ -197,23 +206,23 @@ def assign(course, rel, unit):
     """Answer for one unsorted file: move it into its unit's folder (or "general", or "lessons" for a recording of a whole
     class session). Returns its new path."""
     require_new_layout(course)
-    manifest = course.manifest()
-    files = manifest["files"]
-    if rel not in files:
-        raise KeyError(rel)
-    value = parse_unit(unit)
-    if value == "lessons" and kind(rel) != "recording":
-        raise UserError(f"Only a recording can go to the recorded lessons: {rel}")
-    entry = files.pop(rel)
-    new_rel = f"{_slot(course, entry['tier'], value)}/{Path(rel).name}"
-    if entry.get("stored_at") is None and new_rel != rel:
-        target = course.material / new_rel
-        new_rel = f"{_slot(course, entry['tier'], value)}/{_free_name(target.parent, target.name)}"
-        (course.material / new_rel).parent.mkdir(parents=True, exist_ok=True)
-        shutil.move(str(course.material / rel), str(course.material / new_rel))
-    entry.update(unit=value, sort_reason="student answer")
-    files[new_rel] = entry
-    course.save_manifest(manifest)
+    with course.edit_manifest() as manifest:
+        files = manifest["files"]
+        if rel not in files:
+            raise KeyError(rel)
+        value = parse_unit(unit)
+        if value == "lessons" and kind(rel) != "recording":
+            raise UserError(f"Only a recording can go to the recorded lessons: {rel}")
+        entry = files.pop(rel)
+        new_rel = f"{_slot(course, entry['tier'], value)}/{Path(rel).name}"
+        if entry.get("stored_at") is None and new_rel != rel:
+            target = course.material / new_rel
+            new_rel = f"{_slot(course, entry['tier'], value)}/{_free_name(target.parent, target.name)}"
+            (course.material / new_rel).parent.mkdir(parents=True, exist_ok=True)
+            shutil.move(str(course.material / rel), str(course.material / new_rel))
+            _carry_sidecar(course, rel, new_rel)
+        entry.update(unit=value, sort_reason="student answer")
+        files[new_rel] = entry
     return new_rel
 
 
@@ -227,19 +236,27 @@ def path_of(course, rel):
     return Path(entry.get("stored_at") or course.material / rel)
 
 
-def _is_sidecar(path: Path) -> bool:
-    """A transcript .vtt written next to its recording: ours, not course material."""
-    return path.suffix.lower() == ".vtt" and any(
-        sibling.stem == path.stem and kind(sibling) == "recording" for sibling in path.parent.iterdir())
+def _is_sidecar(path: Path, recordings=()) -> bool:
+    """A transcript .vtt written next to its recording: ours, not course material. Also one left behind when its
+    recording moved (`recordings`: the names of the recordings UniStudent knows); the scan carries it along."""
+    return path.suffix.lower() == ".vtt" and (path.stem in recordings or any(
+        sibling.stem == path.stem and kind(sibling) == "recording" for sibling in path.parent.iterdir()))
 
 
-def _location(rel):
+def _carry_sidecar(course, old_rel, new_rel):
+    """A recording's transcript .vtt goes where the recording went."""
+    old, new = (course.material / old_rel).with_suffix(".vtt"), (course.material / new_rel).with_suffix(".vtt")
+    if old != new and old.is_file() and kind(new_rel) == "recording":
+        shutil.move(str(old), str(new))
+
+
+def _location(rel, tables):
     """(tier, unit, in_slot, loose): what a file's place in the Material folder says. `in_slot` is False when the file
     isn't under <trust level>/<unit folder>/; `loose` when it sits straight in the Material folder or straight in a
     trust-level folder, which is where UniStudent sorts it into a unit folder (a folder the student made is left alone)."""
     parts = Path(rel).parts
-    tier = parse_tier_folder(parts[0]) if len(parts) > 1 else None
-    known, unit = parse_unit_folder(parts[1]) if tier and len(parts) > 2 else (False, None)
+    tier = parse_tier_folder(parts[0], tables) if len(parts) > 1 else None
+    known, unit = parse_unit_folder(parts[1], tables) if tier and len(parts) > 2 else (False, None)
     return tier, unit, known, len(parts) == 1 or (tier is not None and len(parts) == 2)
 
 
@@ -266,59 +283,63 @@ def scan(course):
     (and into that unit's folder, so the folder tells the truth). Returns {moved, dropped, new}.
     An emptied or missing Material folder is never read as "the student deleted everything": it stops, changing nothing."""
     result = {"moved": [], "dropped": [], "new": []}
-    manifest = course.manifest()
-    files = manifest["files"]
-    if not course.material.is_dir():
-        raise UserError(f"The Material folder is missing ({course.material}). Nothing was changed. Put it back "
-                        "(or restore it from the Trash) and run this again.")
-    found = {p.relative_to(course.material).as_posix(): p for p in iter_files(course.material) if not _is_sidecar(p)}
-    away = set(_icloud_placeholders(course.material))
-    gone = {rel: e for rel, e in files.items()
-            if rel not in found and rel not in away and not (e.get("stored_at") and Path(e["stored_at"]).exists())}
-    if files and not found and not away and len(gone) == len(files):
-        raise UserError(f"The Material folder ({course.material.name}) looks empty, but UniStudent remembers "
-                        f"{len(files)} files in it. Nothing was changed. If a sync or drive is not ready, wait and run this "
-                        "again; if you really removed them all, restore them from the Trash first.")
-    kept = {rel: e for rel, e in files.items() if rel not in gone}
-    misplaced = []
-    for rel, path in sorted(found.items()):
-        stat = path.stat()
-        entry = kept.get(rel)
-        fresh = entry is None
-        if not fresh and entry.get("mtime") == stat.st_mtime_ns and entry.get("size") == stat.st_size:
-            fp = entry["fingerprint"]
-        else:
-            fp = fingerprint(path)
-        if fresh:
-            twin = _twin(gone, rel, fp)
-            if twin:
-                entry = gone.pop(twin)
-                result["moved"].append((twin, rel))
+    with course.edit_manifest() as manifest:
+        files = manifest["files"]
+        if not course.material.is_dir():
+            raise UserError(f"The Material folder is missing ({course.material}). Nothing was changed. Put it back "
+                            "(or restore it from the Trash) and run this again.")
+        names = {Path(rel).stem for rel in files if kind(rel) == "recording"}
+        found = {p.relative_to(course.material).as_posix(): p for p in iter_files(course.material)
+                 if not _is_sidecar(p, names)}
+        away = set(_icloud_placeholders(course.material))
+        gone = {rel: e for rel, e in files.items()
+                if rel not in found and rel not in away and not (e.get("stored_at") and Path(e["stored_at"]).exists())}
+        if files and not found and not away and len(gone) == len(files):
+            raise UserError(f"The Material folder ({course.material.name}) looks empty, but UniStudent remembers "
+                            f"{len(files)} files in it. Nothing was changed. If a sync or drive is not ready, wait and run this "
+                            "again; if you really removed them all, restore them from the Trash first.")
+        kept = {rel: e for rel, e in files.items() if rel not in gone}
+        misplaced, tables = [], course.label_tables()
+        for rel, path in sorted(found.items()):
+            stat = path.stat()
+            entry = kept.get(rel)
+            fresh = entry is None
+            if not fresh and entry.get("mtime") == stat.st_mtime_ns and entry.get("size") == stat.st_size:
+                fp = entry["fingerprint"]
             else:
-                entry = {"origin": "material-folder"}
-                result["new"].append(rel)
-        tier, unit, known, loose = _location(rel)
-        entry["tier"] = tier or entry.get("tier", "added")
-        if known:
-            if entry.get("unit") != unit:
-                entry.update(unit=unit, sort_reason="folder")
-        elif rel in result["new"]:
-            entry["unit"], entry["sort_reason"] = detect_unit(rel, path)
-            if loose:
-                misplaced.append(rel)
-        entry.update(fingerprint=fp, size=stat.st_size, mtime=stat.st_mtime_ns)
-        kept[rel] = entry
-    for rel in misplaced:
-        entry = kept.pop(rel)
-        slot = _slot(course, entry["tier"], entry["unit"])
-        (course.material / slot).mkdir(parents=True, exist_ok=True)
-        name = _free_name(course.material / slot, Path(rel).name)
-        shutil.move(str(course.material / rel), str(course.material / slot / name))
-        kept[f"{slot}/{name}"] = entry
-        result["new"] = [f"{slot}/{name}" if r == rel else r for r in result["new"]]
-        result["moved"] = [(a, f"{slot}/{name}" if b == rel else b) for a, b in result["moved"]]
-    result["dropped"] = sorted(gone)
-    manifest["files"] = kept
-    assign_wiki_folders(kept)
-    course.save_manifest(manifest)
+                fp = fingerprint(path)
+            if fresh:
+                twin = _twin(gone, rel, fp)
+                if twin:
+                    entry = gone.pop(twin)
+                    result["moved"].append((twin, rel))
+                else:
+                    entry = {"origin": "material-folder"}
+                    result["new"].append(rel)
+            tier, unit, known, loose = _location(rel, tables)
+            entry["tier"] = tier or entry.get("tier", "added")
+            if known:
+                if entry.get("unit") != unit:
+                    entry.update(unit=unit, sort_reason="folder")
+            elif rel in result["new"]:
+                entry["unit"], entry["sort_reason"] = detect_unit(rel, tables[-1]["unit"], path)
+                if loose:
+                    misplaced.append(rel)
+            entry.update(fingerprint=fp, size=stat.st_size, mtime=stat.st_mtime_ns)
+            kept[rel] = entry
+        for rel in misplaced:
+            entry = kept.pop(rel)
+            slot = _slot(course, entry["tier"], entry["unit"])
+            (course.material / slot).mkdir(parents=True, exist_ok=True)
+            name = _free_name(course.material / slot, Path(rel).name)
+            shutil.move(str(course.material / rel), str(course.material / slot / name))
+            _carry_sidecar(course, rel, f"{slot}/{name}")
+            kept[f"{slot}/{name}"] = entry
+            result["new"] = [f"{slot}/{name}" if r == rel else r for r in result["new"]]
+            result["moved"] = [(a, f"{slot}/{name}" if b == rel else b) for a, b in result["moved"]]
+        for old, new in result["moved"]:  # moved by the student: the sidecar stayed behind
+            _carry_sidecar(course, old, new)
+        result["dropped"] = sorted(gone)
+        manifest["files"] = kept
+        assign_wiki_folders(kept)
     return result

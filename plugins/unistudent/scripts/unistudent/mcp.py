@@ -1,13 +1,16 @@
 """MCP server (stdio, JSON-RPC 2.0): every command line command becomes a tool, every skill a prompt.
 
 Tools are generated from the command line parser, so the CLI stays the single source of truth:
-`us wiki build --force` is the tool `wiki_build` with {"force": true}. Standard library only.
+`us wiki build --force` is the tool `wiki_build` with {"force": true}. The files a result names in
+`"images": [<absolute path>, ...]` come back as image content after its text. Standard library only.
 Works in any MCP client: Claude Desktop/Code, Cursor, VS Code, Codex, Gemini CLI.
 """
 import argparse
+import base64
 import contextlib
 import io
 import json
+import mimetypes
 import re
 import sys
 from pathlib import Path
@@ -20,27 +23,28 @@ HIDDEN_COMMANDS = {"eval-grade", "manifest"}  # developer tools, and output too 
 ACTION_ARGS = {
     ("courses", "list"): [], ("courses", "current"): [], ("courses", "switch"): ["target"],
     ("prefs", "show"): ["course"], ("prefs", "add"): ["course", "scope", "text"],
-    ("wiki", "check"): ["course"], ("wiki", "build"): ["course", "force"],
+    ("wiki", "check"): ["course"], ("wiki", "build"): ["course", "force"], ("wiki", "coverage"): ["course"],
+    ("wiki", "merge"): ["course", "glossary", "question_bank"],
     ("recordings", "list"): ["course", "unit"], ("recordings", "estimate"): ["course", "unit"],
     ("recordings", "benchmark"): ["course", "paths"],
     ("recordings", "transcribe"): ["course", "paths", "background"],
-    ("recordings", "fetch"): ["course", "paths", "audio_only"],
+    ("recordings", "fetch"): ["course", "paths", "audio_only"], ("recordings", "audio-only"): ["course", "paths"],
     ("university", "status"): ["university"], ("university", "save"): ["university", "url", "organizing"],
-    ("course-skill", "status"): ["field", "course_name"],
-    ("course-skill", "save"): ["field", "course_name", "emphasis", "summarize"],
     ("setup-progress", "status"): ["course_name"], ("setup-progress", "clear"): ["course_name"],
     ("setup-progress", "list"): [],
     ("setup-progress", "advance"): ["course_name", "stage", "answer"],
+    ("fetch-plan", "show"): ["course", "listing"], ("fetch-plan", "apply"): ["course", "listing", "unit"],
+    ("fetch-plan", "status"): ["course"],
 }
 REQUIRED = {("courses", "switch"): ["target"], ("prefs", "add"): ["text"],
             ("recordings", "benchmark"): ["paths"], ("recordings", "transcribe"): ["paths"],
-            ("recordings", "fetch"): ["paths"],
+            ("recordings", "fetch"): ["paths"], ("recordings", "audio-only"): ["paths"],
             ("university", "save"): ["url", "organizing"],
-            ("course-skill", "save"): ["emphasis", "summarize"],
             ("setup-progress", "status"): ["course_name"], ("setup-progress", "clear"): ["course_name"],
-            ("setup-progress", "advance"): ["course_name", "stage"]}
+            ("setup-progress", "advance"): ["course_name", "stage"],
+            ("fetch-plan", "show"): ["listing"], ("fetch-plan", "apply"): ["listing"]}
 SKILL_DIRS = [Path(__file__).resolve().parent / "skills"]
-# In a repo checkout, subject and university plugins' skills are prompts too.
+# In a repo checkout, university plugins' skills are prompts too.
 _REPO_PLUGINS = Path(__file__).resolve().parents[3]
 if (_REPO_PLUGINS / "unistudent").is_dir():
     SKILL_DIRS += sorted(p / "skills" for p in _REPO_PLUGINS.iterdir() if (p / "skills").is_dir())
@@ -133,13 +137,20 @@ def call_tool(tools, name, arguments):
         code = 1
         err.write(f"{type(error).__name__}: {error}")
     text = out.getvalue().strip() or err.getvalue().strip() or "{}"
+    data = None
     try:
         data = json.loads(text)
         if isinstance(data, dict) and "error" in data:
             text, code = data["error"], code or 1
     except ValueError:
         pass
-    return {"content": [{"type": "text", "text": text}], "isError": bool(code)}
+    content = [{"type": "text", "text": text}]
+    for path in (data.get("images") or []) if isinstance(data, dict) else []:  # e.g. a recording's frames: shown, not named
+        mime = mimetypes.guess_type(path)[0] or ""
+        if mime.startswith("image/") and Path(path).is_file():
+            content.append({"type": "image", "mimeType": mime,
+                            "data": base64.b64encode(Path(path).read_bytes()).decode("ascii")})
+    return {"content": content, "isError": bool(code)}
 
 
 def _skills():

@@ -3,6 +3,7 @@
 The university plugin (e.g. openu) owns reaching the site. It hands the core a listing
 (what's on the course site) and a folder of downloaded files; the core does the rest.
 """
+import datetime
 import json
 import unittest
 
@@ -42,11 +43,39 @@ class SiteIngest(CourseTestCase):
         self.assertTrue((folders(self.course).material / "official" / "Unit 4" / "Unit slides.pdf").is_file())
         self.assertFalse((self.staged / "slides-u4.pdf").exists())  # moved, not copied
 
+    def test_a_site_title_without_a_file_type_keeps_the_downloaded_files_type(self):
+        # OpenU titles name no file type, and a dotted date ("4.2.21") is not one.
+        make_pdf(self.staged / "unistudent-1-x__Exam of 4.2.21.pdf", ["Exam"])
+        result = self.ingest(listing({"url": "https://example.edu/f/1", "file": "unistudent-1-x__Exam of 4.2.21.pdf",
+                                      "name": "Exam of 4.2.21", "section": "Past exams", "unit_hint": "general"}))
+        self.assertEqual(result["new"], ["official/General/Exam of 4.2.21.pdf"])
+        self.assertEqual(result["wiki"]["coverage"]["skipped"], 0)
+
     def test_status_tells_the_fetcher_what_is_already_downloaded(self):
         make_pdf(self.staged / "a.pdf", ["Unit 1"])
         self.ingest(listing({"url": "https://example.edu/f/1", "file": "a.pdf", "name": "a.pdf", "section": "Unit 1"}))
         status = run_json("site-status", "--course", self.course)
         self.assertEqual(status["downloaded"], ["https://example.edu/f/1"])
+
+    def test_status_names_the_date_of_the_last_sync_for_the_nothing_new_line(self):
+        self.assertIsNone(run_json("site-status", "--course", self.course)["last_sync"])
+        make_pdf(self.staged / "a.pdf", ["Unit 1"])
+        self.ingest(listing({"url": "https://example.edu/f/1", "file": "a.pdf", "name": "a.pdf", "section": "Unit 1"}))
+        status = run_json("site-status", "--course", self.course)
+        self.assertEqual(status["last_sync"], datetime.date.today().isoformat())
+        self.assertIn(status["last_sync"], status["summary"])
+
+    def test_a_batch_of_ingests_can_leave_the_wiki_to_one_build_at_the_end(self):
+        page = folders(self.course).wiki / "sources" / "unit-01" / "a.md"
+        write(self.staged / "a.txt", "Unit 1 notes")
+        path = write(self.tmp / "listing.json", json.dumps(listing(
+            {"url": "https://example.edu/f/1", "file": "a.txt", "name": "a.txt", "section": "Unit 1"})))
+        result = run_json("ingest", "--course", self.course, path, self.staged, "--no-wiki")
+        self.assertEqual(result["new"], ["official/Unit 1/a.txt"])
+        self.assertIsNone(result["wiki"])
+        self.assertFalse(page.exists())
+        run_json("wiki", "build", "--course", self.course)
+        self.assertTrue(page.exists())
 
     def test_a_second_sync_reports_only_what_changed(self):
         if not can_read_pdfs():
@@ -75,6 +104,22 @@ class SiteIngest(CourseTestCase):
                                       "section": "Recordings", "kind": "recording"}))
         self.assertEqual(result["recordings_available"], ["https://example.edu/v/1"])
         self.assertEqual(result["missing"], [])
+
+    def test_a_file_the_lecturer_hung_on_a_recording_is_listed_with_that_recording(self):
+        write(self.staged / "session.mp4", b"\x00" * 4096)
+        write(self.staged / "exercise.txt", "Exercise 1: find the equilibrium.")
+        rec_url = "https://example.edu/video#Session 5"
+        self.ingest(listing(
+            {"url": rec_url, "file": "session.mp4", "name": "Session 5.mp4", "section": "Unit 4", "kind": "recording"},
+            {"url": "https://example.edu/f/9", "file": "exercise.txt", "name": "Class exercise.txt",
+             "section": "Session 5", "attached_to": rec_url},
+        ))
+        rows = run_json("recordings", "list", "--course", self.course)["recordings"]
+        self.assertEqual(len(rows), 1)
+        [attachment] = rows[0]["attachments"]
+        self.assertTrue(attachment["path"].endswith("Class exercise.txt"))
+        page = folders(self.course).wiki / attachment["page"]
+        self.assertIn("find the equilibrium", page.read_text("utf-8"))
 
 
 if __name__ == "__main__":
