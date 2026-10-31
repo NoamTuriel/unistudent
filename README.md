@@ -66,6 +66,8 @@ The skills are split across two plugins. `unistudent` is the core and works for 
 
 You need [uv](https://docs.astral.sh/uv/) (one installer; it fetches everything else) and, for recordings only, [ffmpeg](https://ffmpeg.org). On a Mac, the `uv` installer may leave `uvx` off the PATH that apps see (zsh doesn't read the file it edits): add `export PATH="$HOME/.local/bin:$PATH"` to `~/.zshenv`, restart the app, and in a desktop app's MCP settings use the full path from `which uvx`.
 
+Word or PowerPoint files with formulas (most exams written in Word are)? Install [LibreOffice](https://www.libreoffice.org) too: it is the only tool that draws old Word formulas, so without it they are missing from the Wiki (the build warns). Mac: `brew install --cask libreoffice`; Windows: `winget install TheDocumentFoundation.LibreOffice`; Linux: your package manager.
+
 **On Windows**, in PowerShell: `winget install astral-sh.uv` and, for recordings, `winget install ffmpeg`; then close and reopen the app so it sees them. Setup installs the speech-to-text engine (faster-whisper) itself when you ask for transcripts. It runs on the processor: about 25 minutes per hour of recording on a fast new laptop, longer on an older one (setup tells you, and `us recordings benchmark` measures your computer). With an NVIDIA graphics card it runs much faster once the card's CUDA libraries are installed (NVIDIA's CUDA 12 cuBLAS and cuDNN 9); without them it falls back to the processor by itself and says so.
 
 **Claude Code**
