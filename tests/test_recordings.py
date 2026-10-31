@@ -154,8 +154,10 @@ class TranscriptionProgress(CourseTestCase):
             self.assertTrue(row["state"].startswith("transcribing (started "), row)
             self.assertIn("Transcribing one now: started", run_json("fetch-plan", "status", "--course", course)["box"])
             transcript = folders(course).wiki / "recordings" / "session 5" / "transcript.md"
-            for _ in range(100):
-                if transcript.exists() and file_is_released(Path(job["log"])):
+            box = course / "progress.txt"
+            for _ in range(100):  # the job refreshes the box last, just after the transcript
+                if (transcript.exists() and file_is_released(Path(job["log"]))
+                        and "Transcribing one now" not in box.read_text("utf-8")):
                     break
                 time.sleep(0.1)
         row = run_json("recordings", "list", "--course", course)["recordings"][0]
