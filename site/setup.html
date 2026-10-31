@@ -1,0 +1,206 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>How setup works: UniStudent</title>
+<meta name="description" content="What happens when UniStudent reads your course: the course Wiki, what each kind of file costs in time and AI usage, and the choices you make along the way.">
+<link rel="icon" href="media/icon.svg" type="image/svg+xml">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Figtree:wght@400..900&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="style.css">
+<script>
+// Hide what will animate in, only when motion is wanted; the Motion script's onerror undoes it
+if (!matchMedia('(prefers-reduced-motion: reduce)').matches) document.documentElement.classList.add('m');
+</script>
+</head>
+<body>
+
+<header class="bar" data-field="orange">
+  <div class="wrap">
+    <a class="brand" href="index.html"><img src="media/icon.svg" alt="" width="28" height="28">UniStudent</a>
+    <nav aria-label="Main">
+      <a href="index.html#demo">See it work</a>
+      <a href="setup.html" aria-current="page">How setup works</a>
+      <a href="https://github.com/NoamTuriel/unistudent">GitHub</a>
+      <a class="btn small" href="index.html#install">Install free</a>
+    </nav>
+  </div>
+</header>
+
+<main id="top">
+
+  <section class="field hero page" data-field="orange" aria-labelledby="h-page">
+    <div class="wrap">
+      <h1 id="h-page"><span class="ln"><span>How setup works</span></span></h1>
+      <p class="sub" data-rise>Setup is where UniStudent reads your whole course. It takes a while, you do it once per course, and it's the reason every answer afterwards can point to the exact page or lecture minute.</p>
+      <nav class="toc-links" aria-label="On this page" data-rise>
+        <a href="#wiki">The course Wiki</a><a href="#steps">What happens</a><a href="#costs">What each file takes</a><a href="#choices">Choosing what to turn on</a>
+      </nav>
+    </div>
+  </section>
+
+  <section class="field" id="wiki" data-field="paper" aria-labelledby="h-wiki">
+    <div class="wrap">
+      <div class="split">
+        <h2 id="h-wiki" data-rise>The course Wiki, in plain words</h2>
+        <div class="prose">
+          <p data-rise>Your course files are written for people: long PDFs, slides with half sentences, three-hour recordings. Your AI can't reread all of that every time you ask a question, and if it skims, it fills the gaps from the internet.</p>
+          <p data-rise>So during setup, the AI reads everything once and writes a set of notes for itself: the course Wiki. Some people call this an LLM wiki, meaning a wiki that an AI writes for an AI to read. When you ask a question later, your AI looks it up in the Wiki first, and the Wiki remembers which file and which page every fact came from.</p>
+          <p data-rise>The Wiki sits in a hidden folder inside your course folder. You never need to open it or edit it. What you see are your own files, and the study packs made from the Wiki.</p>
+        </div>
+      </div>
+      <div class="flow" role="img" aria-label="Your files go into the course Wiki, and the Wiki is what answers and study packs come from.">
+        <div class="col" data-rise>
+          <h3>Your files</h3>
+          <ul>
+            <li><b>PDFs, Word, slides</b></li>
+            <li><b>Scans and photos of notes</b></li>
+            <li><b>Lecture recordings</b></li>
+            <li><b>Past exams</b></li>
+          </ul>
+        </div>
+        <span class="to" aria-hidden="true" data-rise>→</span>
+        <div class="col wiki" data-rise>
+          <h3>The course Wiki</h3>
+          <ul>
+            <li><b>A page for every file</b><span>Its text, with the page numbers kept, so answers can cite them</span></li>
+            <li><b>A page for every subject</b><span>What it covers, the methods, and the notation your course uses</span></li>
+            <li><b>A glossary and a question bank</b><span>Terms in your course's words, and the questions it has seen</span></li>
+            <li><b>A course overview</b><span>How the subjects fit together</span></li>
+          </ul>
+        </div>
+        <span class="to" aria-hidden="true" data-rise>→</span>
+        <div class="col" data-rise>
+          <h3>What you get</h3>
+          <ul>
+            <li><b>Answers with sources</b><span>The page or the lecture minute</span></li>
+            <li><b>Study packs</b><span>One per subject</span></li>
+            <li><b>Recording contents</b><span>With the announcements</span></li>
+            <li><b>Practice</b><span>Up to past exams</span></li>
+          </ul>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="field" id="steps" data-field="yellow" aria-labelledby="h-steps">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 id="h-steps" data-rise>What happens during setup</h2>
+        <p data-rise>You start it by saying "Set up my course with UniStudent". It asks one question at a time and says before each step whether it will take a while.</p>
+      </div>
+      <ol class="run">
+        <li data-rise><b>A few questions</b><span>Your university, your course, and where your files are.</span></li>
+        <li data-rise><b>Gathering your files</b><span>From the folder you point it to, from the course inbox, or, with a plugin for your university, straight from the course site. Downloading can be slow, and it tells you so.</span></li>
+        <li data-rise><b>Choosing what to do with recordings</b><span>Skip them, only download them, or decide one recording at a time. Analyzing video frames is a separate yes or no.</span></li>
+        <li data-rise><b>Reading everything and writing the Wiki</b><span>The long part. It reads each file and writes the Wiki pages for every subject.</span></li>
+        <li data-rise><b>What's next</b><span>It explains what it built, how to ask questions, how to add new files, and how to make your first study pack.</span></li>
+      </ol>
+      <p class="fine" data-rise style="margin-top:3rem">You can stop at any point. Running setup again picks up where you left off.</p>
+    </div>
+  </section>
+
+  <section class="field" id="feed" data-field="pink" aria-labelledby="h-feed">
+    <div class="wrap">
+      <div class="chapter-head wide">
+        <h2 id="h-feed" data-rise>The more you give it, the better it knows your course</h2>
+        <p data-rise>It only knows what's in the Wiki. When something isn't there, it has to answer from general knowledge, and it marks that answer with ⚠️ so you know.</p>
+      </div>
+      <div class="fourup">
+        <p data-rise><b>The slides</b>Give it the outline of the course.</p>
+        <p data-rise><b>The book or reading</b>Adds the full explanations and the course's notation.</p>
+        <p data-rise><b>Recordings and your notes</b>Add how your lecturer explains things and what they stressed, including the announcements.</p>
+        <p data-rise><b>Past exams</b>Show the kinds of questions you'll get, so practice can build up to them.</p>
+      </div>
+    </div>
+  </section>
+
+  <section class="field" id="costs" data-field="ink" aria-labelledby="h-costs">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 id="h-costs" data-rise>What each kind of file takes</h2>
+        <p data-rise>Two things add up during setup: time, and AI usage. AI usage is what counts toward your AI app's plan, the same way chatting does (it's measured in tokens). Some steps run on your own computer and use none.</p>
+      </div>
+      <table class="cost" data-rise>
+        <thead><tr><th scope="col">What it does</th><th scope="col">AI usage</th><th scope="col">Time</th><th scope="col">Do you need it?</th></tr></thead>
+        <tbody>
+          <tr>
+            <td><b>Reading PDFs, Word files and slides</b><p>Your computer turns each file into text, page by page. Then the AI reads the text and writes the Wiki pages.</p></td>
+            <td data-label="AI usage"><span class="meter ai" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i></i></span><span class="lvl">Some<small>For writing the Wiki pages. Turning files into text uses none.</small></span></td>
+            <td data-label="Time"><span class="meter time" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></span><span class="lvl">Quickest<small>Grows with the number of files.</small></span></td>
+            <td data-label="Do you need it?"><span class="need core">Yes, this is the core</span></td>
+          </tr>
+          <tr>
+            <td><b>Reading scans and photos</b><p>A scan or a photo of your notes has no text inside it, so the AI reads each page the way you'd look at a picture.</p></td>
+            <td data-label="AI usage"><span class="meter ai" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="lvl">More<small>Every page is read as an image.</small></span></td>
+            <td data-label="Time"><span class="meter time" aria-hidden="true"><i class="on"></i><i class="on"></i><i></i><i></i></span><span class="lvl">Medium<small>Page by page.</small></span></td>
+            <td data-label="Do you need it?"><span class="need core">If you have them</span></td>
+          </tr>
+          <tr>
+            <td><b>Transcribing recordings</b><p>Speech becomes text on your own computer, and nothing is sent anywhere. Then the AI reads the transcript to write the table of contents and pick out the announcements.</p></td>
+            <td data-label="AI usage"><span class="meter ai" aria-hidden="true"><i class="on"></i><i></i><i></i><i></i></span><span class="lvl">A little<small>Only for reading the transcript. Transcribing itself uses none.</small></span></td>
+            <td data-label="Time"><span class="meter time" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i></i></span><span class="lvl">Slow<small>Depends on your computer. It times a one-minute sample first and tells you how long your recordings will take. The first time, it downloads a speech tool of about 1 GB.</small></span></td>
+            <td data-label="Do you need it?"><span class="need rec">Recommended</span></td>
+          </tr>
+          <tr>
+            <td><b>Analyzing video frames</b><p>On top of the transcript, the AI looks at the video about once a minute to catch what's on the board or the slides. A 90-minute lecture means about 90 extra looks.</p></td>
+            <td data-label="AI usage"><span class="meter ai" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="lvl">The most<small>One extra AI look per minute of video.</small></span></td>
+            <td data-label="Time"><span class="meter time" aria-hidden="true"><i class="on"></i><i class="on"></i><i class="on"></i><i class="on"></i></span><span class="lvl">The slowest<small>Added to the transcription time.</small></span></td>
+            <td data-label="Do you need it?"><span class="need opt">Optional, off unless you say yes</span></td>
+          </tr>
+        </tbody>
+      </table>
+      <p class="costs-note" data-rise>The squares compare the four steps with each other: yellow for AI usage, pink for time. Exact times depend on your computer and how big your course is, so before any slow step, setup shows you the real numbers for your course and asks first.</p>
+    </div>
+  </section>
+
+  <section class="field" id="choices" data-field="green" aria-labelledby="h-choices">
+    <div class="wrap">
+      <div class="chapter-head">
+        <h2 id="h-choices" data-rise>Choosing what to turn on</h2>
+      </div>
+      <div class="choices">
+        <div class="choice">
+          <h3 data-rise>Transcribe your recordings?</h3>
+          <p data-rise>Usually yes. A transcript is what lets it cite the exact minute, write down the lecturer's announcements, and catch every "this will be on the exam". Setup offers three options:</p>
+          <ul data-rise><li>Skip recordings for now</li><li>Only download them</li><li>Decide one recording at a time</li></ul>
+          <p data-rise>Before anything starts, it shows how many recordings you have, how many hours of audio, and how long it expects on your computer.</p>
+        </div>
+        <div class="choice">
+          <h3 data-rise>Analyze video frames too?</h3>
+          <p data-rise>Say yes when your lecturer teaches from slides or draws on the board: graphs, formulas, diagrams. That's common in economics, maths and science.</p>
+          <p data-rise>Skip it when the lectures are mostly talking. The transcripts alone are already useful, and you save the most AI usage and time.</p>
+          <p data-rise>It's a setting for each course, so you can change your mind later.</p>
+        </div>
+      </div>
+    </div>
+  </section>
+
+  <section class="field" id="once" data-field="paper" aria-labelledby="h-once">
+    <div class="wrap">
+      <div class="letter">
+        <h2 id="h-once" data-rise>You do this once per course</h2>
+        <p data-rise>A big course with hours of recordings can take a long time to set up. Let it run, take a break, and come back. You can stop whenever you want, and it continues from where it stopped.</p>
+        <p data-rise>After setup, new files don't start anything over. Drop them in the course's inbox folder and say <span class="say-it">Add my new files.</span> It reads only the new ones, adds them to the Wiki, and tells you which study packs changed.</p>
+        <div class="cta" data-rise style="margin-top:2.4rem"><a class="btn" href="index.html#install">Install UniStudent</a><a class="text-btn" href="index.html">Back to the main page</a></div>
+      </div>
+    </div>
+  </section>
+</main>
+
+<footer class="field" id="end" data-field="ink">
+  <div class="wrap">
+    <p class="wordmark" aria-hidden="true"><span>U</span><span>n</span><span>i</span><span>S</span><span>t</span><span>u</span><span>d</span><span>e</span><span>n</span><span>t</span></p>
+    <div class="foot">
+      <p>Your course files stay in folders on your computer; your AI app reads them to answer you. Course material belongs to your university, so this site shows only made-up examples.</p>
+      <nav aria-label="Footer"><a href="index.html">Main page</a><a href="https://github.com/NoamTuriel/unistudent">GitHub</a><a href="https://github.com/NoamTuriel/unistudent/blob/main/LICENSE">MIT license</a></nav>
+    </div>
+  </div>
+</footer>
+
+<script src="https://cdn.jsdelivr.net/npm/motion@13.5.1/dist/motion.js" onerror="document.documentElement.classList.remove('m')"></script>
+<script src="motion.js"></script>
+</body>
+</html>
