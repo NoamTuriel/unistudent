@@ -99,7 +99,7 @@ class GroundingRule(CourseTestCase):
                 "⚠️ לא מתוך חומר הקורס (ידע כללי): כך עובד מודל ה-IS-LM בספרי לימוד.\n")
         report = self.check(text)
         self.assertEqual(report["problems"], [])
-        self.assertTrue(all(p["warning"] for p in report["paragraphs"]))
+        self.assertEqual([p["warning"] for p in report["paragraphs"]], [True, True])
 
     def test_a_leftover_old_label_neither_passes_nor_fails_a_paragraph_by_itself(self):
         cited = "\u2705 The multiplier is 1/r. Sources: [s](.unistudent/wiki/sources/unit-04/slides.md#page-1)\n"

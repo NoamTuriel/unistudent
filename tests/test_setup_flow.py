@@ -153,8 +153,9 @@ class SetupSkillStatic(unittest.TestCase):
         self.assertIn("\"nothing yet\" only", material)
 
     def test_stage_names_in_the_skill_exist_in_the_cli(self):
-        for stage in set(re.findall(r"--stage ([a-z-]+)", self.text)):
-            self.assertIn(stage, STAGES)
+        used = set(re.findall(r"--stage ([a-z-]+)", self.text))
+        self.assertTrue(used)
+        self.assertLessEqual(used, set(STAGES))
 
     def test_every_us_command_and_option_in_every_skill_exists(self):
         parser = cli.build_parser()
