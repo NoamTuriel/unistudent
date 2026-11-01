@@ -21,7 +21,7 @@ Done when: you know the course folder, the Downloads folder path, what's already
 
 ## 2. Find the course on the site
 
-Use a browser tool that drives the student's own logged-in Chrome (Claude in Chrome, or a browser MCP server attached to their Chrome profile). The site can't be reached without their session. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id` and the course number.
+Use a browser tool that drives the student's own logged-in Chrome (Claude in Chrome, or a browser MCP server attached to their Chrome profile). The site can't be reached without their session. No such tool → stop here and say so in plain words: it is not an error and nothing is lost; they can add Claude in Chrome (a free Chrome extension; in Claude Code, connect it with `/chrome`) and run the sync again, or download the files themselves, drop them in the course's inbox and run `course-add`. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id` and the course number.
 
 Done when: you have the course id and number.
 

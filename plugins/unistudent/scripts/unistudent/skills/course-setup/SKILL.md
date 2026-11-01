@@ -94,13 +94,15 @@ Ask where the material comes from:
 - No university (`none`, step 2): offer "my own folder" and "nothing yet" only, and setup passes `--university none` to `us setup` in step 7.
 - Their own folder: ask which folder, and whether it is official or added: the lecturer's and university's material (official), or other material (added). Tell them it is copied in once and their original files stay exactly where they are; nothing of theirs is moved or changed. Step 7 tells them how many files and how much that is.
 
+If they chose the course website (alone or with their folder), check now whether you have a browser tool that drives their own Chrome (Claude in Chrome, or a browser MCP server attached to their Chrome profile): the site can only be reached through their logged-in Chrome. You have one → say nothing. You don't → in the same message, say so in plain words and recommend Claude in Chrome: a free Chrome extension that lets the AI open the course site with their own login and download the files for them. Say it is installed in step 7, together with anything else that needs the app restarted. Yes → record `browser=install`. No → record `browser=no`, and say they can download the files themselves and drop them in the inbox (or give their folder).
+
 Then ask once for anything else the course gave them that hasn't come up: other books, solution sets, past exams. They can add it now to their folder, or later through the inbox.
 
 Then ask for the exam date, if they know it (optional: skipping is fine). It tells the AI how much time is left when planning.
 
-Record it: `us setup-progress advance --course-name "<course>" --stage material --answer source=<site|own|both|none> [--answer own_folder=<folder> --answer tier=<official|added>] [--answer exam_date=<YYYY-MM-DD>]`.
+Record it: `us setup-progress advance --course-name "<course>" --stage material --answer source=<site|own|both|none> [--answer browser=<install|no>] [--answer own_folder=<folder> --answer tier=<official|added>] [--answer exam_date=<YYYY-MM-DD>]`.
 
-Done when: you know where the material comes from (and the folder and its trust level, for their own folder), they were asked about anything else and the exam date, and `material` is recorded.
+Done when: you know where the material comes from (and the folder and its trust level, for their own folder), a missing browser tool was found and answered now (for the course website), they were asked about anything else and the exam date, and `material` is recorded.
 
 ## 6. Recordings
 
@@ -138,6 +140,7 @@ No more questions about the course after this. First create the course folder, s
 Then install what only works after the app is restarted (frame analysis needs no install: it is built in):
 
 - **The University plugin** recorded in step 2: install it with its `install` command if your app lets you, otherwise give the student that command to run.
+- **Claude in Chrome**, if step 5 recorded `browser=install`: the student adds the Claude extension to Chrome from the Chrome Web Store and signs in to it, then connects it to this app (in Claude Code: `/chrome`). Give them these steps in plain words; you can't click them for them.
 
 Record it before any restart: `us setup-progress advance --course-name "<course>" --stage installs`. If anything was installed above, say once, plainly: "Please close and reopen the app (where it reads the course folder's settings, open it in the course folder), then run setup again: it continues from here." Nothing installed → say so in one line and go straight on.
 
@@ -149,7 +152,7 @@ Say what's about to happen: the course site is scanned without downloading anyth
 
 - **From the course website, with a University plugin:** ask them to open Chrome and log in to the course site (never ask for or type their password). Then run the plugin's sync skill (e.g. `openu:openu-sync`) and tell it that it runs inside setup: it scans the site, shows the Fetch plan with its three choices (download all, skip all recordings, edit the list, in the chat or in the checklist file, showing the updated plan after each change), waits for an explicit OK, and asks one grouped question about files whose unit it can't tell: a unit, general, or "I don't know" (left unsorted, but still read into the Wiki). It stops there; its download runs in step 9.
 - **From the course website, with a generated fallback:** its notes only record how the university organizes its material; it is not a downloader. Follow those notes to list the course files in the same listing form a University plugin hands over (`{"course_site": ..., "items": [...]}`, one item per file: `url`, `name`, `section`, `kind`, and `size` or `seconds` when shown; a file hung on a recording also gets `attached_to`, that recording's `url`), save it, and run the same Fetch plan: `us fetch-plan show --json "<listing>"`, the three choices, the explicit OK, the grouped unit question, then `us fetch-plan apply --json "<listing>" [--unit NUMBER=UNIT ...]` (`unknown` for "I don't know").
-- **If you can't log in or can't reach the site** (no access from this app, a login that needs the student, a site that changed): say so in plain words, say it is not an error and nothing is lost, and go on with their own folder or the inbox. Never loop on a failing login.
+- **If you can't log in or can't reach the site** (no browser tool, or `browser=no` in step 5; no access from this app, a login that needs the student, a site that changed): say so in plain words, say it is not an error and nothing is lost, and go on with their own folder or the inbox. Never loop on a failing login.
 - **Their own folder:** run `us import "<own folder>" --tier <official|added>` now (it only copies). If they said yes to transcripts, approve its recordings for transcription: `us recordings approve "<path>" ...` with every path in `us recordings list` (their yes in step 6 is the approval). Then `us unsorted --json`: if any document has no unit, ask one grouped question: a unit number, general (whole-course files such as past exams), or "I don't know" (left unsorted, still read into the Wiki). Record each answer with `us assign "<path>" <unit|general>`. Recordings are sorted in step 9.
 
 If they said yes to transcripts, run `us fetch-plan status --json` and `us recordings estimate --json`: when the status's `hours` is over 3 and the estimate has a `faster_option`, ask one question: **Accurate** (recommended, the default) or **Faster: about 3x faster, a few more misheard words** (its `faster_option.estimated_hours` against `estimated_hours`, as hours of this computer's time). Faster → `us context --transcription fast`. Never offer it otherwise.
