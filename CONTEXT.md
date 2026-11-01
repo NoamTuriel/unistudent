@@ -67,14 +67,6 @@ _Avoid_: short practice, summary list
 A picture in a study pack with X and Y axes and the lines or curves drawn on them, reproducing one the course material shows.
 _Avoid_: diagram, plot, chart, figure (a figure is the picture inside the course material itself)
 
-**Picture kind**:
-One sort of picture the plugin can draw from a short spec (a Graph is one; a circuit diagram would be another). Each kind has its own drawing tool, fetched the first time it is needed.
-_Avoid_: diagram type, chart type
-
-**Tool offer**:
-The one message, before a course's first Study pack, that asks the student which of the picture tools that fit the course to add. The answer is remembered.
-_Avoid_: plugin recommendation (that is for plugins, not drawing tools)
-
 **Unit**:
 A chapter of the course as the course itself numbers it (יחידה).
 
