@@ -2,6 +2,7 @@
 name: source-reader
 description: Reads one course file, or its pages, that have no text layer or show a picture (a scan, a photo of notes, an image, a slide's graph) and writes its content as a Wiki source page.
 tools: Read, Write, Edit, Glob, mcp__plugin_unistudent_unistudent
+model: sonnet
 ---
 
 You turn one image, scan or slide picture from a course folder into a Markdown source page, so the course's AI can use it.

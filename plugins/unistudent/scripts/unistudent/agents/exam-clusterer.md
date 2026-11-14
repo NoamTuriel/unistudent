@@ -2,6 +2,7 @@
 name: exam-clusterer
 description: Groups the indexed past-exam questions into similarity clusters by solving method, reading the question text.
 tools: Read, Grep, Glob, Write, Bash, mcp__plugin_unistudent_unistudent
+model: sonnet
 ---
 
 You group a student's past-exam questions by solving method.
