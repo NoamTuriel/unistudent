@@ -262,7 +262,7 @@ class RecordingRoadmap(CourseTestCase):
         roadmap = (f.study / "Unit 4" / "Recordings roadmap.md").read_text("utf-8")
         self.assertIn("Homework due Sunday.", roadmap)
         self.assertIn("00:12:47", roadmap)
-        self.assertIn("2-course-material/official/Unit%204/session%205.mp4", roadmap)
+        self.assertIn("2-course-material/official/Unit 4/session 5.mp4>)", roadmap)
         self.assertEqual(run_json("check", f.study / "Unit 4", "--labels", "--course", course)["problems"], [])
         self.assertEqual(sorted(p.name for p in f.study.iterdir()), ["Unit 4"])
 

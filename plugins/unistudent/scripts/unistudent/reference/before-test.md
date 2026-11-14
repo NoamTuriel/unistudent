@@ -12,7 +12,7 @@ One page for the whole course (not per unit), made once the Material folder hold
 
 Exam name, question number, part, points, one-line skill; then the question link, and right beside it the solution link(s). Never the answer letter or any hint of the answer.
 
-- Links are full `file:` links into the student's own files with `#page=N`, never into the Wiki.
+- Links are full `file:` links into the student's own files, never into the Wiki. `us before-test build` writes them: in the Markdown page with the page in the link text only (Obsidian opens no `file:` link ending in `#page=N`), in the HTML page with `#page=N` too (a browser opens the PDF at that page).
 - **Hide the answer:** when the solution is on other pages, the question links to a single-page copy (`pdfseparate -f N -l N`) in the question-pages folder; originals stay untouched. When the answer sits on the question's own page it cannot be hidden: link the original page and say so in the link text.
 
 ## Top of the page

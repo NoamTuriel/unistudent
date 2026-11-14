@@ -6,6 +6,7 @@ import subprocess
 from pathlib import Path
 
 from .common import UserError
+from .links_check import file_link
 
 KEYS = {"exam", "q", "qpages", "solpages", "unit", "topic", "skill", "style", "points", "confidence"}  # optional: part, solfile
 TEXT = {
@@ -46,12 +47,8 @@ def _pdf(course, exam):
     return found[0]
 
 
-def _link(pdf, page, text):
-    return f"{pdf.as_uri()}#page={page}", text
-
-
 def _rows(course, rows, folder, t):
-    """Per row: (question links, solution links) as (url, text); makes the single-page copies."""
+    """Per row: (question links, solution links) as (file, page or None, text); makes the single-page copies."""
     copies, links, made = shutil.which("pdfseparate"), {}, False
     for r in rows:
         pdf = _pdf(course, r["exam"])
@@ -66,11 +63,11 @@ def _rows(course, rows, folder, t):
                 if not one.exists():
                     folder.mkdir(parents=True, exist_ok=True)
                     subprocess.run(["pdfseparate", "-f", str(p), "-l", str(p), str(pdf), str(one)], check=True)
-                ql.append((one.as_uri(), f"{t['q']} ({t['page']} {p})"))
+                ql.append((one, None, f"{t['q']} ({t['page']} {p})"))
             else:
                 note = f", {t['shown']}" if not elsewhere else ""
-                ql.append(_link(pdf, p, f"{t['q']} ({t['page']} {p}{note})"))
-        sl = [_link(solpdf, p, f"{t['sol']} ({t['page']} {p})") for p in sol]
+                ql.append((pdf, p, f"{t['q']} ({t['page']} {p}{note})"))
+        sl = [(solpdf, p, f"{t['sol']} ({t['page']} {p})") for p in sol]
         links[r["id"]] = (ql, sl)
     return links, bool(copies), made
 
@@ -99,12 +96,13 @@ def build(course, index, clusters, fmt, notes):
         ql, sl = links[r["id"]]
         part = f"{t['part']} {r['part']}, " if r.get("part") else ""
         head = f"{r['exam']}, {t['q']} {r['q']} ({part}{r['points']} {t['pts']}): {r['skill']}"
-        return head, ql, (sl or [(None, t["nosol"])])
+        return head, ql, (sl or [(None, None, t["nosol"])])
 
     units = sorted({c["unit"] for c in clusters})
     out = []
     if fmt == "html":
-        a = lambda u, x: f'<a href="{html.escape(u)}">{html.escape(x)}</a>' if u else html.escape(x)
+        def a(f, p, x):  # a browser opens a PDF at its page
+            return f'<a href="{html.escape(f.as_uri() + (f"#page={p}" if p else ""))}">{html.escape(x)}</a>' if f else html.escape(x)
         lang = course.settings()["language"]
         direction = "rtl" if lang in ("he", "ar", "fa", "ur", "yi") else "ltr"  # outside the f-string: nested quotes need Python 3.12
         out = [f'<!doctype html><html lang="{lang}" dir="{direction}"><meta charset="utf-8"><title>{name}</title>',
@@ -124,7 +122,7 @@ def build(course, index, clusters, fmt, notes):
                 out.append("</ol></details>")
         ext = ".html"
     else:
-        md = lambda u, x: f"[{x}](<{u}>)" if u else x
+        md = lambda f, p, x: file_link(x, f) if f else x  # Obsidian opens no #page=: the page is in the text
         out = [f"# {name}", "", t["intro"], "", f"**{t['notes']}**", ""] + [f"- {n}" for n in notes] + [""]
         for u in units:
             cs = [c for c in clusters if c["unit"] == u]

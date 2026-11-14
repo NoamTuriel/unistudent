@@ -29,6 +29,15 @@ CODE_BLOCK = re.compile(r"```.*?```|<!--.*?-->", re.S)
 HREF = re.compile(r'href="([^"]+)"')
 
 
+def file_link(label, path) -> str:
+    """A Study vault link to the student's own file, in the one form Obsidian opens in the default app: the raw path in
+    <> and no #page= or #t= (Obsidian opens no file: link with an ending; the page or time goes in the text, ADR 0017)."""
+    raw = unquote(Path(path).as_uri())
+    for char in "%#?<>":  # the only characters a raw path cannot hold
+        raw = raw.replace(char, f"%{ord(char):02X}")
+    return f"[{label}](<{raw}>)"
+
+
 def _links(page: Path, text: str):
     """(label, target) of every link: Markdown links, plus href attributes in an .html page."""
     found = MD_LINK.findall(text)
@@ -122,13 +131,16 @@ def has_sources(page: Path, sources_line) -> bool:
 
 
 def check_vault_page(page: Path, hidden: Path):
-    """A page in the Study vault never links into the hidden folder (the Wiki is for the AI, not the student)."""
+    """A page in the Study vault never links into the hidden folder (the Wiki is for the AI, not the student), and a
+    Markdown page has no `file:` link with an ending (#page=, #t=): Obsidian does not open it (ADR 0017)."""
     problems = []
     for _, raw in _links(page, CODE_BLOCK.sub("", page.read_text("utf-8"))):
         target = raw.strip("<>")
         parsed = urlparse(target)
         if parsed.scheme not in ("", "file"):
             continue
+        if parsed.scheme == "file" and parsed.fragment and page.suffix == ".md":
+            problems.append({"kind": "link-will-not-open", "page": str(page), "link": target})
         path = Path(url2pathname(parsed.path)) if parsed.scheme else (page.parent / unquote(target.partition("#")[0]))
         if path.resolve().is_relative_to(hidden.resolve()):
             problems.append({"kind": "link-into-hidden", "page": str(page), "link": target})

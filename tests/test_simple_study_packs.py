@@ -26,13 +26,14 @@ class PackShape(CourseTestCase):
         return [p["kind"] for p in run_json("check", self.pack / name, "--course", self.course)["problems"]]
 
     def test_a_topic_with_its_closing_lines_passes(self):
-        closing = f"In the lectures: [lecture 3, 00:12:47]({self.slides.as_uri()}#t=767)\n\nFrom: [slides]({self.slides.as_uri()})\n"
+        video = write(folders(self.course).material / "lecture 3.mp4", "").as_uri()
+        closing = f"In the lectures: [lecture 3, 00:12:47]({video})\n\nFrom: [slides]({self.slides.as_uri()})\n"
         self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + closing), [])
 
     def test_sources_folded_into_a_callout_pass_and_a_pack_needs_no_labels(self):
         run_json("setup", self.course, "--name", "Macro", "--language", "he")  # a Hebrew course's own words
         pack, slides = folders(self.course).study / "יחידה 4", next(folders(self.course).material.rglob("slides*"))
-        text = "## נושא\n\n### כסף — Money\n\nהכסף הוא מה שמקובל לשלם בו.\n\n> [!note]- מקורות\n> בהרצאות: [שיעור 3, 00:12:47](" + slides.as_uri() + "#t=767)\n>\n> מתוך: [השקפים](" + slides.as_uri() + ")\n"
+        text = "## נושא\n\n### כסף — Money\n\nהכסף הוא מה שמקובל לשלם בו.\n\n> [!note]- מקורות\n> בהרצאות: [שיעור 3, 00:12:47](" + write(slides.with_name("שיעור 3.mp4"), "").as_uri() + ")\n>\n> מתוך: [השקפים](" + slides.as_uri() + ")\n"
         write(pack / "4.2 Walkthrough.md", text)
         self.assertEqual(run_json("check", pack / "4.2 Walkthrough.md", "--labels", "--course", self.course)["problems"], [])
 
@@ -59,10 +60,10 @@ class PackShape(CourseTestCase):
 
     def test_one_link_per_recording_per_section_with_the_times_as_text(self):
         video = write(folders(self.course).material / "lecture 3.mp4", "").as_uri()
-        single = f"In the recordings: [lecture 3]({video}#t=767) 00:12:47, 00:30:10\n\nFrom: [slides]({self.slides.as_uri()})\n"
+        single = f"In the recordings: [lecture 3]({video}) 00:12:47, 00:30:10\n\nFrom: [slides]({self.slides.as_uri()})\n"
         self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + single), [])
-        per_line = (f"In the recordings: [lecture 3, 00:12:47]({video}#t=767)\n\n"
-                    f"[lecture 3, 00:30:10]({video}#t=1810)\n\nFrom: [slides]({self.slides.as_uri()})\n")
+        per_line = (f"In the recordings: [lecture 3, 00:12:47]({video})\n\n"
+                    f"[lecture 3, 00:30:10]({video})\n\nFrom: [slides]({self.slides.as_uri()})\n")
         self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + per_line), ["repeated-recording-link"])
         orphan = f"In the recordings: lecture 3, 00:12:47\n\nFrom: [slides]({self.slides.as_uri()})\n"
         self.assertEqual(self.kinds("4.2 Walkthrough.md", TOPIC + orphan), ["time-without-link"])
