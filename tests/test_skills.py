@@ -149,6 +149,14 @@ class WorkersGetTheTools(unittest.TestCase):
             tools = re.search(r"(?m)^tools:(.*)$", worker.read_text("utf-8")).group(1)
             self.assertIn("mcp__plugin_unistudent_unistudent", tools, worker)
 
+    def test_every_worker_names_a_model_size_the_conventions_explain(self):
+        block = BLOCK.search((CORE / "study-pack" / "SKILL.md").read_text("utf-8")).group(0)
+        for worker in sorted(self.AGENTS.glob("*.md")):
+            model = re.search(r"(?m)^model: (\S+)$", worker.read_text("utf-8")).group(1)
+            self.assertIn(f"`{model}`:", block, worker)
+        for writer in ("study-pack-writer", "wiki-unit-writer"):
+            self.assertIn("\nmodel: inherit\n", (self.AGENTS / f"{writer}.md").read_text("utf-8"))
+
     def test_the_conventions_block_has_other_apps_run_the_worker_steps_in_the_main_agent(self):
         block = BLOCK.search((CORE / "study-pack" / "SKILL.md").read_text("utf-8")).group(0)
         self.assertIn("in any other app, follow them yourself", block)
