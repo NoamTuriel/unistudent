@@ -19,12 +19,12 @@ LABELS = {
            "official": "חומר-רשמי-של-הקורס", "added": "חומר-לא-רשמי", "unit": "יחידה {n}",
            "general": "חומר-כללי-לכל-היחידות", "unsorted": "עוד-לא-שויך-ליחידה", "roadmap": "מפת הקלטות",
            "lessons": "הקלטות מפגשים", "before_test": "לקראת מבחן", "question_pages": "עמודי שאלות",
-           "model_answer": "תשובה לדוגמה", "say_it": "ככה אומרים", "sources": "מקורות", "from": "מתוך"},
+           "model_answer": "תשובה לדוגמה", "say_it": "ככה אומרים", "sources": "מקורות", "from": "מתוך", "page": "עמוד {n}"},
     "en": {"inbox": "1-inbox", "material": "2-course-material", "study": "3-{course}-study-from-here",
            "official": "official", "added": "added", "unit": "Unit {n}", "general": "General", "unsorted": "Unsorted",
            "roadmap": "Recordings roadmap", "lessons": "Recorded lessons",
            "before_test": "Before the test", "question_pages": "Question pages",
-           "model_answer": "Model answer", "say_it": "Say it", "sources": "Sources", "from": "From"},
+           "model_answer": "Model answer", "say_it": "Say it", "sources": "Sources", "from": "From", "page": "page {n}"},
 }
 # Hebrew names used before 0.5.0: still recognized (and renamed by `ensure_layout`) in folders made with them.
 OLD_LABELS = [{"official": "רשמי", "added": "נוסף", "unit": "יחידה {n}", "general": "כללי", "unsorted": "לא ממוין"}]

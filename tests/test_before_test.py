@@ -49,6 +49,7 @@ class BeforeTest(CourseTestCase):
         self.build("html")
         page = folders(self.course).study / "Before the test.html"
         self.assertIn('href="file://', page.read_text("utf-8"))
+        self.assertIn("#page=", page.read_text("utf-8"))  # a browser opens the page itself
         self.assertEqual(run_json("check", page, "--course", self.course)["problems"], [])
         page.write_text(page.read_text("utf-8") + '<a href="file:///nope/missing.pdf">x</a>', "utf-8")
         self.assertIn("broken-link", [p["kind"] for p in run_json("check", page, "--course", self.course)["problems"]])
@@ -61,7 +62,8 @@ class BeforeTest(CourseTestCase):
         write(self.scratch / "clusters.json", "[]")
         run_json("before-test", "build", "--format", "markdown", "--course", self.course)
         text = (folders(self.course).study / "Before the test.md").read_text("utf-8")
-        self.assertIn("exam%20three%20solutions.pdf#page=1>)", text)
+        self.assertIn("[Solution (page 1)](<file://", text)
+        self.assertIn("exam three solutions.pdf>)", text)  # no #page=: Obsidian would not open it
         self.assertNotIn("the answer is on this page", text)  # page 1 of the solutions is not the question's page
         self.assertIn("exam three, Question 1 (5 pts)", text)  # no "part None"
 

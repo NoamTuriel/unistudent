@@ -18,7 +18,8 @@ from . import material
 from .common import problems_summary
 from .convert import convert, kind, picture_files
 from .course import safe_name, unit_dir
-from .links_check import FRONTMATTER, MD_LINK, SOURCES_LINE, STUB_MARK, check_links, has_sources, opening_words
+from .links_check import (FRONTMATTER, MD_LINK, SOURCES_LINE, STUB_MARK, check_links, file_link, has_sources,
+                          opening_words)
 
 GEN_START = "<!-- unistudent:generated:start -->"
 GEN_END = "<!-- unistudent:generated:end -->"
@@ -526,28 +527,23 @@ def _section(text, title):
     return [re.sub(r"^\s*[-*]\s+", "", l).strip() for l in match.group(1).splitlines() if l.strip()] if match else []
 
 
-def _video_seconds(label, anchor):
-    """Where a time link opens the video: the exact time it shows ("[00:12:47](transcript.md#001230)" opens at
-    12:47), else the transcript heading it links (headings come about once a minute)."""
-    shown = re.fullmatch(r"\s*(?:(\d{1,2}):)?(\d{1,2}):(\d\d)\s*", label)
-    stamp = shown or re.fullmatch(r"(\d\d)(\d\d)(\d\d)", anchor)
-    if not stamp:
-        return None
-    return int(stamp[1] or 0) * 3600 + int(stamp[2]) * 60 + int(stamp[3])
+def _in_text(course, label, anchor, after):
+    """Link text that keeps the page or time a link's ending held (#page=6, #t=767), unless the text or the words right
+    after the link already show it."""
+    page, secs = re.fullmatch(r"page=(\d+)", anchor), re.fullmatch(r"t=(\d+)", anchor)
+    if page and not re.search(rf"(?<!\d){page[1]}(?!\d)", label):
+        return f"{label}, {course.label('page', n=page[1])}"
+    if secs and not re.search(r"\d:\d\d", label + after[:12]):
+        s = int(secs[1])
+        return f"{label}, {s // 3600:02}:{s // 60 % 60:02}:{s % 60:02}"
+    return label
 
 
-def _for_the_vault(text: str, video=None) -> str:
-    """Wiki page text as the student reads it in the Study vault: no frontmatter, no links into the hidden Wiki,
-    headings two levels down."""
+def _for_the_vault(text: str) -> str:
+    """Wiki page text as the student reads it in the Study vault: no frontmatter, no links into the hidden Wiki (a time
+    stays as text: the recording is linked once above it), headings two levels down."""
     text = re.sub(r"\A---\n.*?\n---\n", "", text, flags=re.S)
-
-    def keep(match):  # a time in the transcript becomes a time in the video; other links into the hidden Wiki go
-        stamp = re.fullmatch(r"(?:.*transcript\.md)?#(\d{6})", match.group(2).strip("<>"))
-        if not (video and stamp):
-            return match.group(1)
-        return _link(match.group(1), f"{video}#t={_video_seconds(match.group(1), stamp[1])}")
-
-    return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(keep, text)).strip()
+    return re.sub(r"(?m)^(#{1,4}) ", r"\1## ", MD_LINK.sub(lambda m: m.group(1), text)).strip()
 
 
 def description_line(text, sources_line=SOURCES_LINE):
@@ -594,17 +590,16 @@ def write_roadmaps(course, recordings):
         page = course.pack_folder(unit) / f"{course.label('roadmap')}.md"
         lines = [f"# {course.label('roadmap')}: {course.unit_label(unit)}", ""]
         for rel, info in recs:
-            video = material.path_of(course, rel).as_uri()
             where = course.wiki / info["folder"]
             summary = (where / SUMMARY).read_text("utf-8") if (where / SUMMARY).exists() else ""
             toc = (where / "toc.md").read_text("utf-8") if (where / "toc.md").exists() else ""
-            lines += [f"## {Path(rel).name}", "", _link("recording", video), ""]
+            lines += [f"## {Path(rel).name}", "", file_link("recording", material.path_of(course, rel)), ""]
             if description_line(summary, sources_line):
                 lines += [description_line(summary, sources_line), ""]
             for part in (_only_sections(summary, "Announcements", "This will be on the exam"),
                          _without_type_column(_without_sections(toc, "Solved in this recording"))):
                 if part.strip():
-                    lines += [_for_the_vault(part, video), ""]
+                    lines += [_for_the_vault(part), ""]
         _write_generated(page, "\n".join(lines))
         written.append(page.relative_to(course.root).as_posix())
     _remove_stale_roadmaps(course, written)
@@ -613,8 +608,9 @@ def write_roadmaps(course, recordings):
 
 def relink_vault(course):
     """Keep the citations in the Study vault pointing at the student's own files: a link that went stale because the
-    course folder or the file moved is found again in the Material folder, and an old link into the hidden Wiki
-    becomes a link to the file the Wiki page was made from (the page or time stays in the visible text)."""
+    course folder or the file moved is found again in the Material folder, an old link into the hidden Wiki becomes a
+    link to the file the Wiki page was made from, and every `file:` link is rewritten in the one form Obsidian opens
+    (`file_link`: the page or time moves from the link's ending into the visible text)."""
     if not course.study.is_dir():
         return
     state = course.read_state("wiki.json", {})
@@ -637,31 +633,31 @@ def relink_vault(course):
             parsed = urlparse(raw)
             if parsed.scheme not in ("", "file"):
                 return match.group(0)
-            local = Path(url2pathname(parsed.path)).resolve() if parsed.scheme else resolve(page, raw.partition("#")[0])
+            path = Path(url2pathname(parsed.path))
+            local = path.resolve() if parsed.scheme else resolve(page, raw.partition("#")[0])
             anchor = raw.partition("#")[2]
             if local.is_relative_to(wiki_dir):  # an old link into the Wiki
                 inner = local.relative_to(wiki_dir).as_posix()
                 rel = page_source.get(inner)
                 where = re.fullmatch(r"page-(\d+)", anchor)
                 if rel:
-                    return f"[{label}{', page ' + where[1] if where else ''}]({material.path_of(course, rel).as_uri()})"
+                    return file_link(f"{label}, {course.label('page', n=where[1])}" if where else label,
+                                     material.path_of(course, rel))
                 folder = inner.rsplit("/", 1)[0]
                 if folder in recording_source:
-                    secs = _video_seconds(label, anchor)
-                    video = material.path_of(course, recording_source[folder]).as_uri()
-                    return f"[{label}]({video}{'#t=' + str(secs) if secs is not None else ''})"
+                    return file_link(label, material.path_of(course, recording_source[folder]))
                 return label  # nothing of the student's to point at
-            if parsed.scheme != "file" or local.exists():
+            if parsed.scheme != "file":
                 return match.group(0)
-            parts = local.parts  # a moved course folder: the same place under the Material folder now
-            names = {course.material.name, *(t["material"] for t in course.label_tables() if "material" in t)}
-            for i, part in enumerate(parts):
-                if part in names and (course.material / Path(*parts[i + 1:])).exists():
-                    return _link(label, (course.material / Path(*parts[i + 1:])).as_uri() + (("#" + anchor) if anchor else ""))
-            same = on_disk.get(local.name, [])  # a moved file: the one file of that name
-            if len(same) == 1:
-                return _link(label, same[0].as_uri() + (("#" + anchor) if anchor else ""))
-            return match.group(0)
+            label = _in_text(course, label, anchor, match.string[match.end():])
+            if not local.exists():
+                parts = local.parts  # a moved course folder: the same place under the Material folder now
+                names = {course.material.name, *(t["material"] for t in course.label_tables() if "material" in t)}
+                same = on_disk.get(local.name, [])  # a moved file: the one file of that name
+                path = next((course.material / Path(*parts[i + 1:]) for i, part in enumerate(parts)
+                             if part in names and (course.material / Path(*parts[i + 1:])).exists()),
+                            same[0] if len(same) == 1 else path)
+            return file_link(label, path)
 
         fixed = MD_LINK.sub(fix, text)
         if fixed != text:

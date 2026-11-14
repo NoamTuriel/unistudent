@@ -1,0 +1,9 @@
+# Study vault links open the file; the page or time is in the text
+
+A link in the Study vault to the student's own file is `[text](<file:///raw path>)`: the raw path (spaces and Hebrew as they are) in angle brackets, and nothing after the file name. The page or recording time is only in the link text ("solution, page 6", "lecture 3, 00:12:47").
+
+Links used to end in `#page=N` or `#t=<seconds>`, with the path percent-encoded. Obsidian opens none of them: a `file:` link with an ending does nothing, in reading view, whether the path is encoded or raw, while the same link without the ending opens the file in the default app. The encoded path also made links long and unreadable in edit view. `us check` only checked that the file exists, so it reported 0 problems on links that never opened.
+
+One function (`links_check.file_link`) writes every vault link the code makes: recordings roadmaps, old-link repair, the Markdown Before-the-test page. The study-pack writer is a model following `reference/study-pack.md`, so a rule alone can't guarantee the form: `us check` fails a vault Markdown page with a `file:` link that has an ending (`link-will-not-open`), and every `us wiki build` rewrites all `file:` links in the Study vault into this form, moving a page or time that was only in the ending into the text. Packs written before this change are fixed by the next Wiki build, with no migration command.
+
+We chose this over keeping the jump to a page or time because a link that doesn't open is worse than one that opens on page 1, and the student wants the default apps, not Obsidian's own viewer (a vault symlink or `[[file.pdf#page=6]]` opens inside Obsidian and only for files inside the vault). We accept that the student scrolls to the page or time the text names. The HTML Before-the-test page keeps `#page=N`, since it opens in a browser, which honours it. Chat answers are not in the vault and keep their links as they are.

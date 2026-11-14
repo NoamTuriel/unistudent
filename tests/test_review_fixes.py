@@ -225,11 +225,12 @@ class RoadmapsAndAnnouncements(CourseTestCase):
                                        '## "This will be on the exam"\n\n- The multiplier, at 00:12:47.\n\n## Topics\n\nMoney.\n')
         self.roadmap = self.f.study / "Unit 4" / "Recordings roadmap.md"
 
-    def test_the_roadmap_keeps_clickable_times_and_a_labelled_generated_block(self):  # T3
+    def test_the_roadmap_shows_times_as_text_and_a_labelled_generated_block(self):  # T3
         run_json("wiki", "build", "--course", self.course)
         text = self.roadmap.read_text("utf-8")
-        self.assertIn("[00:01:00](file://", text)
-        self.assertIn("session%205.mp4#t=60)", text)
+        self.assertIn("00:01:00", text)
+        self.assertNotIn("#t=", text)
+        self.assertIn("session 5.mp4>)", text)
         self.assertEqual(text.count("Sources:"), 0)  # one video link per recording, no repeated list of sources
         self.assertEqual(run_json("check", self.roadmap, "--labels", "--course", self.course)["problems"], [])
 

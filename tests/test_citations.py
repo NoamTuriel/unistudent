@@ -51,8 +51,10 @@ class Citations(CourseTestCase):
             self.assertTrue(link.startswith("file:"), link)
             self.assertTrue(disk_path(link).exists(), link)
             self.assertNotIn(".unistudent", link)
-        self.assertIn("[00:12:47]", roadmap.read_text("utf-8"))
-        self.assertIn("session%205.mp4#t=767)", roadmap.read_text("utf-8"))  # the time it shows, not its heading's
+        text = roadmap.read_text("utf-8")
+        self.assertIn("00:12:47", text)  # the time stays as text: Obsidian opens no file: link with #t=
+        self.assertNotIn("[00:12:47]", text)
+        self.assertIn("session 5.mp4>)", text)
         self.assertEqual(self.check(roadmap), [])
 
     def test_check_flags_a_pack_that_links_into_the_wiki_or_at_a_deleted_file(self):
@@ -62,6 +64,19 @@ class Citations(CourseTestCase):
         self.assertEqual(self.check(), [])
         self.material.unlink()
         self.assertIn("broken-link", self.check())
+
+    def test_check_flags_a_link_obsidian_will_not_open_and_the_build_repairs_it(self):
+        write(self.pack, f"It is 1/r. Sources: [slides, page 3]({self.material.as_uri()}#page=3)\n"
+                         f"Also [slides]({self.material.as_uri()}#page=4)\n")
+        self.assertEqual(self.check(), ["link-will-not-open"] * 2)
+        run_json("wiki", "build", "--course", self.course)
+        text = self.pack.read_text("utf-8")
+        self.assertEqual(self.check(), [])
+        self.assertNotIn("#page=", text)
+        self.assertNotIn("%D7", text)  # the raw path, readable in the editor
+        self.assertIn("[slides, page 3](<file://", text)  # the page was in the text already
+        self.assertIn("[slides, page 4](<file://", text)  # the page was only in the link: it moves to the text
+        self.assertEqual(disk_path(targets(self.pack)[0]), self.material)
 
     def test_a_hebrew_name_and_spaces_resolve(self):
         write(self.pack, f"x. Sources: [slides, page 1]({self.material.as_uri()})\n")
