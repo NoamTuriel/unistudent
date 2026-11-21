@@ -396,6 +396,7 @@ def _slug(text: str) -> str:
 PLUGIN_RECOMMENDATIONS = [
     {"name": "openu",
      "gives": "downloads new material from your Open University of Israel course site",
+     "saved_login": True,  # the core's `us openu` logs in from a Saved login, no browser needed (ADR 0019)
      "match": lambda uni: (uni == "oui" or "פתוחה" in uni or "openu" in uni.replace("openuniversity", "")
                            or ("openuniversity" in uni and ("israel" in uni or "ישראל" in uni)))},
 ]

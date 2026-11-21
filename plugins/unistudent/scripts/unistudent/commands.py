@@ -210,7 +210,7 @@ def register(add, with_course):
     p.add_argument("--organizing", nargs="+", help="how the student organizes and prioritizes material")
 
     def cmd_plugins(args):
-        found = [{"name": p["name"], "gives": p["gives"],
+        found = [{"name": p["name"], "gives": p["gives"], "saved_login": p.get("saved_login", False),
                   "install": f"/plugin install {p['name']}@unistudent"}
                  for p in recommend_plugins(args.university)]
         other = ("In another app (Cursor, Codex, Gemini CLI...), add the skills with "
@@ -524,6 +524,61 @@ def register(add, with_course):
                            + (f", the last on {last_sync}." if last_sync else ".")}
 
     with_course(add("site-status", cmd_site_status, "which course-site files are already in the Material folder"))
+
+    def cmd_openu(args):
+        from . import openu, recordings
+        if args.action == "status":
+            saved = openu.saved_login() is not None
+            return {"saved": saved, "summary": "An OpenU Saved login is kept on this computer." if saved
+                    else "No OpenU Saved login: the sync goes through Chrome, or run `us openu login`."}
+        if args.action == "login":
+            if not openu.ask_for_login():
+                raise UserError("The login form wasn't sent within 10 minutes; nothing was saved. Run it again.")
+            return {"saved": True, "summary": "The OpenU login works and is saved on this computer."}
+        if args.action == "forget":
+            gone = openu.forget_login()
+            return {"forgotten": gone, "summary": "The OpenU Saved login is deleted." if gone else "There was no Saved login."}
+        opener = openu.session()
+        if args.action == "scan" and not args.course_id:
+            found = openu.courses(opener)
+            return {"courses": found, "summary": "\n".join(f"{c['id']}  {c['name']}" for c in found) or "No courses."}
+        course = resolve_course(args)
+        if args.action == "scan":
+            if len(args.paths) != 1:
+                raise UserError("scan needs the folder to write the listing into.")
+            path, counts = openu.scan(opener, args.course_id, args.paths[0],
+                                      recordings=course.settings().get("recording_level") != 0)
+            return {"listing": str(path), **counts,
+                    "summary": f"Listing written: {path} ({counts['documents']} files, {counts['recordings']} recordings"
+                               + (f", {counts['recordings_skipped']} recordings left out by the Settings" if counts["recordings_skipped"] else "")
+                               + ")."}
+        if len(args.paths) != 2:
+            raise UserError(f"{args.action} needs the approved listing and the download folder.")
+        listing, folder = args.paths
+        if args.action == "download":
+            have = {e["site_url"] for e in course.manifest()["files"].values() if e.get("site_url")}
+            done, failed = openu.download(opener, listing, folder, have)
+            return {"downloaded": done, "failed": failed,
+                    "summary": f"Downloaded {len(done)} files" + (f"; failed: {', '.join(failed)}" if failed else "") + "."}
+        if not args.url:
+            raise UserError("stream needs --url: the recording's url in the approved listing.")
+        for attempt in (1, 2):  # a stream link that fails is collected again once
+            one = openu.one_recording_listing(listing, args.url, folder, opener)
+            result = recordings.fetch_streams(one, folder, audio_only=recordings.audio_only_fetch(course))
+            if result["downloaded"]:
+                break
+        return {"listing": str(one), **result,
+                "summary": (f"Downloaded {result['downloaded'][0]}; ingest {one} next." if result["downloaded"] else
+                            f"The recording didn't download: {'; '.join(result['reasons'].values())}")}
+
+    p = with_course(add("openu", cmd_openu, "the Open University course site through the student's Saved login: status, "
+                        "login (opens a form on this computer; the password never goes through the chat), forget, scan "
+                        "(no --course-id: list the courses), download the approved files, stream one approved recording"))
+    p.add_argument("action", choices=["status", "login", "forget", "scan", "download", "stream"])
+    p.add_argument("paths", nargs="*", help="scan: the folder for the listing; download/stream: the approved listing "
+                                            "and the download folder")
+    p.add_argument("--course-id", help="scan: the course's id on the site (from `openu scan` with no id)")
+    p.add_argument("--url", help="stream: the recording's url in the approved listing")
 
     def cmd_doc(args):
         package = Path(__file__).resolve().parent

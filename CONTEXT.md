@@ -129,8 +129,12 @@ The university-agnostic plugin that owns course folders, the Wiki, recordings, s
 _Avoid_: generic skill
 
 **University plugin**:
-A plugin holding everything specific to one university: site access, site structure and unit sorting.
+A plugin holding everything specific to one university: how to reach its site, site structure and unit sorting.
 _Avoid_: adapter, connector
+
+**Saved login**:
+The student's username, password and any other login fields for their university's course site, kept on their own computer so the sync can log in without them.
+_Avoid_: credentials, cookies, session
 
 ### Grounding
 
