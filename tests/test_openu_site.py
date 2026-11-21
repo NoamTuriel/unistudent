@@ -23,6 +23,8 @@ FILES = {"/pluginfile.php/1/mod_resource/content/1/notes.pdf": b"%PDF unit 1 not
          "/pluginfile.php/2/mod_url/content/1/ex.docx": b"exercise",
          "/pluginfile.php/3/mod_folder/content/0/exam 2025.pdf": b"%PDF exam",
          "/pluginfile.php/9/mod_ouilvideocollection/attachment/4001/class ex.pdf": b"%PDF class"}
+SECTIONS = {2: "פתרונות לממנים", 3: "וידאו", 4: "סילבוס"}
+COLLECTIONS = {"55": ("900", "AbCd"), "56": ("901", "EfGh")}  # cmid: (cid, mid)
 
 
 class FakeOpenU(http.server.BaseHTTPRequestHandler):
@@ -62,12 +64,14 @@ class FakeOpenU(http.server.BaseHTTPRequestHandler):
             return self._send(200, "<html>שם משתמש או סיסמה שגויים</html>")
         if url.path == "/mod/ouilvideocollection/actions.php" and self._cookie("MoodleSession"):
             form = self._form()
-            assert form == {"action": "getplaylist", "context": "900", "playlistid": "4001", "course": "7", "mid": "AbCd"}, form
+            n, cm = {"4001": ("1", "55"), "4002": ("2", "56")}[form["playlistid"]]
+            assert form == {"action": "getplaylist", "context": COLLECTIONS[cm][0], "playlistid": form["playlistid"],
+                            "course": "7", "mid": COLLECTIONS[cm][1]}, form
             return self._send(200, json.dumps({
-                "title": "Lesson 1", "recorddate": "10/09/2026",
-                "media": {"duration": 2, "cipher": urllib.parse.quote("abc+/=", safe="")},
-                "attachments": f'<span class="ovc_attachment_sp"><a href="{self.base}/pluginfile.php/9/mod_ouilvideocollection/'
-                               'attachment/4001/class%20ex.pdf">class ex</a></span>'}))
+                "title": f"Lesson {n}", "recorddate": "10/09/2026",
+                "media": {"duration": 1 + int(n), "cipher": urllib.parse.quote(f"abc{n}+/=", safe="")},
+                "attachments": "" if n == "2" else f'<span class="ovc_attachment_sp"><a href="{self.base}/pluginfile.php/9/'
+                                                   'mod_ouilvideocollection/attachment/4001/class%20ex.pdf">class ex</a></span>'}))
         self._send(404)
 
     def do_HEAD(self):
@@ -87,10 +91,16 @@ class FakeOpenU(http.server.BaseHTTPRequestHandler):
         if url.path == "/my/":
             return self._send(200, '<a href="/course/view.php?id=7">מבוא לפסיכולוגיה (2025א)</a>')
         if url.path == "/course/view.php" and "section" not in query:
-            return self._send(200, '<h2>מבוא לפסיכולוגיה - 10101</h2><li id="section-3"><h3 class="sectionname">וידאו</h3></li>')
+            return self._send(200, '<h2>מבוא לפסיכולוגיה - 10101</h2>' + "".join(
+                f'<li id="section-{n}"><h3 class="sectionname">{t}</h3></li>' for n, t in SECTIONS.items()))
         if url.path == "/course/view.php":
-            return self._send(200, '<a href="/mod/ouilvideocollection/view.php?id=55">Recordings</a>'
-                              if query["section"] == "3" else "<p>nothing</p>")
+            # As on the real site: a quick-links block on every section page links one collection; the "וידאו"
+            # section embeds all of them; the next section links back to one with its "previous" button.
+            main = {"3": "".join(f'<a class="collection_link" href="#" cid="{c}" mid="{m}" cmid="{cm}"></a>'
+                                 for cm, (c, m) in COLLECTIONS.items()),
+                    "4": '<a class="sequence_navto" href="/mod/ouilvideocollection/view.php?id=56&amp;from=topPrev">prev</a>'}
+            return self._send(200, '<aside data-block="ou_quick_links"><a href="/mod/ouilvideocollection/view.php?id=55">'
+                              f'Recordings</a></aside><div id="region-main">{main.get(query["section"], "")}</div>')
         if url.path == "/course/resources.php":
             rows = [("יחידה 1: מבוא", "Unit 1 notes", "/mod/resource/view.php?id=101"),
                     ("", "Exercise", "/mod/url/view.php?id=102"),
@@ -108,11 +118,13 @@ class FakeOpenU(http.server.BaseHTTPRequestHandler):
         if urllib.parse.unquote(url.path) in FILES:
             return self._send(200, FILES[urllib.parse.unquote(url.path)], head=head)
         if url.path == "/mod/ouilvideocollection/view.php":
-            return self._send(200, '<a class="collection_link" href="#" c-value="1" cid="900" mid="AbCd" cmid="55" sort-type="1">'
-                              '</a><div id="collection1"><div id="playlist4001"><div><span class="ovc_playlist_title" '
-                              'title="Lesson 1" tabindex="0">Lesson 1</span></div></div></div>')
+            n = {"55": "1", "56": "2"}[query["id"]]
+            return self._send(200, "".join(f'<a class="collection_link" href="#" c-value="1" cid="{c}" mid="{m}" cmid="{cm}" '
+                                           'sort-type="1"></a>' for cm, (c, m) in COLLECTIONS.items())
+                              + f'<div id="collection1"><div id="playlist400{n}"><div><span class="ovc_playlist_title" '
+                              f'title="Lesson {n}" tabindex="0">Lesson {n}</span></div></div></div>')
         if url.path == "/local/ouil_video/player.php":
-            assert query["mediaid"] == "abc+/=", query
+            assert query["mediaid"] in ("abc1+/=", "abc2+/="), query
             return self._send(200, 'var jwplayer_parameters = {"file":"' + self.base.replace("/", "\\/")
                               + '\\/Redirector\\/openu\\/c1_HD_mp4\\/hls"};')
         self._send(404)
@@ -183,7 +195,7 @@ class OpenUSite(CourseTestCase):
         self.assertEqual(run_json("openu", "scan", "--course", self.course)["courses"],
                          [{"id": "7", "name": "מבוא לפסיכולוגיה (2025א)"}])
         result = run_json("openu", "scan", "--course", self.course, "--course-id", "7", self.downloads)
-        self.assertEqual((result["documents"], result["recordings"]), (4, 1))
+        self.assertEqual((result["documents"], result["recordings"]), (4, 2))
         listing = json.loads(Path(result["listing"]).read_text("utf-8"))
         items = {i["name"]: i for i in listing["items"]}
         notes = items["Unit 1 notes"]
@@ -193,6 +205,8 @@ class OpenUSite(CourseTestCase):
         self.assertEqual(items["exam 2025.pdf"]["unit_hint"], "general")
         lesson = items["Lesson 1 10/09/2026"]
         self.assertEqual((lesson["kind"], lesson["seconds"], lesson["section"]), ("recording", 2, "וידאו"))
+        # the collection that only the "וידאו" section embeds is found too, under that section
+        self.assertEqual(items["Lesson 2 10/09/2026"]["section"], "וידאו")
         self.assertEqual(items["class ex.pdf"]["attached_to"], lesson["url"])
         plan = run_json("fetch-plan", "show", "--course", self.course, result["listing"])
         self.assertFalse(plan["nothing_new"])

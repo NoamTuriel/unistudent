@@ -244,14 +244,23 @@ def _sections(page):
 
 
 def _collections(opener, course_id, course_page):
-    """[(collection URL, section title)]: the video collections linked from the course's section pages."""
+    """[(collection URL, section title)]: the video collections of the course's section pages. A section's main region
+    links a collection or embeds it (`a.collection_link` with its `cmid`), and that section names it; the quick-links
+    block above it, the same on every page, only adds collections no section shows. "Previous" and "next" buttons
+    (`...?id=N&from=...`) are not counted."""
     sections = _sections(course_page)
-    found = {}
-    for number in sorted({0, *sections}):
+    found, quick = {}, set()
+    for number in [*sorted(sections), 0]:
         page = _get(opener, f"{SITE}/course/view.php?id={course_id}&section={number}")
-        for cm in re.findall(r"/mod/ouilvideocollection/view\.php\?id=(\d+)", page):
-            found.setdefault(f"{SITE}/mod/ouilvideocollection/view.php?id={cm}", sections.get(number, ""))
-    return list(found.items())
+        start = page.find('id="region-main"')
+        main = page[start:] if start >= 0 else page
+        quick.update(re.findall(r'/mod/ouilvideocollection/view\.php\?id=(\d+)"', page[:max(start, 0)]))
+        for cm in (re.findall(r'/mod/ouilvideocollection/view\.php\?id=(\d+)"', main)
+                   + [_attr(t, "cmid") for t in re.findall(r"<a[^>]*collection_link[^>]*>", main)]):
+            found.setdefault(cm, sections.get(number, ""))
+    for cm in sorted(quick - set(found)):
+        found[cm] = ""
+    return [(f"{SITE}/mod/ouilvideocollection/view.php?id={cm}", title) for cm, title in found.items() if cm]
 
 
 def _attr(tag, name):
