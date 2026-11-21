@@ -480,7 +480,7 @@ def register(add, with_course):
                                     extra={"site_url": url, "site_modified": item.get("modified"),
                                            "fetched": datetime.date.today().isoformat(),
                                            **({"attached_to": item["attached_to"]} if item.get("attached_to") else {}),
-                                           **({"assignment": assignments.record_of(item)} if assignments.record_of(item) else {})})
+                                           **({"assignment": record} if (record := assignments.record_of(item)) else {})})
             (changed if before else new).append(rel)
             if item.get("transcribe"):  # ticked in the Fetch plan by a student who wants transcripts
                 from .recordings import approve
