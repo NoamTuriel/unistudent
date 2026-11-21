@@ -158,7 +158,10 @@ def _transcribes(course):
 
 
 def show(course, listing_path):
-    items = _new_items(course, _read_listing(listing_path))
+    from . import assignments
+    data = _read_listing(listing_path)
+    assignments.refresh(course, data.get("items", []))  # every sync lists every assignment: dates and status move even when nothing is new
+    items = _new_items(course, data)
     if not items:
         fetched = [e["fetched"] for e in course.manifest()["files"].values() if e.get("site_url") and e.get("fetched")]
         return {"checklist": None, "totals": {}, "total_bytes": 0, "unknown_size": 0, "fits": True, "hours": 0,
