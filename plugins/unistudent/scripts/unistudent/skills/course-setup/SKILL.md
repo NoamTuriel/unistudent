@@ -188,10 +188,11 @@ The student is back. Give one short report, in plain words:
 - **What's in:** documents and recordings added, units with material.
 - **What failed, and what to do:** each failed download, install or recording, with the one thing to do about it (for example "this recording's link expired: run the sync again", "speech-to-text didn't install: run this command, then `/unistudent:course-recordings`").
 - **Files you answered "I don't know" for:** they are unsorted but already in the Wiki; they can sort them any time by asking.
+- **Open assignments:** run `us assignments --json`. Any open → say how many and the soonest due date, and offer `/unistudent:course-assignments` (it scans the files for text aimed at an AI first, checks the Wiki can solve them, and only then offers to solve; nothing is ever submitted for the student). Offer it; never start it unasked.
 
 Then run `us wiki coverage --json` and give the counts (analyzed, failed, skipped, still pending) in plain words ("pending" after the run can only be recordings still waiting for a transcript: say that), and name each failed or skipped file with its reason and what to do (for example "this PDF has no text layer: I can read it visually if you want"). The same list is saved as `coverage.md` in the Wiki, so any later session knows what's missing. Ask one question: which of these gaps are worth fixing now. Do what they choose, or leave it.
 
-Done when: the student has seen the report and the coverage summary, and answered the one question about gaps.
+Done when: the student has seen the report and the coverage summary, was told about any open assignments, and answered the one question about gaps.
 
 ## 11. Capabilities: explain, then show, what this can do
 

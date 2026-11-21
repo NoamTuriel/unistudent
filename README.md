@@ -56,6 +56,7 @@ The skills are split across two plugins. `unistudent` is the core and works for 
 | course-help | `unistudent` | How it works, and what's waiting |
 | course-add | `unistudent` | Move what you dropped into the course's inbox into the Material folder and add it to the Wiki |
 | course-wiki | `unistudent` | Build or refresh the Wiki |
+| course-assignments | `unistudent` | Find open assignments, scan their files for text aimed at an AI, check the Wiki can solve them, and (if you say yes) solve them from your material (never submits) |
 | study-pack | `unistudent` | Build a study pack for a unit, or review proposed updates |
 | before-test | `unistudent` | Build the Before-the-test page: every past-exam question, grouped by method, with solution links (asks first, heavy) |
 | course-recordings | `unistudent` | Transcribe and summarise recordings (heavy; always asks first) |
