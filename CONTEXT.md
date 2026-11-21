@@ -100,7 +100,11 @@ The hardcoded, CI-proven list of self-installing kinds and Recommended tools.
 _Avoid_: plugin recommendation, tool offer
 
 **Unit**:
-A chapter of the course as the course itself numbers it (יחידה).
+A group of topics the course teaches together, numbered in the order the course teaches them. Universities name it differently: a chapter (יחידה), a module, a week, a lecture.
+_Avoid_: chapter, module, week (as the general term)
+
+**Question's unit**:
+The latest unit, in teaching order, whose method, notation or assumption a question needs. A question appears in that unit's study pack only; a question whose parts end in different units also appears, with only those parts, in each earlier unit where one of its parts ends.
 
 **Topic**:
 One of the 4–6 sub-parts of a unit that every page of its study pack is organised by.

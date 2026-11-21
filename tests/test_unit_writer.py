@@ -121,6 +121,19 @@ class UnitWriter(CourseTestCase):
         for unit in ("3", "4"):
             self.assertEqual(run_json("study", "changes", "--unit", unit, "--course", self.course)["changed"], ["question-bank.md"])
 
+    def test_a_question_in_two_units_says_which_parts_each_unit_gets(self):
+        def problems(entry):
+            write(self.f.wiki / "question-bank.md", "# Question bank\n\n" + entry)
+            return [(p["kind"], p.get("entry")) for p in run_json("wiki", "check", "--course", self.course)["problems"]]
+        q12 = "### Exam Q12  #unit-03/demand #unit-04/supply\n- Where: [d](sources/unit-03/demand.md)\n"
+        self.assertEqual(problems(q12), [("unit-split-missing", "Exam Q12")])  # the old "reaches both" entry
+        self.assertEqual(problems(q12 + "- Parts by unit: unit 3: a · unit 5: b\n"), [("unit-split-mismatch", "Exam Q12")])
+        self.assertEqual(problems("### Exam Q12  #unit-04/supply\n- Where: [d](sources/unit-03/demand.md)\n"
+                                  "- Parts by unit: unit 3: a · unit 4: b\n"), [("unit-split-mismatch", "Exam Q12")])
+        for fine in (q12 + "- Parts by unit: unit 3: a, b · unit 4: c\n",
+                     "### Exam Q1  #unit-03/demand #unit-03/shifts #general/review\n- Where: [d](sources/unit-03/demand.md)\n"):
+            self.assertEqual(problems(fine), [])
+
     def merge(self, unit, glossary, questions):
         files = [write(self.tmp / f"unit-{unit}-glossary.md", glossary), write(self.tmp / f"unit-{unit}-questions.md", questions)]
         return run_json("wiki", "merge", "--glossary", files[0], "--question-bank", files[1], "--course", self.course)
@@ -133,7 +146,7 @@ class UnitWriter(CourseTestCase):
         write(lock, "")  # another writer is merging right now
         waiting = threading.Thread(target=self.merge, args=(4, "### Price (P)\nWhat a unit costs. Sources: [s](sources/unit-04/supply.md)\n",
                                                               "### Exam Q12  #unit-04/supply\n- Where: [s](sources/unit-04/supply.md)\n"
-                                                              "- Solved in a recording: no\n"))
+                                                              "- Solved in a recording: no\n- Parts by unit: unit 3: a · unit 4: b\n"))
         waiting.start()
         time.sleep(0.3)
         self.assertNotIn("unit-04", (self.f.wiki / "glossary.md").read_text("utf-8"))  # it waits for the lock
