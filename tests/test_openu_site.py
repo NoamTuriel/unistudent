@@ -22,13 +22,17 @@ GOOD = {"p_user": "student", "p_sisma": "סיסמה-1234", "p_mis_student": "123
 FILES = {"/pluginfile.php/1/mod_resource/content/1/notes.pdf": b"%PDF unit 1 notes",
          "/pluginfile.php/2/mod_url/content/1/ex.docx": b"exercise",
          "/pluginfile.php/3/mod_folder/content/0/exam 2025.pdf": b"%PDF exam",
-         "/pluginfile.php/9/mod_ouilvideocollection/attachment/4001/class ex.pdf": b"%PDF class"}
+         "/pluginfile.php/9/mod_ouilvideocollection/attachment/4001/class ex.pdf": b"%PDF class",
+         "/pluginfile.php/5/ouilassigntype_file/assignfile/1/hw 1.docx": b"hw one",
+         "/pluginfile.php/5/ouilassigntype_file/assignfile/2/hw 2.docx": b"hw two"}
 SECTIONS = {2: "פתרונות לממנים", 3: "וידאו", 4: "סילבוס"}
 COLLECTIONS = {"55": ("900", "AbCd"), "56": ("901", "EfGh")}  # cmid: (cid, mid)
 
 
 class FakeOpenU(http.server.BaseHTTPRequestHandler):
     video = None  # a local video file standing in for the HLS stream
+    assignments = False  # whether the course has OPAL's assignments module
+    submitted = ()  # ids of the assignments the student has submitted
 
     def log_message(self, *args):
         pass
@@ -115,6 +119,19 @@ class FakeOpenU(http.server.BaseHTTPRequestHandler):
             return self._redirect(target)
         if url.path == "/mod/folder/view.php":
             return self._send(200, f'<a href="{self.base}/pluginfile.php/3/mod_folder/content/0/exam%202025.pdf?forcedownload=1">exam</a>')
+        if url.path == "/mod/ouilassign/index.php":
+            return self._send(200, "".join(f'<a href="{self.base}/mod/ouilassign/view.php?id={n}">מטלת קובץ 0{n - 300}</a>'
+                                           for n in (301, 302)) if self.assignments else "<p>מטלות הקורס</p>")
+        if url.path == "/mod/ouilassign/view.php":  # shaped like the real page, as checked on 2026-11-21
+            n = query["id"]
+            mine = ('<h3>ההגשה שלי</h3><div>מטלה זו טרם הוגשה</div>' if n == "301" and n not in self.submitted else
+                    '<h3>ההגשה שלי</h3><span>תאריך הגשה</span><div>29/07/2026 20:02</div><span>סטטוס</span>'
+                    f'<div>{"נבדק" if n == "302" else "הוגש"}</div><h3>קבצים שהוגשו</h3>'
+                    f'<a href="{self.base}/pluginfile.php/5/assignsubmission_file/submission_files/{n}/mine.pdf">mine.pdf</a>')
+            return self._send(200, '<nav><a href="#">מטלת קובץ 01</a><span>סטטוס</span></nav><h3>פרטי המטלה</h3><div>'
+                              '<span class="ouilassign_inner_title">תאריך אחרון להגשה</span><div>30/12/2026</div></div>'
+                              + mine + f'<h3>המטלה</h3><a href="{self.base}/pluginfile.php/5/ouilassigntype_file/assignfile/'
+                              f'{n[-1]}/hw%20{n[-1]}.docx?forcedownload=1">hw {n[-1]}.docx</a>')
         if urllib.parse.unquote(url.path) in FILES:
             return self._send(200, FILES[urllib.parse.unquote(url.path)], head=head)
         if url.path == "/mod/ouilvideocollection/view.php":
@@ -146,6 +163,7 @@ class OpenUSite(CourseTestCase):
         self.downloads = self.tmp / "Downloads"
 
     def tearDown(self):
+        FakeOpenU.assignments, FakeOpenU.submitted = False, ()
         for p in self.patches:
             p.stop()
         self.server.shutdown()
@@ -222,6 +240,32 @@ class OpenUSite(CourseTestCase):
         self.assertEqual((len(ingested["new"]), ingested["missing"]), (4, []))
         again = run_json("openu", "scan", "--course", self.course, "--course-id", "7", self.tmp / "again")["listing"]
         self.assertEqual(run_json("openu", "download", "--course", self.course, again, self.tmp / "again")["downloaded"], [])
+
+    def test_assignments_are_listed_with_due_date_status_and_file_and_a_later_sync_moves_the_status(self):
+        FakeOpenU.assignments = True
+        self.save_good_login()
+        run_json("context", "--course", self.course, "--recording-level", "0")  # recordings left out: nothing else to fetch
+        scan = lambda folder: run_json("openu", "scan", "--course", self.course, "--course-id", "7", folder)
+        result = scan(self.downloads)
+        self.assertEqual((result["assignments"], result["documents"]), (2, 4))
+        text = Path(result["listing"]).read_text("utf-8")
+        self.assertNotIn("mine.pdf", text)  # the student's own submission is theirs, never course material
+        items = {i["name"]: i for i in json.loads(text)["items"] if i["kind"] == "assignment"}
+        one, two = items["hw 1"], items["hw 2"]
+        self.assertEqual((one["due"], one["status"], two["status"]), ("2026-12-30", "open", "graded"))
+        self.assertEqual((one["section"], one["size"]), ("מטלות", len(b"hw one")))
+        self.assertTrue(one["file"].endswith("__hw 1.docx"))
+        run_json("fetch-plan", "show", "--course", self.course, result["listing"])
+        approved = run_json("fetch-plan", "apply", "--course", self.course, result["listing"])["listing"]
+        got = run_json("openu", "download", "--course", self.course, approved, self.downloads)
+        self.assertEqual((len(got["downloaded"]), got["failed"]), (6, {}))  # the assignment files, from their own links
+        ingested = run_json("ingest", "--course", self.course, "--no-wiki", approved, self.downloads)
+        self.assertEqual([r["path"].split("/")[-1] for r in ingested["assignments_open"]], ["hw 1.docx"])
+        # later the student submits hw 1: the next sync has nothing new, and the status still moves
+        FakeOpenU.submitted = ("301",)
+        again = scan(self.tmp / "again")["listing"]
+        self.assertTrue(run_json("fetch-plan", "show", "--course", self.course, again)["nothing_new"])
+        self.assertEqual(run_json("assignments", "--course", self.course, "--today", "2026-11-21")["open"], [])
 
     @unittest.skipUnless(shutil.which("ffmpeg"), "ffmpeg not installed")
     def test_an_approved_recording_streams_and_ingests(self):

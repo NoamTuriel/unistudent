@@ -120,9 +120,39 @@ What `us openu` (the core's `openu.py`) does instead of the snippets above. Chec
 - **Recordings:** the collection page lists each recording as `div#playlist<N>` holding its `.ovc_playlist_title`, and the collection itself as `a.collection_link` with attributes `cid`, `mid` and `cmid` (the one whose `cmid` is this collection). A POST to `/mod/ouilvideocollection/actions.php` with `action=getplaylist&context=<cid>&playlistid=<N>&course=<courseid>&mid=<mid>` (no sesskey) answers JSON: `title`, `recorddate` (dd/mm/yyyy), `media.duration` (seconds), `attachments` (HTML with the attachment links), and `media.cipher`, the player's token, URL-encoded.
 - **Stream link:** `/local/ouil_video/player.php?mediaid=<cipher, decoded>` holds, in `jwplayer_parameters`, a redirector link on `apiou.bynetcdn.com/Redirector/.../hls`. Fetched without cookies, that link answers an RSS feed whose `<jwplayer:source file="...">` is the tokenised `souvod1.bynetcdn.com/.../playlist.m3u8` that ffmpeg downloads.
 
-## Assignments: due date and status (not verified on the live site)
+## Assignments: due date and status
 
-The core finds open assignments from listing items that carry `kind: "assignment"`, `due` (`YYYY-MM-DD`) and `status` (`open`, `submitted`, `graded` or `unknown`); `us ingest` keeps them current on every sync. Moodle's assignment activities link as `/mod/assign/view.php?id=<cmid>`; open that page for each assignment link in the course's resources list and read its "Due" date and its submission status ("No submissions have been made yet" → `open`; "Submitted for grading" → `submitted`; "Graded" → `graded`) from the page text; the Hebrew site words differ (check them on the page). Not verified: no logged-in session was available when this was written, so the selectors and the Hebrew wording are unchecked. Where a page does not show a date or status, leave the field out: the core then lists the assignment as open with "no date known". Its files (the assignment's attached PDF) are ordinary document items with `kind: "assignment"`. Keep listing it every sync, also when its file is already downloaded: that is how a status change reaches the core.
+With a Saved login the core's `openu.py` reads them itself (`us openu scan` lists them as `kind: "assignment"` items, `download` being the assignment's file): the same pages and labels as below, read from the server's HTML, one text line per element.
+
+Verified 2026-11-21 on the live site (a logged-in session, 4 courses with assignments, 9 assignments). The core finds open assignments from listing items that carry `kind: "assignment"`, `due` (`YYYY-MM-DD`) and `status` (`open`, `submitted`, `graded`, `unknown`); `us ingest` keeps them current on every sync.
+
+OPAL does not use Moodle's own assignment module (`/mod/assign/` is empty). Assignments are a site module, `ouilassign` ("מטלות הקורס"), and the resources list above does not show them:
+
+- **Index:** `/mod/ouilassign/index.php?id=<courseid>` links one page per assignment, `/mod/ouilassign/view.php?id=<id>`, titled "מטלת קובץ 01", "מטלת קובץ 02"... (a course with none has no links; the course's resources list may also hold plain files such as "פתרון מטלה 1": those are ordinary documents, not assignments). The index page also links the site's guide pages for the assignments system ("דפי הדרכה למערכת מטלות החדשה"), and a course's resources list can hold a "הגשת מטלות תלמידים" file: both are official sources for the submission steps.
+- **Page (label, then its value on the next text line):** "תאריך אחרון להגשה" gives the due date as `DD/MM/YYYY` (no time on the pages seen); "משקל המטלה" the weight; "קבצים מותרים" the allowed file types. Under "ההגשה שלי": "מטלה זו טרם הוגשה" when nothing was submitted; otherwise "תאריך הגשה" (`DD/MM/YYYY HH:MM`), "מספר אסמכתא", and "סטטוס" with its value ("נבדק" = checked and graded, seen; other values for a submission not yet checked were not seen: any other value is taken as submitted). "ציון" is the grade.
+- **Files:** under "המטלה" the assignment's own file (usually `.docx`): `/pluginfile.php/<n>/ouilassigntype_file/assignfile/<n>/<file>`. Under "קבצים שהוגשו" is the student's own submission, which is theirs, not course material: never ingest it.
+- The student submits on the page ("הגשת המטלה": upload or update a file). The sync never touches it.
+
+Snippet (run in the course tab, once per course; keep the result in the page variable and return counts, as above):
+
+```js
+window.ASSIGN = [];
+const idx = new DOMParser().parseFromString(await (await fetch('/mod/ouilassign/index.php?id=' + COURSE_ID, {credentials: 'include'})).text(), 'text/html');
+for (const href of new Set([...idx.querySelectorAll('a[href*="/mod/ouilassign/view.php"]')].map(a => a.getAttribute('href')))) {
+  const d = new DOMParser().parseFromString(await (await fetch(href, {credentials: 'include'})).text(), 'text/html');
+  const lines = (d.querySelector('[role=main], #region-main, main') || d.body).textContent.split('\n').map(s => s.trim()).filter(Boolean);
+  const after = l => { const i = lines.indexOf(l); return i >= 0 ? lines[i + 1] : null; };
+  const m = (after('תאריך אחרון להגשה') || '').match(/^(\d\d)\/(\d\d)\/(\d{4})$/);
+  const state = after('סטטוס'), file = d.querySelector('a[href*="ouilassigntype_file/assignfile"]');
+  ASSIGN.push({url: new URL(href, location.origin).href, name: lines.find(s => /^מטלת \S+ \d+$/.test(s)), section: 'מטלות', kind: 'assignment',
+    due: m ? `${m[3]}-${m[2]}-${m[1]}` : undefined,
+    status: lines.includes('מטלה זו טרם הוגשה') ? 'open' : state === 'נבדק' ? 'graded' : state ? 'submitted' : 'unknown',
+    download: file && file.href});
+}
+[ASSIGN.length, ASSIGN.filter(i => i.due).length, ASSIGN.filter(i => i.download).length].join(' ')
+```
+
+Each `ASSIGN` item is a document item: `url` is the assignment's page (its identity: the core matches it on every sync), and the file is downloaded from `download` (not from `url`, which is a page), then `download` is dropped from the item before the listing is saved. Run the size and type snippet on `download`. List every assignment on every sync, also when its file is already downloaded: that is how a status change reaches the core. Last count 0 for `due` or `download` is shown to the student; the assignment is then listed with "no date known" or not at all.
 
 ## Terms of use
 

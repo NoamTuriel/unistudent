@@ -8,4 +8,4 @@ The step also never submits and never fills a gap from general knowledge without
 
 The command is `us assignments`, not `us assign`, which already means "sort a file into a unit".
 
-Shipped in unistudent 0.9.0 and openu 0.5.2.
+Shipped in unistudent 1.0.0 and openu 0.5.3.

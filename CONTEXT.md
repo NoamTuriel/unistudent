@@ -114,7 +114,7 @@ _Avoid_: subject, section
 
 **Assignment**:
 A piece of coursework the student submits for the course (מטלה, ממן), given as a file. Its due date and status come from the course site, or from the student for a file they added.
-_Avoid_: homework, task; "assign" is reserved for sorting a file into a unit
+_Avoid_: homework, task; the verb "assign" (`us assign`) means sorting a file into a unit, never giving coursework
 
 **Open assignment**:
 An Assignment not yet submitted or graded and not past its due date (one with no known date counts as open; one past its date and not submitted is overdue).

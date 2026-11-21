@@ -292,11 +292,51 @@ def _recordings(opener, course_id, collection_url):
     return found
 
 
+ASSIGNMENTS = "מטלות"  # the site's own word: the section its assignments are listed under
+
+
+def _lines(page):
+    """A page's visible text, one run of text per line."""
+    page = re.sub(r"(?is)<(script|style)\b.*?</\1>", "", page)
+    return [t for t in (" ".join(html.unescape(x).split()) for x in re.sub(r"<[^>]+>", "\n", page).split("\n")) if t]
+
+
+def _assignments(opener, course_id):
+    """One listing item per Assignment of the course. OPAL's assignments are its own module (`ouilassign`), not Moodle's
+    and not in the resources list; each one's page holds its due date, its status and the assignment's file (checked
+    2026-11-21). `url`, the page, is the assignment's identity; `download` is its file."""
+    try:
+        index = _get(opener, f"{SITE}/mod/ouilassign/index.php?id={course_id}")
+    except OSError:
+        return []  # a course without the module
+    items = []
+    for href in dict.fromkeys(re.findall(r'href="([^"]*/mod/ouilassign/view\.php\?id=\d+)"', index)):
+        page = _get(opener, _absolute(href))
+        file = re.search(r'href="([^"]*ouilassigntype_file/assignfile/[^"]*)"', page)
+        if not file:
+            continue  # no file to read into the Wiki
+        lines = _lines(page)
+        lines = lines[lines.index("פרטי המטלה"):] if "פרטי המטלה" in lines else lines
+
+        def after(label):
+            return lines[lines.index(label) + 1] if label in lines[:-1] else None
+
+        day = re.fullmatch(r"(\d\d)/(\d\d)/(\d{4})", after("תאריך אחרון להגשה") or "")
+        state = after("סטטוס")  # "נבדק" is checked and graded; a submission not yet checked has another word
+        download = _absolute(file.group(1)).split("?")[0]
+        items.append({"url": _absolute(href), "name": Path(urllib.parse.unquote(download.rsplit("/", 1)[-1])).stem,
+                      "section": ASSIGNMENTS, "kind": "assignment", "download": download,
+                      **({"due": f"{day[3]}-{day[2]}-{day[1]}"} if day else {}),
+                      "status": ("open" if "מטלה זו טרם הוגשה" in lines else "graded" if state == "נבדק"
+                                 else "submitted" if state else "unknown")})
+    return items
+
+
 def _size_and_type(opener, item, prefix):
     """The file's size and real type from its headers only (nothing downloads); sets `size` and `file`."""
     ext = ""
     try:
-        with opener.open(urllib.request.Request(item["url"], method="HEAD"), timeout=TIMEOUT) as reply:
+        with opener.open(urllib.request.Request(item.get("download") or item["url"], method="HEAD"), timeout=TIMEOUT) as reply:
             if reply.headers.get("Content-Length"):
                 item["size"] = int(reply.headers["Content-Length"])
             ext = (re.search(r"\.[A-Za-z0-9]+$", urllib.parse.unquote(urllib.parse.urlparse(reply.geturl()).path))
@@ -320,6 +360,7 @@ def scan(opener, course_id, folder, recordings=True):
                 items.append({"url": url, "name": name, "section": row["section"], "kind": "document", **hint})
         else:
             items.append({"url": row["url"], "name": row["name"], "section": row["section"], "kind": "document", **hint})
+    items += _assignments(opener, course_id)
     skipped = 0
     for collection_url, section in _collections(opener, course_id, course_page):
         for rec in _recordings(opener, course_id, collection_url):
@@ -334,13 +375,14 @@ def scan(opener, course_id, folder, recordings=True):
                           "section": section, "kind": "recording", "media": rec["media"],
                           **({"seconds": rec["seconds"]} if rec["seconds"] else {})})
     for item in items:
-        if item["kind"] == "document":
+        if item["kind"] in ("document", "assignment"):
             _size_and_type(opener, item, prefix)
     path = Path(folder) / f"{prefix}listing.json"
     path.parent.mkdir(parents=True, exist_ok=True)
     path.write_text(json.dumps({"course_site": f"{SITE}/course/view.php?id={course_id}", "items": items},
                                ensure_ascii=False, indent=1), "utf-8")
     return path, {"documents": sum(i["kind"] == "document" for i in items),
+                  "assignments": sum(i["kind"] == "assignment" for i in items),
                   "recordings": sum(i["kind"] == "recording" for i in items), "recordings_skipped": skipped}
 
 
@@ -368,7 +410,7 @@ def download(opener, listing, folder, have=()):
             continue  # a resumed run
         for attempt in (1, 2):
             try:
-                _download(opener, item["url"], target)
+                _download(opener, item.get("download") or item["url"], target)
                 done.append(item["file"])
                 break
             except OSError as error:

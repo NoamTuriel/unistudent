@@ -6,7 +6,6 @@ fonts' ToUnicode maps and the text state, not the whole PDF format.
 """
 import math
 import re
-import unicodedata
 import zipfile
 import zlib
 from pathlib import Path
@@ -73,13 +72,34 @@ def odd_characters(text, where):
     return [_finding("invisible-characters", where, "".join(tags), how + (", they spell out a message" if tags else ""))]
 
 
-def text_findings(text, where):
-    """The checks every kind of file gets, on text that is on show: characters and sentences aimed at an AI."""
+def _sentence(text):
+    """The sentence of `text` that holds the first phrase aimed at an AI (all of `text` when only a reversed reading matches)."""
+    text = " ".join(text.split())
+    match = next((m for m in (p.search(text) for p in AI_PHRASES) if m), None)
+    if not match:
+        return text
+    start = max(text.rfind(c, 0, match.start()) for c in ".!?") + 1
+    stops = [i for i in (text.find(c, match.end()) for c in ".!?") if i >= 0]
+    return text[start:min(stops) + 1 if stops else len(text)].strip()
+
+
+def text_findings(text, where, locate=None):
+    """The checks every kind of file gets, on text that is on show: characters and sentences aimed at an AI.
+    `locate(sentence)` says where a sentence is, in words, when the file knows."""
     out = odd_characters(text, where)
     for paragraph in re.split(r"\n+", text):
         if aimed_at_ai(paragraph):
-            out.append(_finding("instruction-to-ai", where, paragraph, "a sentence addressed to an AI assistant"))
+            sentence = _sentence(paragraph)
+            out.append(_finding("instruction-to-ai", where, sentence, "a sentence addressed to an AI assistant",
+                                locate(sentence) if locate else None))
     return out
+
+
+def _flag(findings, kind, where, text, how):
+    """Text kept out of the reader's sight (an annotation, a comment, metadata) is reported when it is aimed at an AI or
+    hides characters; the rest of it is not the student's business."""
+    if aimed_at_ai(text) or odd_characters(text, ""):
+        findings.append(_finding(kind, where, text, how))
 
 
 def _place(x, y, box):
@@ -387,7 +407,14 @@ def _page_segments(stream, fonts, notes):
     return segments, [r for r in dark if sum(r[4]) < 2.4]
 
 
-def _hidden_why(seg, dark_rects, box, has_image):
+def _locate(segments, sentence, box):
+    """Where the on-show text segment holding the start of `sentence` is drawn, in words."""
+    head = sentence[:20]
+    spot = next((s for s in segments if head in " ".join(s[0].split())), None)
+    return _place(spot[1], spot[2], box) if spot else None
+
+
+def _hidden_why(seg, dark_rects, box):
     why = []
     if seg["mode"] in (3, 7):
         why.append("invisible (render mode %d)" % seg["mode"])
@@ -403,7 +430,7 @@ def _hidden_why(seg, dark_rects, box, has_image):
 def _scan_pdf(path):
     data = Path(path).read_bytes()
     notes, findings = set(), []
-    if b"/Encrypt" in data[-4096:] or re.search(rb"/Encrypt\s", data):
+    if re.search(rb"/Encrypt(?![A-Za-z])", data):
         return [], ["the PDF is encrypted: its content was not read"]
     objs = _objects(data)
     order = _page_order(objs, data)
@@ -413,7 +440,8 @@ def _scan_pdf(path):
     for number, page in enumerate(order, 1):
         body = objs[page]
         box_raw = _inherited(objs, body, b"CropBox") or _inherited(objs, body, b"MediaBox") or b"[0 0 612 792]"
-        box = tuple(float(v) for v in re.findall(rb"[-+]?\d*\.?\d+", box_raw)[:4]) or (0, 0, 612, 792)
+        numbers = [float(v) for v in re.findall(rb"[-+]?\d*\.?\d+", box_raw)]
+        box = tuple(numbers[:4]) if len(numbers) >= 4 else (0, 0, 612, 792)
         listed = re.search(rb"/Contents\s*\[(.*?)\]", body, re.S)
         refs = [int(n) for n in re.findall(rb"(\d+)\s+0\s+R", listed.group(1))] if listed else [_ref(body, b"Contents")]
         stream = b"\n".join(_stream(objs.get(r, b"")) for r in refs)
@@ -424,15 +452,15 @@ def _scan_pdf(path):
         has_image = any(b"/Subtype/Image" in x for x in xobjects)
         segments, dark = _page_segments(stream, _fonts(objs, resources), notes)
         read_any = read_any or bool(segments)
-        visible, offsets, groups = "", [], []
+        visible, shown, groups = "", [], []
         for seg in segments:
-            why = _hidden_why(seg, dark, box, has_image)
+            why = _hidden_why(seg, dark, box)
             if why and groups and groups[-1]["why"] == why and abs(groups[-1]["y"] - seg["y"]) < 40:
                 groups[-1]["text"] += seg["text"]
             elif why:
                 groups.append({"why": why, "text": seg["text"], "x": seg["x"], "y": seg["y"]})
             else:
-                offsets.append((len(visible), seg["x"], seg["y"]))
+                shown.append((seg["text"], seg["x"], seg["y"]))
                 visible += seg["text"] + " "
         for g in groups:
             text = " ".join(g["text"].split())
@@ -443,33 +471,23 @@ def _scan_pdf(path):
                 continue
             findings.append(_finding("hidden-text", f"page {number}", text, "hidden text: " + ", ".join(g["why"]),
                                      _place(g["x"], g["y"], box)))
-        for f in text_findings(visible, f"page {number}"):
-            if f["kind"] == "instruction-to-ai":
-                at = visible.find(f["text"][:30].split()[0]) if f["text"] else 0
-                spot = [o for o in offsets if o[0] <= max(at, 0)]
-                f["position"] = _place(spot[-1][1], spot[-1][2], box) if spot else None
-                f["summary"] = f["summary"].replace(f["where"] + ":", f["where"] + (f", {f['position']}" if f["position"] else "") + ":", 1)
-            findings.append(f)
+        findings += text_findings(visible, f"page {number}", lambda sentence: _locate(shown, sentence, box))
         annots.update({n: number for n in _annotation_numbers(objs, body)})
     # text kept outside the pages: annotations and form fields, document information and XMP metadata
     for number, body in objs.items():
         if re.search(rb"/Subtype\s*/(?:Text|FreeText|Popup|Stamp|Widget|Highlight|Link)\b", body) or number in annots:
             for key in (rb"Contents", rb"TU", rb"V", rb"RC"):
                 for m in re.finditer(rb"/" + key + rb"\s*\(((?:\\.|[^\\)])*)\)", body):
-                    text = _text_of(_pdf_string(m.group(1)))
-                    if aimed_at_ai(text) or odd_characters(text, ""):
-                        where = f"page {annots[number]}" if number in annots else "a form field or annotation"
-                        findings.append(_finding("annotation", where, text, "text in a PDF annotation or form field"))
+                    where = f"page {annots[number]}" if number in annots else "a form field or annotation"
+                    _flag(findings, "annotation", where, _text_of(_pdf_string(m.group(1))), "text in a PDF annotation or form field")
         if b"/Title" in body and re.search(rb"/(?:Title|Subject|Keywords|Author|Creator|Producer)\s*\(", body):
             for m in re.finditer(rb"/(Title|Subject|Keywords|Author|Creator)\s*\(((?:\\.|[^\\)])*)\)", body):
-                text = _text_of(_pdf_string(m.group(2)))
-                if aimed_at_ai(text) or odd_characters(text, ""):
-                    findings.append(_finding("metadata", "the document's properties", text, f"text in the PDF's {m.group(1).decode().lower()} field"))
+                _flag(findings, "metadata", "the document's properties", _text_of(_pdf_string(m.group(2))),
+                      f"text in the PDF's {m.group(1).decode().lower()} field")
         if b"<x:xmpmeta" in _stream(body) or b"<x:xmpmeta" in body:
             xmp = (_stream(body) or body).decode("utf-8", "replace")
             for text in re.findall(r">([^<>]{12,})<", xmp):
-                if aimed_at_ai(text) or odd_characters(text, ""):
-                    findings.append(_finding("metadata", "the document's properties", text, "text in the PDF's metadata"))
+                _flag(findings, "metadata", "the document's properties", text, "text in the PDF's metadata")
     if not read_any:
         notes.add("no text could be read from this PDF (a scan, a picture, or content this reader does not handle): "
                   "this is not a clean result")
@@ -539,33 +557,25 @@ def _scan_docx(path):
                     else:
                         grouped.append([why, text])
                 for why, text in grouped:
-                    f = _finding("hidden-text", where, text, "hidden text: " + ", ".join(why),
-                                 f'after the visible words "{before}"' if before else None)
-                    findings.append(f)
+                    findings.append(_finding("hidden-text", where, text, "hidden text: " + ", ".join(why),
+                                             f'after the visible words "{before}"' if before else None))
                 visible_all.append(visible)
                 deleted = " ".join("".join(t.text or "" for t in d.iter(W + "delText")) for d in para.iter(W + "del"))
-                if deleted.strip() and aimed_at_ai(deleted):
-                    findings.append(_finding("tracked-deletion", where, deleted, "deleted text still stored in the file"))
-            for f in text_findings("\n".join(visible_all), label or "the document"):
-                findings.append(f)
+                _flag(findings, "tracked-deletion", where, deleted, "deleted text still stored in the file")
+            findings += text_findings("\n".join(visible_all), label or "the document")
         comments = _parse(zf, "word/comments.xml")
         for c in (comments.iter(W + "comment") if comments is not None else []):
-            text = " ".join(t.text or "" for t in c.iter(W + "t"))
-            if aimed_at_ai(text) or odd_characters(text, ""):
-                findings.append(_finding("comment", "a comment", text, "text in a Word comment"))
+            _flag(findings, "comment", "a comment", " ".join(t.text or "" for t in c.iter(W + "t")), "text in a Word comment")
         for part in [n for n in names if re.fullmatch(r"word/(document|header\d*|footer\d*)\.xml", n)]:
             root = _parse(zf, part)
             for el in (root.iter() if root is not None else []):
                 if el.tag.endswith(("}docPr", "}cNvPr")):
                     for key in ("descr", "title"):
-                        text = el.get(key) or ""
-                        if aimed_at_ai(text) or odd_characters(text, ""):
-                            findings.append(_finding("alt-text", "a picture's description", text, "text in a picture's alt text"))
+                        _flag(findings, "alt-text", "a picture's description", el.get(key) or "", "text in a picture's alt text")
         for name in names:
             if name.startswith("customXml/") and name.endswith(".xml"):
                 text = " ".join(re.findall(r">([^<>]{12,})<", zf.read(name).decode("utf-8", "replace")))
-                if aimed_at_ai(text) or odd_characters(text, ""):
-                    findings.append(_finding("custom-xml", "the file's custom data", text, "text in the file's custom data parts"))
+                _flag(findings, "custom-xml", "the file's custom data", text, "text in the file's custom data parts")
     notes.add("text hidden under pictures or shapes and camouflaged colours are not detected by this scan")
     return findings, sorted(notes)
 
@@ -573,8 +583,8 @@ def _scan_docx(path):
 def _scan_pptx(path):
     findings, notes = [], set()
     with zipfile.ZipFile(path) as zf:
-        size = _parse(zf, "ppt/presentation.xml")
-        sld = size.find(".//{http://schemas.openxmlformats.org/presentationml/2006/main}sldSz") if size is not None else None
+        presentation = _parse(zf, "ppt/presentation.xml")
+        sld = presentation.find(".//{http://schemas.openxmlformats.org/presentationml/2006/main}sldSz") if presentation is not None else None
         width, height = (int(sld.get("cx")), int(sld.get("cy"))) if sld is not None else (9144000, 6858000)
         for name in sorted(n for n in zf.namelist() if re.fullmatch(r"ppt/(slides/slide|notesSlides/notesSlide)\d+\.xml", n)):
             root = _parse(zf, name)
@@ -585,10 +595,11 @@ def _scan_pptx(path):
             where = ("slide " if "/slides/" in name else "the notes of slide ") + number
             if root.get("show") == "0":
                 findings.append(_finding("hidden-slide", where, "", "a slide that is hidden in the slideshow"))
+            shown = []
             for shape in root.iter():
                 if not shape.tag.endswith("}sp"):
                     continue
-                off = next((e for e in shape.iter(A + "off")), None)
+                off = next(shape.iter(A + "off"), None)
                 outside = off is not None and not (0 <= int(off.get("x", 0)) <= width and 0 <= int(off.get("y", 0)) <= height)
                 for run in shape.iter(A + "r"):
                     text = "".join(t.text or "" for t in run.iter(A + "t"))
@@ -603,8 +614,10 @@ def _scan_pptx(path):
                         why.append("text outside the slide")
                     if text.strip() and (why or "notesSlide" in name and aimed_at_ai(text)):
                         findings.append(_finding("hidden-text", where, text, "hidden text: " + (", ".join(why) or "in the speaker notes")))
-            findings += [f for f in text_findings("\n".join("".join(t.text or "" for t in p.iter(A + "t")) for p in root.iter(A + "p")), where)
-                         if f["kind"] == "invisible-characters" or "notesSlide" not in name]
+                    else:
+                        shown.append(text)
+            findings += odd_characters("\n".join(t.text or "" for t in root.iter(A + "t")), where)
+            findings += [f for f in text_findings("\n".join(shown), where) if f["kind"] == "instruction-to-ai"]
     notes.add("text hidden under pictures or shapes and camouflaged colours are not detected by this scan")
     return findings, sorted(notes)
 

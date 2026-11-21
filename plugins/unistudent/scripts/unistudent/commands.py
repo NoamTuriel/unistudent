@@ -480,7 +480,7 @@ def register(add, with_course):
                                     extra={"site_url": url, "site_modified": item.get("modified"),
                                            "fetched": datetime.date.today().isoformat(),
                                            **({"attached_to": item["attached_to"]} if item.get("attached_to") else {}),
-                                           **({"assignment": assignments.record_of(item)} if assignments.record_of(item) else {})})
+                                           **({"assignment": record} if (record := assignments.record_of(item)) else {})})
             (changed if before else new).append(rel)
             if item.get("transcribe"):  # ticked in the Fetch plan by a student who wants transcripts
                 from .recordings import approve
@@ -553,7 +553,8 @@ def register(add, with_course):
             path, counts = openu.scan(opener, args.course_id, args.paths[0],
                                       recordings=course.settings().get("recording_level") != 0)
             return {"listing": str(path), **counts,
-                    "summary": f"Listing written: {path} ({counts['documents']} files, {counts['recordings']} recordings"
+                    "summary": f"Listing written: {path} ({counts['documents']} files, {counts['assignments']} assignments, "
+                               f"{counts['recordings']} recordings"
                                + (f", {counts['recordings_skipped']} recordings left out by the Settings" if counts["recordings_skipped"] else "")
                                + ")."}
         if len(args.paths) != 2:
