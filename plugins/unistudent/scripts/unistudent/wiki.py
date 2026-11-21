@@ -36,8 +36,9 @@ STUBS = {
     "question-bank.md": """# Question bank
 
 {stub}
-<!-- One entry per question found in the course material (Q&A files, assignments, past exams), one tag per unit it
-exercises (a question on two units: #unit-05/<topic-tag> #unit-06/<topic-tag>):
+<!-- One entry per question found in the course material (Q&A files, assignments, past exams), tagged with the latest
+unit (in teaching order) it needs. A question whose parts end in different units: one tag per such unit and a
+Parts by unit line (#unit-05/<topic-tag> #unit-06/<topic-tag>, "- Parts by unit: unit 5: a, b · unit 6: c"):
 ### <short title>  #unit-NN/<topic-tag>
 - Where: [..](sources/..#page-N) · Solved in a recording: [<time>](recordings/../toc.md#solved-in-this-recording) or "no"
 - Question: <short paraphrase>
@@ -754,5 +755,14 @@ def check(course):
         if page.name == SUMMARY and page.parent.parent.name == "recordings" \
                 and not description_line(page.read_text("utf-8"), sources_line):
             problems.append({"kind": "no-description", "page": str(page)})
+    bank = course.wiki / "question-bank.md"
+    for entry in entries(bank.read_text("utf-8")) if bank.is_file() else []:
+        # A question in two units says which parts each gets (the Question's unit is the latest)
+        units = {int(n) for n in re.findall(r"#unit-(\d+)", _heading(entry))}
+        line = re.search(r"(?m)^- Parts by unit:(.*)", entry)
+        kind = ("unit-split-missing" if len(units) > 1 and not line else
+                "unit-split-mismatch" if line and {int(n) for n in re.findall(r"unit (\d+)", line[1])} != units else None)
+        if kind:
+            problems.append({"kind": kind, "page": str(bank), "entry": " ".join(TAG.sub("", _heading(entry))[4:].split())})
     return {"problems": problems,
-            "summary": problems_summary(problems, lambda p: f"{p['kind']}: {p['page']} {p.get('link', '')}")}
+            "summary": problems_summary(problems, lambda p: f"{p['kind']}: {p['page']} {p.get('link', p.get('entry', ''))}")}

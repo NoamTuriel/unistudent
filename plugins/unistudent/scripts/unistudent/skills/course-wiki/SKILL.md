@@ -36,7 +36,7 @@ Done when: each section of `<wiki>/course.md` has content with sources or says i
 
 ## 5. Check
 
-Run `us wiki check`. Fix every problem (broken link, broken anchor, page without sources) and run it again.
+Run `us wiki check`. Fix every problem (broken link, broken anchor, page without sources) and run it again. A question-bank entry tagged to two units (`unit-split-missing`, or `unit-split-mismatch` when its `Parts by unit` line disagrees with its tags): read the question and the units' Approved methods, give each part the latest unit it needs, and keep only the tags of units where a part ends, plus a matching `Parts by unit` line when more than one is left (the format comment at the top of the question bank).
 
 Done when: `us wiki check` reports 0 problems.
 
