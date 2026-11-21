@@ -1,4 +1,4 @@
-"""Seam 1 (sync): the OpenU course site through a Saved login (ADR 0019): login form → scan → download → ingest.
+"""Seam 1 (sync): the OpenU course site through a Saved login (ADR 0020): login form → scan → download → ingest.
 
 A fake OpenU (SSO, Moodle pages, the video collection and the CDN redirector) runs on 127.0.0.1, shaped like the real
 site as checked on 2026-11-21.

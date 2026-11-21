@@ -1,4 +1,4 @@
-"""The Open University of Israel course site over plain HTTP, from the student's Saved login (ADR 0019).
+"""The Open University of Israel course site over plain HTTP, from the student's Saved login (ADR 0020).
 
 The same scan and downloads the OpenU sync skill otherwise runs as scripts in the student's Chrome
 (plugins/openu/skills/openu-sync/references/site.md): log in through the OU SSO, list the course's files and

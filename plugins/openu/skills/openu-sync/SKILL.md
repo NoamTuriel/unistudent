@@ -89,6 +89,7 @@ Outside setup:
 
 - `unsorted` files: ask one grouped question: a unit number, general, or "I don't know". Record answers with `us assign`; "I don't know" leaves the file unsorted, already in the Wiki.
 - Give each unit in `wiki.units_touched` (all ingests together) to the unistudent `wiki-unit-writer` worker (`us doc wiki-unit-writer` gives its instructions); it merges its own glossary and question-bank entries.
+- Open assignments: run `us assignments --json`. Any open → one line (how many, the soonest due date) and offer `/unistudent:course-assignments`: it scans the files for text aimed at an AI first, checks the Wiki can solve them, and only then offers to solve. Offer it; never start it unasked, and nothing is ever submitted for the student.
 - Two lines: what's new since the last sync, and what's waiting (failed downloads with what to do, recordings the Settings skip, unsorted files). If a unit with a study pack got new material, offer `/unistudent:study-pack N`. If recordings came in, offer `/unistudent:course-recordings`.
 
-Done when: unsorted files are answered or left unsorted by choice, every touched unit went to the unit writer, and the two lines were said.
+Done when: unsorted files are answered or left unsorted by choice, every touched unit went to the unit writer, open assignments were offered, and the two lines were said.
