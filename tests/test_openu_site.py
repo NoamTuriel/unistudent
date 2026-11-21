@@ -55,6 +55,8 @@ class FakeOpenU(http.server.BaseHTTPRequestHandler):
         url = urllib.parse.urlparse(self.path)
         if url.path == "/process":
             form = self._form()
+            if not self._cookie("cookies_enabled"):  # set by the login page: a POST without it is refused (as the real SSO)
+                return self._send(200, "<html>עליך לאפשר קליטת עוגיות (cookies)</html>")
             if all(form.get(k) == v for k, v in GOOD.items()):
                 return self._redirect(form["T_PLACE"], "sso=ok; Path=/")
             return self._send(200, "<html>שם משתמש או סיסמה שגויים</html>")
@@ -77,7 +79,7 @@ class FakeOpenU(http.server.BaseHTTPRequestHandler):
         if url.path == "/auth/ouilsso/redirect2.php":
             return self._redirect(query["urltogo"], "MoodleSession=s1; Path=/") if self._cookie("sso") else self._redirect("/login")
         if url.path == "/login":
-            return self._send(200, "<form id=login_sso></form>")
+            return self._send(200, "<form id=login_sso></form>", [("Set-Cookie", "cookies_enabled=1; Path=/")])
         if url.path.startswith("/Redirector/"):  # the CDN: no cookies needed
             return self._send(200, f'<rss><channel><item><jwplayer:source file="{self.video}" /></item></channel></rss>')
         if not self._cookie("MoodleSession"):

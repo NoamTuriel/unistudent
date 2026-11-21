@@ -13,6 +13,7 @@ import json
 import os
 import re
 import secrets
+import sys
 import urllib.parse
 import urllib.request
 import webbrowser
@@ -78,6 +79,8 @@ def login(creds):
     form["T_PLACE"] = f"{SITE}/auth/ouilsso/redirect2.php?urltogo={SITE}/my/"
     data = urllib.parse.urlencode(form, encoding="windows-1255", errors="replace").encode()  # the SSO page's charset
     try:
+        # The login page sets the cookie the SSO checks: a POST without it gets "allow cookies" and no login.
+        opener.open(f"{SSO}/login?" + urllib.parse.urlencode({"T_PLACE": form["T_PLACE"]}), timeout=TIMEOUT).read()
         opener.open(urllib.request.Request(f"{SSO}/process", data), timeout=TIMEOUT).read()
         reply = opener.open(f"{SITE}/my/", timeout=TIMEOUT)
         reply.read()
@@ -170,6 +173,7 @@ def ask_for_login(wait_seconds=600):
     server = http.server.HTTPServer(("127.0.0.1", 0), Form)
     url = f"http://127.0.0.1:{server.server_port}/{token}"
     try:
+        print(f"The login form is at {url} (open it on this computer if no tab opened).", file=sys.stderr, flush=True)
         if not webbrowser.open(url):
             raise UserError(f"Couldn't open a browser. Open this address on this computer: {url}")
         deadline = datetime.datetime.now() + datetime.timedelta(seconds=wait_seconds)
