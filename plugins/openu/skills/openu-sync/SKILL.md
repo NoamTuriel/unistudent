@@ -11,9 +11,11 @@ How the site works (lists, sizes, download method, recordings, ready-made snippe
 
 The sync runs in three parts: scan the site without downloading (steps 1-3), show the Fetch plan and wait for the student's OK (step 4), then download without asking anything (steps 5-6). **Inside setup**, course setup tells you so when it starts this skill: it runs steps 1-4 before the student leaves and steps 5-6 in its unattended run, and does its own report (step 7 is skipped).
 
+There are two ways in. **With a Saved login** (the student's OpenU username, password and ID number, kept on their computer), `us openu` logs in, scans and downloads by itself, with no browser. **Through Chrome**, every scan and download is a script run in the student's logged-in Chrome tab. Use the Saved login when there is one; Chrome otherwise, or when the Saved login stops working. Never ask for the password in the chat, never type it anywhere, and never open `logins.json`: `us openu login` opens a form on the student's computer, and only that form takes the password.
+
 ## 1. Course and what's already here
 
-Run `us courses current` (say which course) and `us site-status --json` (URLs already downloaded, and `last_sync`, the date of the last sync). Read the course's Recording choice from `.unistudent/settings.json` in the course folder: `recording_level` (0 skip, 1 download only, 3 transcript and summary). You need access to the student's Downloads folder: that's where the browser saves files.
+Run `us courses current` (say which course), `us openu status` (whether there is a Saved login) and `us site-status --json` (URLs already downloaded, and `last_sync`, the date of the last sync). Read the course's Recording choice from `.unistudent/settings.json` in the course folder: `recording_level` (0 skip, 1 download only, 3 transcript and summary). You need access to the student's Downloads folder: that's where the browser saves files.
 
 Ask the recordings question only when `recording_level` is `null` (an older course synced outside setup): transcribe and summarise them (recommended: the AI can then answer from what the lecturer said and link to the minute), download them only, or skip them. Record it with `us context --recording-level <3|1|0>`; it holds for every later sync.
 
@@ -21,13 +23,19 @@ Done when: you know the course folder, the Downloads folder path, what's already
 
 ## 2. Find the course on the site
 
-Use a browser tool that drives the student's own logged-in Chrome (Claude in Chrome, or a browser MCP server attached to their Chrome profile). The site can't be reached without their session. No such tool → stop here and say so in plain words: it is not an error and nothing is lost; they can add Claude in Chrome (a free Chrome extension; in Claude Code, connect it with `/chrome`) and run the sync again, or download the files themselves, drop them in the course's inbox and run `course-add`. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id` and the course number.
+**With a Saved login:** run `us openu scan` with no `--course-id`: it lists the student's courses (`id`, name and semester). Pick the one matching the course and the current semester. If it says the site didn't accept the Saved login, say so in one line and ask: type it again (`us openu login`, which opens the form; tell the student before you run it) or go through Chrome this time. Never retry the same login.
+
+**Through Chrome** (no Saved login): use a browser tool that drives the student's own logged-in Chrome (Claude in Chrome, or a browser MCP server attached to their Chrome profile). The site can't be reached without their session. No such tool → offer the Saved login: "Should I save your OpenU login on this computer? A form opens in your browser and the AI never sees it. Then I can download new material without you logging in." Yes → `us openu login`, then follow the Saved login way. No → stop here and say so in plain words: it is not an error and nothing is lost; they can add Claude in Chrome (a free Chrome extension; in Claude Code, connect it with `/chrome`) and run the sync again, or download the files themselves, drop them in the course's inbox and run `course-add`. If they aren't logged in, ask them to log in in Chrome themselves: never ask for or type their password. Open `https://opal.openu.ac.il/my/` and pick the course link matching the course (and the current semester). Note its `id` and the course number.
 
 Done when: you have the course id and number.
 
 ## 3. Scan, without downloading
 
 Nothing downloads in this step, and no stream links are collected: they expire within hours.
+
+**With a Saved login:** run `us openu scan --course-id <id> "<Downloads>"`. It does everything below (files, folders, video collections, recordings with their lengths, their attached files, sizes and types; recordings left out when `recording_level` is 0) and writes the listing into Downloads; its `listing` is the path. Then go to step 4.
+
+**Through Chrome:**
 
 - **Documents:** run the listing snippet from `site.md` for the course id, then add folder contents (open each folder, list its file links). One item per file: `url`, `name`, `section` (the site's section title, as shown), `kind: "document"`, and `unit_hint: "general"` for past exams, exam information and file stores. Then run the size and type snippet: it adds `size`, and `file` (`unistudent-<course number>-<date>__<name>.<real file type>`, the name it will be downloaded under), without downloading anything. Its last count must be 0: a `file` without its type can't be read into the Wiki.
 - **Recordings and their attached files:** run the recordings snippet in each video collection (links on the course page and in the "וידאו" section), even when `recording_level` is 0: lecturers hang files on recordings (the class exercise file, the exam-prep file) that are in no other list. Every file in a recording's `attachments` is a document item, with `attached_to`: that recording's `url` (collection URL + `#` + title, also when no recording item is added), so the recording's summarizer reads it. When `recording_level` is 0, add no recording items (count them for the report); otherwise one item per recording: `url` (the collection URL + `#` + the title), `title` (exactly as shown), `name` (title + date), `section`, `kind: "recording"`, and `seconds` as the snippet read it from the player (the length is what makes the Fetch plan's time real: recordings of unknown length leave the student no time to plan around).
@@ -54,13 +62,15 @@ Done when: the student gave an explicit OK and `fetch-plan apply` returned the a
 
 From here to the end, never ask: a failure is retried once, then skipped and reported.
 
-In the course tab, download every document item of the approved listing whose `url` is not in `us site-status` yet (a resumed run skips what is already in), with the in-page method from `site.md`, under its `file` name. Then run `us ingest --json "<approved listing>" "<Downloads>"`. The core moves the files into the course's Material folder (`official`, by unit), updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`. Download each `missing` file once more and run the ingest again; what is still missing goes in the report.
+With a Saved login, run `us openu download "<approved listing>" "<Downloads>"` (it skips what is already in and retries a failure once). Through Chrome, in the course tab, download every document item of the approved listing whose `url` is not in `us site-status` yet (a resumed run skips what is already in), with the in-page method from `site.md`, under its `file` name. Then run `us ingest --json "<approved listing>" "<Downloads>"`. The core moves the files into the course's Material folder (`official`, by unit), updates the Wiki, and reports `new`, `changed`, `missing` and `unsorted`. Download each `missing` file once more and run the ingest again; what is still missing goes in the report.
 
 Done when: every approved document is ingested or listed as failed.
 
 ## 6. Download the recordings, one at a time
 
 For each recording item of the approved listing whose `url` is not in `us site-status` yet (a resumed run skips what is already in), oldest first (by the recording date), and only now:
+
+With a Saved login, run `us openu stream "<approved listing>" "<Downloads>" --url "<the item's url>"`: it collects the link, downloads the recording (collecting the link again once if that fails) and returns `listing`, the one-recording listing. Then run `us ingest --json --no-wiki "<that listing>" "<Downloads>"`. A recording it couldn't download goes in the report. Through Chrome:
 
 1. In its collection tab, run the stream snippet from `site.md` with the item copied exactly from the approved listing (rebuilding it from the page loses its `transcribe` tick): it collects that one recording's link and downloads a one-recording listing, `unistudent-<course number>-<date>__rec-<n>.json`.
 2. Run `us recordings fetch --json "<Downloads>/<that file>" "<Downloads>"` (it keeps the sound only when the Settings say so).

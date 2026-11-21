@@ -60,7 +60,7 @@ Put the files in one batch folder by prefixing names, e.g. `unistudent-<course>-
 
 ## Recordings
 
-- Video collections: `/mod/ouilvideocollection/view.php?c=<id>`. Each recording is a `.ovc_playlist_title` element (title) inside `.ovc_playlist`; the date and lecturer are next to it.
+- Video collections: linked as `/mod/ouilvideocollection/view.php?id=<cmid>`. Each recording is a `.ovc_playlist_title` element (title) inside `.ovc_playlist`; the date and lecturer are next to it.
 - Clicking a title loads an iframe `/local/ouil_video/player.php?mediaid=<id>`. In that iframe, `jwplayer_parameters.file` is an HLS playlist on `souvod1.bynetcdn.com` with a time-limited token in the URL. It needs **no cookies**: ffmpeg can download it directly while the token is valid (a few hours). A whole course takes longer than that to download, so a link is collected only after the student's OK, one recording at a time, just before its download.
 - Two quality variants: about 1.8 Mbit/s and 0.4 Mbit/s. At 1.8 Mbit/s an hour is about 0.81 GB, so a three-hour session is about 2.4 GB; far less at low quality or audio only, which is all transcription needs. The Fetch plan estimates a recording's size from its length at 1.8 Mbit/s.
 
@@ -109,6 +109,17 @@ a.download = FILE; a.click();
 
 The javascript tool hides tokenised URLs from Claude's view, so the snippet writes the link straight into the one-recording listing instead of returning it. `us recordings fetch` downloads from that file. Chrome never overwrites a download: a second try saved under the same name lands as `<name> (1).json`, so a retry gets its own name (`__rec-<n>-again.json`). Measured 2026-10-20: about 4 MB/s, so an hour of video (0.8 GB) takes about 3 to 4 minutes.
 
+## Over plain HTTP, with a Saved login
+
+What `us openu` (the core's `openu.py`) does instead of the snippets above. Checked 2026-11-21 against the live site.
+
+- **Login:** `https://opal.openu.ac.il/login/index.php` redirects to the OU SSO, a plain HTML form (`windows-1255`) posted to `https://sso.apps.openu.ac.il/process`: `p_user` (username), `p_sisma` (password), `p_mis_student` (9-digit ID number) and `T_PLACE` (where to go after: `https://opal.openu.ac.il/auth/ouilsso/redirect2.php?urltogo=...`). No captcha and no second step. After it, `/my/` answers on opal instead of redirecting to the SSO.
+- **Courses:** `/my/` links to every course; the course page header reads "<course name> - <course number>".
+- **Files:** `resources.php` and folder pages are server-rendered: the same table and `pluginfile.php` links as above.
+- **Video collections:** the course page has an element `id="section-<n>"` per section tile, with its title in an `h3`/`h4`. Each section page (`/course/view.php?id=<courseid>&section=<n>`) shows its collections in its main region (after `id="region-main"`): as links `/mod/ouilvideocollection/view.php?id=<cmid>` (not `?c=`), or embedded, as one `a.collection_link` per collection with its `cmid` (the "וידאו" section embeds them all: checked 2026-11-21, four collections, 70 recordings). The quick-links block above the main region, the same on every page, links only one collection, so it can't name a collection's section. "Previous"/"next" buttons link collections as `...?id=<cmid>&from=...`: not a section's own.
+- **Recordings:** the collection page lists each recording as `div#playlist<N>` holding its `.ovc_playlist_title`, and the collection itself as `a.collection_link` with attributes `cid`, `mid` and `cmid` (the one whose `cmid` is this collection). A POST to `/mod/ouilvideocollection/actions.php` with `action=getplaylist&context=<cid>&playlistid=<N>&course=<courseid>&mid=<mid>` (no sesskey) answers JSON: `title`, `recorddate` (dd/mm/yyyy), `media.duration` (seconds), `attachments` (HTML with the attachment links), and `media.cipher`, the player's token, URL-encoded.
+- **Stream link:** `/local/ouil_video/player.php?mediaid=<cipher, decoded>` holds, in `jwplayer_parameters`, a redirector link on `apiou.bynetcdn.com/Redirector/.../hls`. Fetched without cookies, that link answers an RSS feed whose `<jwplayer:source file="...">` is the tokenised `souvod1.bynetcdn.com/.../playlist.m3u8` that ffmpeg downloads.
+
 ## Assignments: due date and status (not verified on the live site)
 
 The core finds open assignments from listing items that carry `kind: "assignment"`, `due` (`YYYY-MM-DD`) and `status` (`open`, `submitted`, `graded` or `unknown`); `us ingest` keeps them current on every sync. Moodle's assignment activities link as `/mod/assign/view.php?id=<cmid>`; open that page for each assignment link in the course's resources list and read its "Due" date and its submission status ("No submissions have been made yet" → `open`; "Submitted for grading" → `submitted`; "Graded" → `graded`) from the page text; the Hebrew site words differ (check them on the page). Not verified: no logged-in session was available when this was written, so the selectors and the Hebrew wording are unchecked. Where a page does not show a date or status, leave the field out: the core then lists the assignment as open with "no date known". Its files (the assignment's attached PDF) are ordinary document items with `kind: "assignment"`. Keep listing it every sync, also when its file is already downloaded: that is how a status change reaches the core.
@@ -119,4 +130,5 @@ Every page's footer: materials are uploaded for the personal use of the course's
 
 ## Not available
 
-- Moodle's `core_courseformat_get_state` AJAX call (older Moodle). The standard web-service token login wasn't tried: it would need the student's password.
+- Moodle's `core_courseformat_get_state` AJAX call (older Moodle).
+- The Moodle app's web-service token (`login/token.php`): the site's public config says `enablemobilewebservice: 0` (checked 2026-11-21).
