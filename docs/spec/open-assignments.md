@@ -64,7 +64,7 @@ A scan that cannot parse a file says "could not check", never "clean". No findin
 
 ## Not verified / known limits
 
-- OPAL's assignment pages: how a due date and status appear on the live site is not verified (no logged-in session). The listing fields are the contract; the `site.md` snippet for reading them is marked unverified.
+- OPAL's assignment module: verified on 2026-11-21 against the live site (see `plugins/openu/skills/openu-sync/references/site.md`). Not seen: the status word for a file submitted but not yet checked (anything but "נבדק" is read as submitted), a time of day on a due date, and assignment types other than file assignments.
 - The research's unverified items (PDF-spec wording for render mode, annotations, layers; markitdown and ffmpeg on hidden content; pptx and xlsx hidden attributes) apply to the scan: it relies on first-hand fixtures, not on those claims.
 - Text under images, camouflaged text, text rendered as images and semantic honeypots (a made-up term, contradictory numbers) are not statically provable. The skill cross-checks numbers across the assignment, the site page and the Wiki and says what disagrees.
 - The PDF reader is a small parser: encrypted files, unusual encodings and content in object streams it cannot read are reported as could-not-check.
