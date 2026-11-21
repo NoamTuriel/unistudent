@@ -1,6 +1,6 @@
 {
   "name": "unistudent",
-  "version": "0.8.5",
+  "version": "0.9.0",
   "description": "Core (any university): course folders, Wiki, recordings, study packs, grounding labels, preferences.",
   "author": {
     "name": "Noam Turiel"
@@ -9,6 +9,7 @@
   "skills": [
     "./scripts/unistudent/skills/before-test",
     "./scripts/unistudent/skills/course-add",
+    "./scripts/unistudent/skills/course-assignments",
     "./scripts/unistudent/skills/course-help",
     "./scripts/unistudent/skills/course-recordings",
     "./scripts/unistudent/skills/course-setup",

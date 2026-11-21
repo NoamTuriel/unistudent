@@ -109,6 +109,10 @@ a.download = FILE; a.click();
 
 The javascript tool hides tokenised URLs from Claude's view, so the snippet writes the link straight into the one-recording listing instead of returning it. `us recordings fetch` downloads from that file. Chrome never overwrites a download: a second try saved under the same name lands as `<name> (1).json`, so a retry gets its own name (`__rec-<n>-again.json`). Measured 2026-10-20: about 4 MB/s, so an hour of video (0.8 GB) takes about 3 to 4 minutes.
 
+## Assignments: due date and status (not verified on the live site)
+
+The core finds open assignments from listing items that carry `kind: "assignment"`, `due` (`YYYY-MM-DD`) and `status` (`open`, `submitted`, `graded` or `unknown`); `us ingest` keeps them current on every sync. Moodle's assignment activities link as `/mod/assign/view.php?id=<cmid>`; open that page for each assignment link in the course's resources list and read its "Due" date and its submission status ("No submissions have been made yet" → `open`; "Submitted for grading" → `submitted`; "Graded" → `graded`) from the page text; the Hebrew site words differ (check them on the page). Not verified: no logged-in session was available when this was written, so the selectors and the Hebrew wording are unchecked. Where a page does not show a date or status, leave the field out: the core then lists the assignment as open with "no date known". Its files (the assignment's attached PDF) are ordinary document items with `kind: "assignment"`. Keep listing it every sync, also when its file is already downloaded: that is how a status change reaches the core.
+
 ## Terms of use
 
 Every page's footer: materials are uploaded for the personal use of the course's students and for course purposes only; they are the university's property and must not be distributed ("אין להפיץ חומרים אלה"), under the discipline code. So: download for the student's own study only, keep everything in their own course folder, and never publish or share course material. The footer doesn't address recordings separately.

@@ -4,6 +4,7 @@ import hashlib
 import re
 from pathlib import Path
 
+from . import assignments
 from .common import UserError, problems_summary, resolve_course
 from .course import (Course, Registry, find_course, SETUP_STAGES, RENAMED_STAGES, clear_setup_progress, generated_university_file,
                      list_generated, list_setup_progress, missing_setup_answers, next_setup_stage, parse_unit,
@@ -455,6 +456,7 @@ def register(add, with_course):
         data = json.loads(Path(args.listing).read_text("utf-8"))
         staged = Path(args.folder)
         by_url = {e.get("site_url"): rel for rel, e in course.manifest()["files"].items() if e.get("site_url")}
+        assignments.refresh(course, data.get("items", []))  # dates and status move without the file changing
         new, changed, missing, recordings = [], [], [], []
         for item in data.get("items", []):
             url = item.get("url")
@@ -477,7 +479,8 @@ def register(add, with_course):
                                     site_unit=parse_unit(hint) if hint is not None else None,
                                     extra={"site_url": url, "site_modified": item.get("modified"),
                                            "fetched": datetime.date.today().isoformat(),
-                                           **({"attached_to": item["attached_to"]} if item.get("attached_to") else {})})
+                                           **({"attached_to": item["attached_to"]} if item.get("attached_to") else {}),
+                                           **({"assignment": assignments.record_of(item)} if assignments.record_of(item) else {})})
             (changed if before else new).append(rel)
             if item.get("transcribe"):  # ticked in the Fetch plan by a student who wants transcripts
                 from .recordings import approve
@@ -485,6 +488,7 @@ def register(add, with_course):
         built = wiki.build(course) if (new or changed) and not args.no_wiki else None
         return {"new": new, "changed": changed, "missing": missing, "recordings_available": recordings,
                 "unsorted": [r for r in material.unsorted(course) if r in new or r in changed], "wiki": built,
+                "assignments_open": [{k: r[k] for k in ("path", "due", "state")} for r in assignments.listing(course)["open"]],
                 "summary": f"{len(new)} new, {len(changed)} changed, {len(missing)} missing, "
                            f"{len(recordings)} recordings available on the site."}
 
@@ -524,6 +528,26 @@ def register(add, with_course):
                            + (f", the last on {last_sync}." if last_sync else ".")}
 
     with_course(add("site-status", cmd_site_status, "which course-site files are already in the Material folder"))
+
+    def cmd_assignments(args):
+        course = resolve_course(args)
+        if args.action == "scan":
+            return assignments.trap_scan(course, args.files)
+        if args.action == "set":
+            if len(args.files) != 1 or not (args.due or args.status):
+                raise UserError("set: give one file and --due YYYY-MM-DD and/or --status.")
+            record = assignments.mark(course, args.files[0], args.due, args.status)
+            return {"assignment": record, "summary": f"{args.files[0]}: due {record['due'] or 'unknown'}, {record['status']}."}
+        return assignments.listing(course, args.today)
+
+    p = with_course(add("assignments", cmd_assignments,
+                        "the open Assignments with their Readiness (default), the Trap scan of assignment files "
+                        "(scan), or record a date and status by hand (set)"))
+    p.add_argument("action", choices=["list", "scan", "set"], nargs="?", default="list")
+    p.add_argument("files", nargs="*", help="scan: files to scan (default: every open assignment); set: the one file")
+    p.add_argument("--due", help="set: the due date, YYYY-MM-DD")
+    p.add_argument("--status", choices=list(assignments.STATUSES), help="set: open, submitted, graded or unknown")
+    p.add_argument("--today", help="list: count days from this date (YYYY-MM-DD) instead of today")
 
     def cmd_doc(args):
         package = Path(__file__).resolve().parent
