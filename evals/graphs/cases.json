@@ -1,0 +1,32 @@
+[
+ {
+  "id": "subsidy",
+  "areas": 2,
+  "labels": ["D", "S", "S1", "A", "B", "C", "E", "Q0", "Q1", "P0", "יצרן", "צרכן", "כמות", "מחיר"],
+  "brief": "A competitive market for one good. Horizontal axis: כמות (Q). Vertical axis: מחיר (P). The demand curve D slopes down and the supply curve S slopes up; they cross at the initial equilibrium, quantity Q0 and price P0. The government pays producers a subsidy per unit, so supply moves down and to the right to S1 (parallel to S; S1 is drawn dashed). The new quantity Q1 is larger than Q0: it is where S1 crosses D. That crossing is point C, and its price is the consumer price, written 'P1 צרכן' on the price axis. Point B is on the original curve S, directly above C (at quantity Q1); its price is the producer price, written 'P1 יצרן' on the price axis. Point A is on the price axis at the producer price and point E is on the price axis at the consumer price. The rectangle ABCE is the government's spending on the subsidy. The triangle whose corners are the initial equilibrium, B and C is the welfare loss. Q0 and Q1 are marked on the quantity axis and P0 on the price axis, with thin dashed guide lines."
+ },
+ {
+  "id": "tariff",
+  "areas": 3,
+  "labels": ["D", "S", "S1", "S2", "A", "B", "C", "E", "Q1", "Q2", "Q3", "Q4", "מחיר עולמי", "מכס", "כמות", "מחיר"],
+  "brief": "A small open economy that imports one good. Horizontal axis: כמות (Q). Vertical axis: מחיר (P). Domestic demand D slopes down and domestic supply S slopes up. The world price is below the price at which D and S cross: it is a horizontal line named 'S1 (מחיר עולמי)'. At the world price, domestic production is Q1 (where S meets the line) and consumption is Q2 (where D meets the line). A tariff raises the domestic price: a second, higher horizontal line named 'S2 (מחיר עולמי + מכס)', still below the crossing of D and S. With the tariff, production is Q3 (where S meets S2) and consumption is Q4 (where D meets S2), so Q1 < Q3 < Q4 < Q2. Point A is where S meets the S2 line and point B is where D meets the S2 line. Point E is directly below A on the S1 line and point C is directly below B on the S1 line. The rectangle ABCE is the government's tariff receipts. There are two welfare-loss triangles: the left one has corners A, E and the point where S meets the S1 line; the right one has corners B, C and the point where D meets the S1 line. Q1, Q3, Q4 and Q2 are marked on the quantity axis with thin dashed guide lines."
+ },
+ {
+  "id": "tax",
+  "areas": 4,
+  "labels": ["D", "S", "S1", "Q0", "Q1", "P0", "Pc", "Pp", "עודף הצרכן", "עודף היצרן", "תקבולי המס", "הפסד רווחה", "כמות", "מחיר"],
+  "brief": "A competitive market for one good with a tax per unit on producers. Horizontal axis: כמות (Q). Vertical axis: מחיר (P). Demand D slopes down and supply S slopes up; they cross at the initial equilibrium (Q0, P0). The tax moves supply up and to the left to S1 (parallel to S; S1 is solid and the original S is dashed). The new equilibrium is where S1 crosses D, at quantity Q1, smaller than Q0; its price is the consumer price Pc. The producer price Pp is the price on the original curve S at quantity Q1, so Pp < P0 < Pc. Four areas are shown and each is named in Hebrew, inside the area or in a legend: 'עודף הצרכן' (consumer surplus): the triangle between the point where D meets the price axis, the point on the price axis at Pc, and the new equilibrium. 'עודף היצרן' (producer surplus): the triangle between the point where S meets the price axis, the point on the price axis at Pp, and the point on S at Q1. 'תקבולי המס' (tax receipts): the rectangle between the prices Pp and Pc, from the price axis to Q1. 'הפסד רווחה' (welfare loss): the triangle between the new equilibrium, the point on S at Q1, and the initial equilibrium. Q1 and Q0 are marked on the quantity axis and Pp, P0 and Pc on the price axis."
+ },
+ {
+  "id": "minwage",
+  "areas": 0,
+  "labels": ["L0", "L1", "L2", "W0", "Wmin", "אבטלה", "שכר מינימום", "עובדים", "שכר"],
+  "brief": "A labour market with a minimum wage. Horizontal axis: עובדים (L). Vertical axis: שכר (W). The demand for workers (named 'ביקוש לעובדים') slopes down and the supply of workers (named 'היצע עובדים') slopes up; they cross at the equilibrium (L0, W0). The minimum wage Wmin is above W0: a horizontal line named 'שכר מינימום'. At the minimum wage, firms employ L1 workers (the point where the demand curve meets the line) and L2 workers want to work (the point where the supply curve meets the line), so L1 < L0 < L2. The gap between those two points, along the minimum wage line, is unemployment: it is marked with a double-headed arrow named 'אבטלה'. L1, L0 and L2 are marked on the horizontal axis and W0 and Wmin on the vertical axis, with thin dashed guide lines."
+ },
+ {
+  "id": "ppf",
+  "areas": 0,
+  "labels": ["A", "B", "C", "D", "XA", "YA", "קו המחירים", "מוצר X", "מוצר Y"],
+  "brief": "A production possibility frontier. Horizontal axis: מוצר X. Vertical axis: מוצר Y. The frontier is one smooth concave curve (bowed outward, away from the origin) from a point on the vertical axis to a point on the horizontal axis. Point A is on the curve, with thin dashed guide lines to both axes, marked XA on the horizontal axis and YA on the vertical axis. Point B is inside the frontier (inefficient). Point C is outside the frontier (cannot be produced). A straight line named 'קו המחירים' slopes down and is tangent to the frontier at A: it touches the curve only at A and does not cut through it. Point D is also on the curve, further to the right and lower than A. An arrow from A to D is named 'יותר X, פחות Y'."
+ }
+]
